@@ -105,11 +105,64 @@ def get_category(f_name):
     return -1
 
 
+catid_pattern_dict = {}  # value should be a list?
+
 pattern_threshold = 0.5
+
+# -----------------------------------------------
+
+
+def extract_patterns(func_body: str, length: int):
+    patterns_list = []
+    asm_list = get_asm_list(func_body)
+    start_index = 0
+    while start_index < len(asm_list) - length:
+        end_index = start_index + length
+        # generate the potential pattern
+        inst_list = []
+        ignore_pattern = False
+        for idx in range(start_index, end_index):
+            if asm_list[idx].startswith('j'):
+                ignore_pattern = True
+            elif asm_list[idx].startswith('push'):
+                ignore_pattern = True
+            elif asm_list[idx].startswith('pop'):
+                ignore_pattern = True
+            elif asm_list[idx].startswith('nop'):
+                ignore_pattern = True
+            inst_list.append(parse_line(asm_list[idx]))
+        pattern = ','.join(inst_list)
+        if not ignore_pattern and ('ps' in pattern or 'ss' in pattern or 'xmm' in pattern or 'ymm' in pattern):
+            patterns_list.append(pattern)
+        start_index += 1
+    # patterns_list.sort()
+    return patterns_list
+
+
+def prepare_patterns(dataset_dir: str, length: int):
+    global catid_pattern_dict
+    catid_pattern_dict.clear()
+    file_num = 0
+    for home, dirs, files in os.walk(dataset_dir):
+        for f in files:
+            if '.txt.' not in f:
+                continue
+
+            file_num += 1
+            print('prepare patterns for', f, ',num', file_num)
+            cat_id = get_category(f)  # TODO
+            f = os.path.join(home, f)
+            func_body = open(f, 'r').read()
+            patterns_list = extract_patterns(func_body, length)
+            if cat_id not in catid_pattern_dict.keys():
+                catid_pattern_dict[cat_id] = patterns_list
+            else:
+                new_list = patterns_list + catid_pattern_dict[cat_id]
+                catid_pattern_dict[cat_id] = new_list
 
 
 # -----------------------------------------------
-#
+
 
 def patterns_generation(func_path: str, min_len: int, max_len: int, dataset_dir: str):
     func_dir, func_name = os.path.split(func_path)
@@ -120,69 +173,49 @@ def patterns_generation(func_path: str, min_len: int, max_len: int, dataset_dir:
     func_body = open(func_path, 'r').read()
     asm_list = get_asm_list(func_body)
 
-    visited_patterns = []
     start_time = time.time()
     for length in range(min_len, max_len+1):
-        start_index = 0
-        while start_index < len(asm_list)-length:
-            end_index = start_index + length
-            # generate the potential pattern
-            inst_list = []
-            for idx in range(start_index, end_index):
-                inst_list.append(parse_line(asm_list[idx]))
-            pattern = ','.join(inst_list)
 
-            # skip duplicated pattern
-            if pattern not in visited_patterns:
-                visited_patterns.insert(0, pattern)
+        prepare_patterns(dataset_dir, length)
 
-                # evaluate the pattern
-                score, ave_freq, all_ave_freq = evaluate_pattern(pattern, length, cat_id, dataset_dir)
-                if score > pattern_threshold and ave_freq >= 3:
-                    print('store the pattern', pattern)
-                    pattern_list.append([(length, pattern, score, cat_id), ave_freq, all_ave_freq])
+        patterns = extract_patterns(func_body, length)
 
-            start_index += 1
+        # check pattern one by one
+        patterns = list(set(patterns))
+        for pattern in patterns:
+            score, match_count, total_count = evaluate_pattern(pattern, length, cat_id)
+            if score > 0.8:
+                pattern_list.append((pattern, score, match_count, total_count))
         current_time = time.time()
         print('length {}, time consumed {}'.format(length, current_time-start_time))
     pattern_list.sort(key=lambda x: x[1], reverse=True)
+    with open('patterns.log', 'w') as f:
+        for pat in pattern_list:
+            f.write(str(pat)+'\n')
     return pattern_list
 
 
-def evaluate_pattern(pattern: str, length: int, category, dataset_dir: str):
-    file_num = 0
-    result = {}
-    for home, dirs, files in os.walk(dataset_dir):
-        for f in files:
-            if '.txt.' not in f:
-                continue
+def evaluate_pattern(pattern: str, length: int, category):
+    result = {}  # [cat_id]=(match_count)
+    for catid, pattern_list in catid_pattern_dict.items():
+        count = pattern_list.count(pattern)
+        if catid in result.keys():
+            result[catid] += count
+        else:
+            result[catid] = count
 
-            file_num += 1
-            print('evaluate on', f, 'num', file_num)
-            cat_id = get_category(f)  # TODO check name
-            f = os.path.join(home, f)
-            func_body = open(f, 'r').read()
-            match_count = match_pattern(func_body, pattern, length)
-
-            if cat_id not in result.keys():
-                result[cat_id] = (1, match_count)
-            else:
-                old = result[cat_id]
-                result[cat_id] = (old[0]+1, old[1]+match_count)
     # give a final confidence score
-    average_list = []
-    for cat_id, match_tuple in result.items():
-        average_list.append((cat_id, match_tuple[1]/match_tuple[0]))
-    average_list.sort(key=lambda x: x[1], reverse=True)
-    if average_list[0][0] != category:
-        return 0.0, 0, 0
+    total_count = 0
+    for cat_id, match_count in result.items():
+        total_count += match_count
+    if category not in result.keys():
+        return 0.0, 0, total_count
     else:
-        all_ave_match_count = sum(i for _, i in average_list)
-        score = average_list[0][1] / all_ave_match_count
-        # debug
-        if score > 0.5 and average_list[0][1] >= 3:
-            print('average count {}, score {}'.format(average_list[0][1], score))
-        return score, average_list[0][1], all_ave_match_count
+        if total_count != 0:
+            score = result[category] / total_count
+        else:
+            score = 0.0
+        return score, result[category], total_count
 
 
 def get_asm_list(f_b: str):
@@ -207,47 +240,6 @@ def parse_line(line: str):
     for op in operands_list:
         result += ' ' + get_op_type(op)
     return result
-
-
-def match_pattern(f_body: str, pattern: str, length: int):
-    asm_list = get_asm_list(f_body)
-    match_count = 0
-    start_index = 0
-    while start_index < len(asm_list):  # all func body
-        end_index = start_index + length
-        asm_snippet_list = asm_list[start_index:end_index]  # TODO check
-        if _match(asm_snippet_list, pattern, length):
-            match_count += 1
-            start_index = end_index  # TODO check
-            continue
-
-        start_index += 1
-    return match_count
-
-
-def _match(asm_snippet_list, pattern_str, length):
-    pat_list = pattern_str.split(',')
-    for i in range(length):  # the pattern list
-        # pre process pattern
-        inst = pat_list[i]
-        pat_op_list = inst.split(' ')
-        # preprocess asm line
-        line = asm_snippet_list[i]
-        if line.find(' ') != -1:
-            mnemonic, ops = line.split(' ', 1)
-            asm_op_list = ops.split(',')
-        else:
-            mnemonic = line
-            asm_op_list = []
-        # check the mnemonic
-        if (not mnemonic == pat_op_list[0]) or (len(asm_op_list) != len(pat_op_list)-1):
-            return False
-        # check operands
-        for j in range(1, len(pat_op_list)):
-            asm_op_type = get_op_type(asm_op_list[j - 1])
-            if pat_op_list[j] != asm_op_type:
-                return False
-    return True
 
 
 # -----------------------------------------------
