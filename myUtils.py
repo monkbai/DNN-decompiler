@@ -3,8 +3,8 @@ import collections
 import time
 import os
 import math
-from e9patch_tools import all_inst_trace_2, all_inst_trace_1
-
+from scripts.e9patch_tools import all_inst_trace_2, all_inst_trace_1
+import explain
 
 def all_inst_with_mem(prog_path: str, input_data_path: str, start_addr: str, end_addr: str, log_path: str):
     tmp_log_1 = '/home/lifter/e9patch/temp_1.log'
@@ -62,15 +62,16 @@ def get_range(asm_path: str):
 
 def get_asm_line(f_b_line: str):
     line = f_b_line
-    if line.startswith(';'):
+    if not line.startswith('0x'):
         return None
 
-    asm_code = line[42:].strip()
-    asm_addr = line[:line.find(':')]
+    asm_addr, asm_code = line.split(':')
+    asm_code = asm_code.strip()
+    asm_addr = asm_addr.strip()
     return asm_addr, asm_code
 
 
-def parse_line(asm_line: str):
+def parse_asm_line(asm_line: str):
     blank_1 = asm_line.find(' ')
     if blank_1 == -1:
         return [asm_line]
@@ -83,6 +84,15 @@ def parse_line(asm_line: str):
     return code_list
 
 
+def parse_mem_line(mem_line: str):
+    if mem_line.startswith('N'):
+        return '0'
+    mem_addr = mem_line.split(':')[1].strip()
+    mem_addr = int(mem_addr, 16)
+    mem_addr = hex(mem_addr)
+    return mem_addr
+
+
 def check_xmm_inst(func_asm: str):
     lines = func_asm.split('\n')
     for line in lines:
@@ -90,7 +100,7 @@ def check_xmm_inst(func_asm: str):
         if not asm_result:
             continue
         asm_addr, asm_line = asm_result
-        code_list = parse_line(asm_line)
+        code_list = parse_asm_line(asm_line)
         mnemonic = code_list[0]
 
         has_xxm = 0
@@ -145,14 +155,18 @@ reg_state = {'ah': '', 'ch': '', 'dh': '', 'bh': '',
 extern_functions = {'memset': '0x400cb0', 'expf': '0x400c00'}
 
 
-def taint_analysis(log_file: str):
+def lightweight_SymEx(log_file: str):
     log_txt = open(log_file, 'r').read()
     log_lines = log_txt.split('\n')
 
     start_time = time.time()
 
     index = 0
-    while index < len(log_lines):
+    while index < len(log_lines)-2:
+        print('line {}'.format(index))
+        if index == 100000:
+            print('debug')
+            break
         # read one line of log
         log_line = log_lines[index]
         index += 1
@@ -160,22 +174,20 @@ def taint_analysis(log_file: str):
         while mem_line.startswith('  '):
             index += 1
             mem_line = log_lines[index]
-        index += 1
-        mem_value_line = log_lines[index]
+        # index += 1
+        # mem_value_line = log_lines[index]
 
         # is the end?
-        if not log_line.startswith('00000000') or not mem_line.startswith('mem_1'):
+        if not log_line.startswith('0x') or not (mem_line[0] in 'RWN'):  # Read, Write, NoMem
             break
 
         # handle different instructions
         asm_addr, asm_line = get_asm_line(log_line)
         # if asm_addr.endswith('40520c'):  # for debug
         #     print(asm_addr)
-        code_list = parse_line(asm_line)
+        code_list = parse_asm_line(asm_line)
         mnemonic = code_list[0]
-        mem_addr = mem_line[6:].strip()
-        mem_addr = int(mem_addr, 16)
-        mem_addr = hex(mem_addr)
+        mem_addr = parse_mem_line(mem_line)
 
         # ymm register related instructions
         if mnemonic.startswith('vmovups'):
@@ -1098,193 +1110,7 @@ def handle_expf(code_list):
     xmm_regs['xmm0'] = 'expf({})'.format(xmm_regs['xmm0'])
 
 
-# -----------------------------------------------
-# how to interpret the taint analysis result
-# can we assume that we know the start addresses of inputs and output?
-def explain_tvm_conv2d_result(mem_log_path: str):
-    # assume the mem_log comes from a convolution layer
 
-    # read the mem_log
-    with open(mem_log_path, 'r') as f:
-        mem_log = f.read()
-    log_lines = mem_log.split('\n')
-    index = 0
-    mem_sta = collections.OrderedDict()
-    while index < len(log_lines)-1:
-        key = log_lines[index]
-        index += 1
-        value = log_lines[index]
-        if key.startswith('0x7ff'):
-            index += 1
-            continue
-        mem_sta[key] = value.strip('<>')
-
-        index += 1
-    mem_list = list(mem_sta.items())
-    # TODO: here assume width==height
-    input_shape = [1, 1, 1, 1]
-    filter_shape = [1, 1, 1, 1]
-    output_shape = [1, 1, 1, 1]
-
-    # get the filter shape and input shape from first output
-    offset_list = get_offset_list(mem_list[0][1], compiler='tvm')  # analyze the first expression (with the smallest address)
-    stride = offset_list[1]-offset_list[0]
-    index = 0
-    while index < len(offset_list) - 1:
-        if offset_list[index+1] - offset_list[index] > stride:
-            tmp1 = offset_list[index + 1]  # input[1] * input[2]
-            tmp2 = offset_list[index] + stride  # filter[1] * filter[2]
-            filter_shape[3] = len(offset_list)/tmp2
-            filter_shape[2] = filter_shape[3]  # TODO assume
-            filter_shape[1] = tmp2/filter_shape[2]
-            # input[1] = filter[1]
-            input_shape[1] = filter_shape[1]
-            input_shape[2] = tmp1 / input_shape[1]
-            input_shape[3] = input_shape[2]  # TODO assume
-            break
-        index += 1
-
-    # get output shape
-    output_channel = 0
-    first_addr_list = get_addr_list(mem_list[0][1], compiler='tvm')
-    for key, value in mem_list:
-        current_addr_list = get_addr_list(value, compiler='tvm')
-        if current_addr_list == first_addr_list:
-            output_channel += 1
-
-    output_shape[1] = output_channel
-    filter_shape[0] = output_shape[1]
-    output_shape[2] = input_shape[2] - filter_shape[2] + 1
-    output_shape[3] = input_shape[3] - filter_shape[3] + 1
-
-    # final shape
-    print('input shape', input_shape)
-    print('filter shape', filter_shape)
-    print('output shape', output_shape)
-
-
-def get_offset_list(value: str, compiler: str):
-    times = value.count('*')
-    if compiler == 'tvm':
-        offset_list = get_addr_list(value, 'tvm')
-    elif compiler == 'glow':
-        offset_list = get_addr_list(value, 'glow')
-    else:
-        print('at get_offset_list')
-        print('compiler not supported:', compiler)
-        exit(-1)
-        return
-    offset_list.sort()
-    start_addr = offset_list[0]
-    for i in range(len(offset_list)):
-        offset_list[i] = (offset_list[i] - start_addr) / 4
-    return offset_list
-
-
-input_on_the_left = True
-
-
-def get_addr_list(value: str, compiler: str):
-    global input_on_the_left
-    """
-
-    :param value: the expression
-    :param compiler: 'tvm' or 'glow'
-    :return: list of used input addresses
-    """
-    addr_list = []
-    if compiler == 'tvm':
-        it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
-        for match in it:
-            addr = match.group(1)
-            addr_list.append(int(addr, 16))
-        return addr_list
-    elif compiler == 'glow':
-        # assume the input is on the left
-        if input_on_the_left:
-            it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
-            for match in it:
-                addr = match.group(1)
-                addr_list.append(int(addr, 16))
-            addr_list.sort()
-        else:
-            # input on the right
-            addr_list.clear()
-            it = re.finditer(r'\* (0x[0-9a-f]+),4', value)
-            for match in it:
-                addr = match.group(1)
-                addr_list.append(int(addr, 16))
-            addr_list.sort()
-        if addr_list[-1] - addr_list[0] == (len(addr_list) - 1) * 4:
-            input_on_the_left = False
-            addr_list = get_addr_list(value, compiler)
-        return addr_list
-
-
-def explain_glow_conv2d_result(mem_log_path: str):
-    # read the mem_log
-    with open(mem_log_path, 'r') as f:
-        mem_log = f.read()
-    log_lines = mem_log.split('\n')
-    index = 0
-    mem_sta = collections.OrderedDict()
-    longest_expression = [('', ''), ]
-    while index < len(log_lines)-1:
-        key = log_lines[index]
-        index += 1
-        value = log_lines[index]
-        if key.startswith('0x7ff') or key.endswith(',32'):
-            index += 1
-            continue
-        mem_sta[key] = value.strip('<>')
-
-        # looking for the longest expression
-        if len(mem_sta[key]) > len(longest_expression[0][1]):
-            longest_expression[0] = (key, mem_sta[key])
-
-        index += 1
-    mem_list = list(mem_sta.items())
-    # TODO: here assume width==height
-    input_shape = [1, 1, 1, 1]
-    filter_shape = [1, 1, 1, 1]
-    output_shape = [1, 1, 1, 1]
-
-    # get the filter shape and input shape from first output
-    offset_list = get_offset_list(longest_expression[0][1], compiler='glow')
-    stride = offset_list[1]-offset_list[0]
-    index = 0
-    while index < len(offset_list) - 1:
-        if offset_list[index+1] - offset_list[index] > stride:
-            tmp1 = offset_list[index + 1]  # input[1] * input[2]
-            tmp2 = offset_list[index] + stride  # filter[1] * filter[2]
-            filter_shape[3] = len(offset_list)/tmp2
-            filter_shape[2] = filter_shape[3]  # TODO assume
-            filter_shape[1] = tmp2/filter_shape[2]
-            # input[1] = filter[1]
-            input_shape[1] = filter_shape[1]
-            input_shape[2] = tmp1 / input_shape[1]
-            input_shape[3] = input_shape[2]  # TODO assume
-            break
-        index += 1
-
-    # get output shape
-    output_channel = 0
-    first_addr_list = get_addr_list(longest_expression[0][1], compiler='glow')
-    for key, value in mem_list:
-        current_addr_list = get_addr_list(value, compiler='glow')
-        if current_addr_list == first_addr_list:
-            output_channel += 1
-
-    output_shape[1] = output_channel
-    filter_shape[0] = output_shape[1]
-    # without padding
-    output_shape[2] = math.sqrt(len(mem_list)/output_shape[1])
-    output_shape[3] = output_shape[2]
-
-    # final shape
-    print('input shape', input_shape)
-    print('filter shape', filter_shape)
-    print('output shape', output_shape)
 
 
 # -----------------------------------------------
@@ -1298,7 +1124,7 @@ def test_one_function(asm_path: str, generate_log: bool):
         log_path = os.path.join(current_dir, './log.txt')
         all_inst_trace_1(program_path, input_data, start_addr, end_addr, log_path)
 
-    taint_analysis('./log.txt')
+    lightweight_SymEx('./log.txt')
 
     explain_tvm_conv2d_result('./mem_log.txt')
 
@@ -1313,9 +1139,9 @@ def test_glow_function():
     current_dir = os.path.dirname(__file__)
     log_path = os.path.join(current_dir, './log.txt')
     all_inst_trace_1(program_path, input_data, start_addr, end_addr, log_path)
-    taint_analysis('./log.txt')
+    lightweight_SymEx('./log.txt')
 
-    explain_glow_conv2d_result('./mem_log.txt')
+    explain.explain_glow_conv2d_result('./mem_log.txt')
 
 
 def test():
@@ -1326,4 +1152,6 @@ if __name__ == '__main__':
     # explain_glow_conv2d_result('./mem_log.txt')
     # explain_tvm_conv2d_result('./mem_log.txt')
     # test()
-    test_glow_function()
+    # test_glow_function()
+    lightweight_SymEx('/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/pinatrace.out')
+    explain.explain_tvm_conv2d_result('./mem_log.txt')

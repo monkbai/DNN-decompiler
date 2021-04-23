@@ -41,6 +41,18 @@ e9patch_dir = '/home/lifter/e9patch/'
 e9tool_path = '/home/lifter/e9patch/e9tool'
 
 
+def can_be_instrumented(prog_path: str, addr_str: str):
+    global project_dir
+    project_dir = e9patch_dir
+    cmd_str = "./e9tool --match 'addr=={}' --action 'call entry(addr,instr,size,asm)@MyPrintRAX' {} --syntax=intel"
+    status, output = cmd(cmd_str.format(addr_str, prog_path))
+
+    if status == 0:
+        if 'num_patched           = 1 / 1' in output:
+            return True
+    return False
+
+
 def func_call_trace(prog_path: str, input_data_path: str, addr_list_str: str, log_path: str):
     """ input addr_list: the addresses of all operator functions
         then use e9patch to instrument all these addresses
@@ -59,7 +71,7 @@ def all_inst_trace_1(prog_path: str, input_data_path: str, start_addr: str, end_
     global project_dir
     project_dir = e9patch_dir
     # try to improve success rate of instrumentation
-    cmd_str = "./e9tool --match 'addr >= {} and addr <= {}' --action 'call record_inst_mem(addr,&mem[0],asm)@MyPrintRAX' " \
+    cmd_str = "./e9tool --match 'addr >= {} and addr <= {} and asm==.*xmm.*' --action 'call record_inst_mem(addr,&mem[0],asm)@MyPrintRAX' " \
               "--syntax=intel {}"
 
     status, output = cmd(cmd_str.format(start_addr, end_addr, prog_path))
@@ -77,7 +89,7 @@ def all_inst_trace_1(prog_path: str, input_data_path: str, start_addr: str, end_
         print(output)
         exit(-1)
 
-
+# deprecated
 def all_inst_trace_2(prog_path: str, input_data_path: str, start_addr: str, end_addr: str):
     global project_dir
     project_dir = e9patch_dir
@@ -118,7 +130,7 @@ def all_inst_trace_2(prog_path: str, input_data_path: str, start_addr: str, end_
         print(output)
         exit(-1)
 
-
+# deprecated
 def arith_inst_trace(prog_path: str, input_data_path: str, start_addr: str, end_addr: str, log_path: str):
     """ arithmetic instructions trace """
     global project_dir
