@@ -4,7 +4,8 @@ import time
 import os
 import math
 from scripts.e9patch_tools import all_inst_trace_2, all_inst_trace_1
-import explain
+import scripts.explain
+
 
 def all_inst_with_mem(prog_path: str, input_data_path: str, start_addr: str, end_addr: str, log_path: str):
     tmp_log_1 = '/home/lifter/e9patch/temp_1.log'
@@ -155,7 +156,20 @@ reg_state = {'ah': '', 'ch': '', 'dh': '', 'bh': '',
 extern_functions = {'memset': '0x400cb0', 'expf': '0x400c00'}
 
 
-def lightweight_SymEx(log_file: str):
+def parse_two_lines(log_line: str, mem_line: str):
+    # is the end?
+    if not log_line.startswith('0x') or not (mem_line[0] in 'RWN'):  # Read, Write, NoMem
+        return
+
+    # handle different instructions
+    asm_addr, asm_line = get_asm_line(log_line)
+    code_list = parse_asm_line(asm_line)
+    mnemonic = code_list[0]
+    mem_addr = parse_mem_line(mem_line)
+    return asm_addr, code_list, mnemonic, mem_addr
+
+
+def lightweight_SymEx(log_file: str, max_inst_num: int):
     log_txt = open(log_file, 'r').read()
     log_lines = log_txt.split('\n')
 
@@ -163,31 +177,20 @@ def lightweight_SymEx(log_file: str):
 
     index = 0
     while index < len(log_lines)-2:
-        print('line {}'.format(index))
-        if index == 100000:
+        print('line {}'.format(index))  # debug
+        if index == max_inst_num:
             print('debug')
             break
-        # read one line of log
+
+        # read two lines of log
         log_line = log_lines[index]
         index += 1
         mem_line = log_lines[index]
         while mem_line.startswith('  '):
             index += 1
             mem_line = log_lines[index]
-        # index += 1
-        # mem_value_line = log_lines[index]
 
-        # is the end?
-        if not log_line.startswith('0x') or not (mem_line[0] in 'RWN'):  # Read, Write, NoMem
-            break
-
-        # handle different instructions
-        asm_addr, asm_line = get_asm_line(log_line)
-        # if asm_addr.endswith('40520c'):  # for debug
-        #     print(asm_addr)
-        code_list = parse_asm_line(asm_line)
-        mnemonic = code_list[0]
-        mem_addr = parse_mem_line(mem_line)
+        asm_addr, code_list, mnemonic, mem_addr = parse_two_lines(log_line, mem_line)
 
         # ymm register related instructions
         if mnemonic.startswith('vmovups'):
@@ -1108,9 +1111,6 @@ def handle_memset(code_list):
 def handle_expf(code_list):
     global xmm_regs
     xmm_regs['xmm0'] = 'expf({})'.format(xmm_regs['xmm0'])
-
-
-
 
 
 # -----------------------------------------------

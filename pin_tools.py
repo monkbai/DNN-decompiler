@@ -41,12 +41,13 @@ pin_home = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux'
 
 mypintool_dir = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/'
 
+func_call_cmd = "../../../pin -t obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
 # output_path, start_addr, end_addr, program, input_data
 inst_trace_cmd = "timeout 10s ../../../pin -t obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
 mem_read_log_cmd = "../../../pin -t obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
 
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
-tools_list = ["InstTrace", "MemoryRead"]
+tools_list = ["InstTrace", "MemoryRead", "FunCallTrace"]
 
 
 def compile_all_tools():
@@ -60,8 +61,40 @@ def compile_all_tools():
     project_dir = project_dir_backup
 
 
+# ==============================================================
+# Instrumentation tools below
+# ==============================================================
+
+
+def func_call_trace(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
+    """ input addr_list: the addresses of all operator functions
+        then use pin to instrument all these addresses
+    """
+    global project_dir
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+    # ------- set project_dir before instrumentation
+
+    addrs_file_path = './addrs_tmp.log'
+    addrs_file_path = os.path.abspath(addrs_file_path)
+    with open(addrs_file_path, 'w') as f:
+        for addr in addr_list:
+            f.write(addr + '\n')
+        f.close()
+
+    status, output = cmd(func_call_cmd.format(log_path, addrs_file_path, prog_path, input_data_path))
+
+    status, output = cmd("rm {}".format(addrs_file_path))
+
+    # ------- end reset project_dir
+    project_dir = project_dir_backup
+
+
 def mem_read_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str):
     global project_dir
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+
     log_path = os.path.abspath(log_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
@@ -69,15 +102,22 @@ def mem_read_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, 
     if status != 0:
         print(output)
 
+    project_dir = project_dir_backup
+
 
 def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str):
     global project_dir
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+
     log_path = os.path.abspath(log_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
     status, output = cmd(inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
+
+    project_dir = project_dir_backup
 
 
 if __name__ == '__main__':
