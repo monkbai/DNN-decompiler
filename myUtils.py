@@ -7,44 +7,6 @@ from scripts.e9patch_tools import all_inst_trace_2, all_inst_trace_1
 import scripts.explain
 
 
-def all_inst_with_mem(prog_path: str, input_data_path: str, start_addr: str, end_addr: str, log_path: str):
-    tmp_log_1 = '/home/lifter/e9patch/temp_1.log'
-    tmp_log_2 = '/home/lifter/e9patch/temp_2.log'
-    # generate two logs
-    all_inst_trace_2(prog_path, input_data_path, start_addr, end_addr)
-    # merge two log files
-    with open(log_path, 'w') as f:
-        log_1_list = open(tmp_log_1, 'r').read().split('\n')
-        log_2_list = open(tmp_log_2, 'r').read().split('\n')
-        length_1 = len(log_1_list)
-        length_2 = len(log_2_list)
-        idx_1 = 0
-        idx_2 = 0
-        while idx_1 < length_1 and idx_2 < length_2:
-            line_1 = log_1_list[idx_1]
-            line_2 = log_2_list[idx_2]
-            addr_1 = line_1[:line_1.find(':')]
-            addr_2 = line_2[:line_2.find(':')]
-
-            while addr_1 != addr_2:
-                if int(addr_1, 16) < int(addr_2, 16):
-                    idx_1 += 1
-                    line_1 = log_1_list[idx_1]
-                    addr_1 = line_1[:line_1.find(':')]
-                else:
-                    idx_2 += 1
-                    line_2 = log_2_list[idx_2]
-                    addr_2 = line_2[:line_2.find(':')]
-
-            # write to file
-            mem_addr = line_2[line_2.find(':') + 1:].strip()
-            f.write(line_1 + '\n')
-            f.write(mem_addr + '\n')
-
-            idx_1 += 1
-            idx_2 += 1
-
-
 def get_range(asm_path: str):
     asm_txt = open(asm_path, 'r').read()
     asm_lines = asm_txt.split('\n')
@@ -87,41 +49,28 @@ def parse_asm_line(asm_line: str):
 
 def parse_mem_line(mem_line: str):
     if mem_line.startswith('N'):
-        return '0'
+        return '0', '0'
     mem_addr = mem_line.split(':')[1].strip()
     mem_addr = int(mem_addr, 16)
     mem_addr = hex(mem_addr)
-    return mem_addr
+    mem_size = mem_line.split(':')[2].strip()
+    return mem_addr, mem_size
 
 
-def check_xmm_inst(func_asm: str):
-    lines = func_asm.split('\n')
-    for line in lines:
-        asm_result = get_asm_line(line)
-        if not asm_result:
-            continue
-        asm_addr, asm_line = asm_result
-        code_list = parse_asm_line(asm_line)
-        mnemonic = code_list[0]
+def parse_three_lines(log_line: str, mem_line: str, mem_value_line: str):
+    # is the end?
+    if not log_line.startswith('0x') or not (mem_line[0] in 'RWN'):  # Read, Write, NoMem
+        return
 
-        has_xxm = 0
-        has_mem_op = 0
-        for op in code_list:
-            # xxm register
-            match_obj = re.match('xmm[0-9]+', op)
-            if match_obj:
-                has_xxm += 1
-                continue
-            # memory
-            match_obj = re.match(r'.*\[.*\]', op)
-            if match_obj:
-                has_mem_op += 1
-                if has_mem_op > 1:
-                    print(line)
-
-                continue
-            if has_xxm > 0:
-                print(line)
+    # handle different instructions
+    asm_addr, asm_line = get_asm_line(log_line)
+    code_list = parse_asm_line(asm_line)
+    mnemonic = code_list[0]
+    mem_addr, mem_size = parse_mem_line(mem_line)
+    if len(mem_size) == 0:
+        mem_size = '0'
+    mem_value = mem_value_line.split(':')[1].strip()
+    return asm_addr, code_list, mnemonic, mem_addr, int(mem_size), mem_value
 
 
 # -----------------------------------------------
@@ -140,9 +89,11 @@ xmm_regs = {
             'ymm12': '0', 'ymm13': '0', 'ymm14': '0', 'ymm15': '0',
             }
 mem_state = {}  # collections.OrderedDict()  # slow
+"""
 # we only care about registers related to mov instructions
 # if one register is used in 'mov' instruction, record its state
 # if one register is used in arithmetic instruction (inc, mul, add, ...), remove its state
+"""
 reg_state = {'ah': '', 'ch': '', 'dh': '', 'bh': '',
              'al': '', 'cl': '', 'dl': '', 'bl': '', 'spl': '', 'bpl': '', 'sil': '', 'dil': '',
              'r8b': '', 'r9b': '', 'r10b': '', 'r11b': '', 'r12b': '', 'r13b': '', 'r14b': '', 'r15b': '',
@@ -153,44 +104,66 @@ reg_state = {'ah': '', 'ch': '', 'dh': '', 'bh': '',
              'rax': '', 'rcx': '', 'rdx' : '', 'rbx' : '', 'rsp' : '', 'rbp' : '', 'rsi' : '', 'rdi' : '',
              'r8' : '', 'r9' : '', 'r10' : '', 'r11' : '', 'r12' : '', 'r13' : '', 'r14' : '', 'r15' : '', }
 
-extern_functions = {'memset': '0x400cb0', 'expf': '0x400c00'}
+# How to automatically know which external function is called ?
+# Read the asm file to record external functions and their address
+extern_functions = {'0x400cb0': 'memset', '0x400c00': 'expf'}  # we need to simulate memset if it is used to clean
 
 
-def parse_two_lines(log_line: str, mem_line: str):
-    # is the end?
-    if not log_line.startswith('0x') or not (mem_line[0] in 'RWN'):  # Read, Write, NoMem
-        return
+def record_ext_funcs(func_asm_path: str):
+    with open(func_asm_path, 'r') as f:
+        extern_functions.clear()
+        asm_txt = f.read()
+        lines = asm_txt.split('\n')
+        for line in lines:
+            if not line.startswith('0x'):
+                continue
+            line = line[line.find('\t'):]
+            line = line.strip()
+            if line.startswith('call'):
+                op_list = line.split(' ')
+                if len(op_list) > 2:
+                    ext_addr = op_list[1]
+                    ext_name = op_list[2].strip('<>')
+                    extern_functions[ext_addr] = ext_name
 
-    # handle different instructions
-    asm_addr, asm_line = get_asm_line(log_line)
-    code_list = parse_asm_line(asm_line)
-    mnemonic = code_list[0]
-    mem_addr = parse_mem_line(mem_line)
-    return asm_addr, code_list, mnemonic, mem_addr
+
+""" Represent each memory block with its address """
 
 
-def lightweight_SymEx(log_file: str, max_inst_num: int):
+def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_inst_num: int):
+    record_ext_funcs(func_asm_path)
+
     log_txt = open(log_file, 'r').read()
     log_lines = log_txt.split('\n')
 
     start_time = time.time()
 
     index = 0
-    while index < len(log_lines)-2:
+    log_length = len(log_lines)
+    while index < log_length-2:
         print('line {}'.format(index))  # debug
-        if index == max_inst_num:
+        if index >= max_inst_num:
             print('debug')
             break
 
-        # read two lines of log
+        # read three lines of log
         log_line = log_lines[index]
         index += 1
         mem_line = log_lines[index]
         while mem_line.startswith('  '):
             index += 1
             mem_line = log_lines[index]
+        index += 1
+        mem_value_line = log_lines[index]
+        asm_addr, code_list, mnemonic, mem_addr, mem_size, mem_value = parse_three_lines(log_line, mem_line, mem_value_line)
 
-        asm_addr, code_list, mnemonic, mem_addr = parse_two_lines(log_line, mem_line)
+        # debug
+        if asm_addr == '0x4229f2':
+            print('debug')
+
+        # TODO: should we update the mem_value of the address to be read?
+        if len(mem_value) > 0 and 0 < mem_size < 16 and mem_addr.startswith('0x7ff'):
+            set_mem(mem_value, mem_addr, mem_size)
 
         # ymm register related instructions
         if mnemonic.startswith('vmovups'):
@@ -274,10 +247,17 @@ def lightweight_SymEx(log_file: str, max_inst_num: int):
         elif mnemonic.startswith('lea'):
             handle_lea(code_list, mem_addr)
         elif mnemonic.startswith('call'):
-            if code_list[1] == extern_functions['memset']:
-                handle_memset(code_list)  # how to handle the function call
-            elif code_list[1] == extern_functions['expf']:
-                handle_expf(code_list)
+            if code_list[1] in extern_functions.keys():
+                if 'memset' == extern_functions[code_list[1]]:
+                    handle_memset(code_list)  # how to handle the function call
+                elif 'expf' == extern_functions[code_list[1]]:
+                    handle_expf(code_list)
+                else:
+                    print('call not implemented')
+                    handle_unknown_call(code_list)
+            else:
+                print('call not implemented')
+                handle_unknown_call(code_list)
         elif mnemonic == 'add' or mnemonic.startswith('sub') or \
                 mnemonic.startswith('idiv') or mnemonic.startswith('imul') or \
                 mnemonic.startswith('xor') or mnemonic.startswith('inc') or \
@@ -295,7 +275,7 @@ def lightweight_SymEx(log_file: str, max_inst_num: int):
             if len(code_list) > 2 and ('[' in code_list[1] or '[' in code_list[2]):
                 print(log_line)
             else:
-                print(log_line)
+                print(log_line)  # ret,
         index += 1
     # show the result
 
@@ -305,12 +285,14 @@ def lightweight_SymEx(log_file: str, max_inst_num: int):
 
     all_mem_key = mem_state.keys()
     all_mem_key = sorted(all_mem_key)
-    with open('./mem_log.txt', 'w') as f:
+    with open(exp_log_path, 'w') as f:
         for key in all_mem_key:
+            if key.startswith('0x7ff'):  # TODO: should we ignore all stack addresses?
+                continue
             # print(key)
             # print(mem_state[key])
             f.write(key+'\n')
-            f.write('<'+mem_state[key]+'>\n')
+            f.write(mem_state[key]+'\n')
 
 
 # -----------------------------------------------
@@ -473,6 +455,7 @@ def reg2xmm(xmm1: str, reg2: str):
 
 
 def set_reg(reg_name: str, value: str):
+    # FIXME: update eax while updating rax's value
     global reg_state
     reg_state[reg_name] = value
 
@@ -1105,12 +1088,29 @@ def handle_memset(code_list):
     global mem_state
     addr = reg_state['rdi']
     size = int(reg_state['edx'], 16)
-    remove_overlap_mem(addr, size, set_zero=True)
+    # TODO: what if the addr is not an address? e.g., it is maybe empty?
+    if len(addr) > 0 and ',' not in addr:  # if addr is not an address
+        remove_overlap_mem(addr, size, set_zero=True)
+
+    handle_unknown_call(code_list)
 
 
 def handle_expf(code_list):
     global xmm_regs
     xmm_regs['xmm0'] = 'expf({})'.format(xmm_regs['xmm0'])
+
+    handle_unknown_call(code_list)
+
+
+def handle_unknown_call(code_list):
+    global reg_state
+    # function call will update rax register
+    # but we don't know which function is called
+    reg_state['al'] = ''
+    reg_state['ah'] = ''
+    reg_state['ax'] = ''
+    reg_state['eax'] = ''
+    reg_state['rax'] = ''
 
 
 # -----------------------------------------------

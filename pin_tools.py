@@ -43,7 +43,7 @@ mypintool_dir = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/M
 
 func_call_cmd = "../../../pin -t obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
 # output_path, start_addr, end_addr, program, input_data
-inst_trace_cmd = "timeout 10s ../../../pin -t obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
+inst_trace_cmd = "timeout 20s ../../../pin -t obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
 mem_read_log_cmd = "../../../pin -t obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
 
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"

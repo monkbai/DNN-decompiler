@@ -9,8 +9,8 @@ def memory_slices(mem_read_trace: str):
     next_id = 0
     start_time = time.time()
     with open(mem_read_trace, 'r') as f:
-        trace_txt = f.read()
-        lines = trace_txt.split('\n')
+        mem_read_txt = f.read()
+        lines = mem_read_txt.split('\n')
         lines = list(set(lines))
         addr_lists = []
         for line in lines:
