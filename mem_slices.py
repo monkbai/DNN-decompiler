@@ -88,7 +88,7 @@ def memory_slices(mem_read_trace: str):
             else:
                 print('unexpected')
         for start_addr, end_addr in new_mem_objs:
-            print('[{}, {}]'.format(hex(start_addr), hex(end_addr)))
+            print('[{}, {}] {}'.format(hex(start_addr), hex(end_addr), hex(end_addr - start_addr)))
     end_time = time.time()
     print('time:', end_time - start_time)
     return new_mem_objs

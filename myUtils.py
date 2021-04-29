@@ -7,8 +7,13 @@ from scripts.e9patch_tools import all_inst_trace_2, all_inst_trace_1
 import scripts.explain
 
 
+# /* ===================================================================== */
+# // Utilities
+# /* ===================================================================== */
 def get_range(asm_path: str):
-    asm_txt = open(asm_path, 'r').read()
+    f = open(asm_path, 'r')
+    asm_txt = f.read()
+    f.close()
     asm_lines = asm_txt.split('\n')
     start_line = 0
     end_line = len(asm_lines) - 1
@@ -73,6 +78,9 @@ def parse_three_lines(log_line: str, mem_line: str, mem_value_line: str):
     return asm_addr, code_list, mnemonic, mem_addr, int(mem_size), mem_value
 
 
+# /* ===================================================================== */
+# // Registers/Memory Model
+# /* ===================================================================== */
 # -----------------------------------------------
 # taint analysis
 # write result(mem_state) to log file
@@ -88,6 +96,7 @@ xmm_regs = {
             'ymm8': '0', 'ymm9': '0', 'ymm10': '0', 'ymm11': '0',
             'ymm12': '0', 'ymm13': '0', 'ymm14': '0', 'ymm15': '0',
             }
+xmm_reg_backup = xmm_regs
 mem_state = {}  # collections.OrderedDict()  # slow
 """
 # we only care about registers related to mov instructions
@@ -103,16 +112,20 @@ reg_state = {'ah': '', 'ch': '', 'dh': '', 'bh': '',
              'r8d': '', 'r9d': '', 'r10d': '', 'r11d': '', 'r12d': '', 'r13d': '', 'r14d': '', 'r15d': '',
              'rax': '', 'rcx': '', 'rdx' : '', 'rbx' : '', 'rsp' : '', 'rbp' : '', 'rsi' : '', 'rdi' : '',
              'r8' : '', 'r9' : '', 'r10' : '', 'r11' : '', 'r12' : '', 'r13' : '', 'r14' : '', 'r15' : '', }
-
+reg_backup = reg_state
 # How to automatically know which external function is called ?
 # Read the asm file to record external functions and their address
 extern_functions = {'0x400cb0': 'memset', '0x400c00': 'expf'}  # we need to simulate memset if it is used to clean
 
 
+# /* ===================================================================== */
+# // Symbolic Execution Engine
+# /* ===================================================================== */
 def record_ext_funcs(func_asm_path: str):
     with open(func_asm_path, 'r') as f:
         extern_functions.clear()
         asm_txt = f.read()
+        f.close()
         lines = asm_txt.split('\n')
         for line in lines:
             if not line.startswith('0x'):
@@ -127,13 +140,23 @@ def record_ext_funcs(func_asm_path: str):
                     extern_functions[ext_addr] = ext_name
 
 
+def clear_mem_state():
+    global mem_state, xmm_regs, reg_state
+    mem_state.clear()
+    xmm_regs = xmm_reg_backup
+    reg_state = reg_backup
+
+
 """ Represent each memory block with its address """
 
 
 def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_inst_num: int):
+    clear_mem_state()
     record_ext_funcs(func_asm_path)
 
-    log_txt = open(log_file, 'r').read()
+    f = open(log_file, 'r')
+    log_txt = f.read()
+    f.close()
     log_lines = log_txt.split('\n')
 
     start_time = time.time()
@@ -141,9 +164,9 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
     index = 0
     log_length = len(log_lines)
     while index < log_length-2:
-        print('line {}'.format(index))  # debug
+        # print('line {}'.format(index))  # debug
         if index >= max_inst_num:
-            print('debug')
+            # print('debug')
             break
 
         # read three lines of log
@@ -158,11 +181,13 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         asm_addr, code_list, mnemonic, mem_addr, mem_size, mem_value = parse_three_lines(log_line, mem_line, mem_value_line)
 
         # debug
-        if asm_addr == '0x4229f2':
-            print('debug')
+        #if asm_addr == '0x4229f2':
+        #    print('debug')
+        #if '0x22f700a0,4' in mem_state.keys():
+        #    print('debug')
 
         # TODO: should we update the mem_value of the address to be read?
-        if len(mem_value) > 0 and 0 < mem_size < 16 and mem_addr.startswith('0x7ff'):
+        if len(mem_value) > 0 and mem_size == 8 and mem_addr.startswith('0x7ff'):
             set_mem(mem_value, mem_addr, mem_size)
 
         # ymm register related instructions
@@ -293,8 +318,13 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             # print(mem_state[key])
             f.write(key+'\n')
             f.write(mem_state[key]+'\n')
+        f.flush()
+        f.close()
 
 
+# /* ===================================================================== */
+# // Operations directly on the Reg/Mem Model
+# /* ===================================================================== */
 # -----------------------------------------------
 # write global dictionaries: xmm_regs, mem_state, reg_state
 
@@ -472,6 +502,9 @@ def set_xmm(xmm_name: str, value: str):
     xmm_regs[xmm_name] = value
 
 
+# /* ===================================================================== */
+# // Different Instructions' Handlers
+# /* ===================================================================== */
 def xmm2xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
     xmm_regs[xmm1] = xmm_regs[xmm2]

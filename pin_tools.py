@@ -43,11 +43,14 @@ mypintool_dir = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/M
 
 func_call_cmd = "../../../pin -t obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
 # output_path, start_addr, end_addr, program, input_data
-inst_trace_cmd = "timeout 20s ../../../pin -t obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
+inst_trace_cmd = "timeout 15s ../../../pin -t obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
 mem_read_log_cmd = "../../../pin -t obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
+mem_write_log_cmd = "../../../pin -t obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
+mem_dump_log_cmd = "../../../pin -t obj-intel64/MemoryDump.so -o {} -dump_addr {} -length {} -dump_point {} -- {} {}"
+mme_dump_2_log_cmd = "../../../pin -t obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -- {} {}"
 
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
-tools_list = ["InstTrace", "MemoryRead", "FunCallTrace"]
+tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemWrite", "MemDump"]
 
 
 def compile_all_tools():
@@ -105,6 +108,21 @@ def mem_read_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, 
     project_dir = project_dir_backup
 
 
+def mem_write_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str):
+    global project_dir
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+
+    log_path = os.path.abspath(log_path)
+    prog_path = os.path.abspath(prog_path)
+    data_path = os.path.abspath(data_path)
+    status, output = cmd(mem_write_log_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
+    if status != 0:
+        print(output)
+
+    project_dir = project_dir_backup
+
+
 def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str):
     global project_dir
     project_dir_backup = project_dir
@@ -118,6 +136,49 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
         print(output)
 
     project_dir = project_dir_backup
+
+
+# DO NOT USE THIS ONE
+def dump_dwords(prog_path: str, input_data_path: str, inst_addr: str, mem_addr:str, dwords_len: int, log_path: str):
+    global project_dir
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+
+    status, output = cmd(mem_dump_log_cmd.format(log_path, mem_addr, dwords_len, inst_addr, prog_path, input_data_path))
+    # print(output)
+    if status != 0:
+        print(output)
+
+    project_dir = project_dir_backup
+
+
+def dump_dwords_2(prog_path: str, input_data_path: str, inst_addr: str, dwords_len: int, log_path: str):
+    global project_dir
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+
+    status, output = cmd(mme_dump_2_log_cmd.format(log_path, dwords_len, inst_addr, prog_path, input_data_path))
+    # print(output)
+    if status != 0:
+        print(output)
+
+    project_dir = project_dir_backup
+
+
+def convert_dwords2float(dwords_txt: str, float_len: int):
+    def dw2fl(hex_str: str):
+        return struct.unpack('!f', bytes.fromhex(hex_str))[0]
+
+    dwords_lines = dwords_txt.split('\n')
+    index = 0
+    float_array = []
+    while index < float_len:
+        hex_str = dwords_lines[index].strip()
+        if hex_str.startswith('0x') and len(hex_str) > 0:
+            hex_str = hex_str[2:]
+            float_array.append(dw2fl(hex_str))
+        index += 1
+    return float_array
 
 
 if __name__ == '__main__':
