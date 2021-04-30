@@ -181,8 +181,8 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         asm_addr, code_list, mnemonic, mem_addr, mem_size, mem_value = parse_three_lines(log_line, mem_line, mem_value_line)
 
         # debug
-        if asm_addr == '0x4298d5':
-            print('debug')
+        #if asm_addr == '0x4298d5':
+        #    print('debug')
         #if asm_addr == '0x42974a':
         #    print('debug')
         #if asm_addr == '0x4297dd':
@@ -641,6 +641,9 @@ def xmm_add_mem(xmm_name: str, mem_addr: str, size: int):
     if mem_key in mem_state.keys():
         xmm_regs[xmm_name] = '({} + {})'.format(xmm_regs[xmm_name], mem_state[mem_key])
     else:
+        # TODO: this is inaccurate
+        if mem_key.startswith('0x7f') or mem_key.startswith('0x4'):
+            return
         xmm_regs[xmm_name] = '({} + {})'.format(xmm_regs[xmm_name], mem_key)
 
 
@@ -899,7 +902,17 @@ def handle_addss(code_list, mem_addr):
     op2 = code_list[2]
     assert op1 in xmm_regs.keys()
     if op1 in xmm_regs.keys() and op2 in xmm_regs.keys():
-        # TODO this is not correct
+        if xmm_regs[op1] == xmm_regs[op2]:
+            print('warning: skip addss')
+            return
+        elif xmm_regs[op1] in xmm_regs[op2]:
+            print('warning: skip addss')
+            set_xmm(op1, xmm_regs[op2])
+            return
+        elif xmm_regs[op2] in xmm_regs[op1]:
+            print('warning: skip addss')
+            return
+        # TODO this maybe not correct, assume program will not add two same value (except for rearrange )
         xmm_add_xmm(op1, op2, 4)
     elif op1 in xmm_regs.keys() and '[' in op2:
         if 'dword' in op2:

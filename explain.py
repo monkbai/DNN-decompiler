@@ -3,11 +3,10 @@ import re
 import math
 import collections
 
+
 # ==============================================================
 # Utils
 # ==============================================================
-
-
 def choose_one_4bytes(exp_log_path: str):
     """ Choose one expression from the exp_log to recover the filter shape """
     exp_log_path = os.path.abspath(exp_log_path)
@@ -91,7 +90,7 @@ def get_input_shape(name, exp, mem_regions, input_channel, size):
 
 
 # ==============================================================
-# Heuristics used to recover shape
+# Heuristics used to recover shape for TVM Conv2d
 # ==============================================================
 
 
@@ -268,6 +267,9 @@ def get_addr_list(value: str, compiler: str, size=4):
         return addr_list
 
 
+# ==============================================================
+# Heuristics used to recover shape for Glow Conv2d
+# ==============================================================
 def explain_glow_conv2d_result(mem_log_path: str):
     # read the mem_log
     with open(mem_log_path, 'r') as f:
@@ -334,5 +336,26 @@ def explain_glow_conv2d_result(mem_log_path: str):
     print('output shape', output_shape)
 
 
+# ==============================================================
+# Heuristics used to recover shape for TVM dense/fully-connected layer
+# ==============================================================
+def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
+    # assume the mem_log comes from a convolution layer
+
+    name, exp = choose_one_4bytes(exp_log_path)
+    if len(name) == 0:
+        exit(-1)
+
+    input_size = exp.count('*') * 4
+    output_size = 0
+    big_mem = (0, 0)
+    for mem_blk in mem_write_regions:
+        if (mem_blk[1] - mem_blk[0]) > (big_mem[1] - big_mem[0]):
+            big_mem = mem_blk
+    output_size = (big_mem[1] - big_mem[0]) / 4
+    return input_size, output_size
+
+
 if __name__ == '__main__':
-    explain_tvm_conv2d_result('./mem_log.txt')
+    pass
+    # explain_tvm_conv2d_result('./mem_log.txt')
