@@ -181,7 +181,11 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         asm_addr, code_list, mnemonic, mem_addr, mem_size, mem_value = parse_three_lines(log_line, mem_line, mem_value_line)
 
         # debug
-        #if asm_addr == '0x4229f2':
+        if asm_addr == '0x4298d5':
+            print('debug')
+        #if asm_addr == '0x42974a':
+        #    print('debug')
+        #if asm_addr == '0x4297dd':
         #    print('debug')
         #if '0x22f700a0,4' in mem_state.keys():
         #    print('debug')
@@ -259,7 +263,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         elif mnemonic.startswith('movhlps'):
             handle_mov_ps(code_list, mem_addr)
         elif mnemonic.startswith('shufps'):
-            pass
+            pass  # it is hard to model, to simplify the implementation, skip it
         elif mnemonic.startswith('pxor'):
             pass
         elif mnemonic.startswith('por'):
@@ -540,10 +544,20 @@ def xmm_sub_xmm(xmm1: str, xmm2: str, size: int):
         xmm_regs[xmm1] = '({} - {})'.format(xmm_regs[xmm1], xmm_regs[xmm2])
 
 
+def neighbor_mem_merge(mem1: str, mem2: str, mem1_size: int, mem2_size: int):
+    if mem1.startswith('0x') and mem2.startswith('0x'):
+        mem1_addr = int(mem1.split(',')[0], 16)
+        mem2_addr = int(mem2.split(',')[0], 16)
+        if mem1_addr + mem1_size == mem2_addr:
+            return mem1.split(',')[0] + ',' + str(mem1_size + mem2_size)
+    return '({}:{}),16'.format(mem2, mem1)  # cannot merge
+
+
 def xmm_movlhps_xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
     if xmm_regs[xmm1].endswith('8') and xmm_regs[xmm2].endswith('8'):
-        xmm_regs[xmm1] = '({}:{}),16'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+        # xmm_regs[xmm1] = '({}:{}),16'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+        xmm_regs[xmm1] = neighbor_mem_merge(xmm_regs[xmm1], xmm_regs[xmm2], 8, 8)
     else:
         xmm_regs[xmm1] = 'lpd({}):lpd({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
 
@@ -557,7 +571,8 @@ def xmm_unpcklpd_xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
     # assert xmm_regs[xmm1].endswith('4') and xmm_regs[xmm2].endswith('4')
     if xmm_regs[xmm1].endswith('8') and xmm_regs[xmm2].endswith('8'):
-        xmm_regs[xmm1] = '({}:{}),16'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+        # xmm_regs[xmm1] = '({}:{}),16'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+        xmm_regs[xmm1] = neighbor_mem_merge(xmm_regs[xmm1], xmm_regs[xmm2], 8, 8)
     else:
         xmm_regs[xmm1] = 'lpd({}):lpd({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
 
@@ -565,7 +580,8 @@ def xmm_unpcklpd_xmm(xmm1: str, xmm2: str):
 def xmm_unpcklps_xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
     if xmm_regs[xmm1].endswith('4') and xmm_regs[xmm2].endswith('4'):
-        xmm_regs[xmm1] = '({}:{}),8'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+        # xmm_regs[xmm1] = '({}:{}),8'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+        xmm_regs[xmm1] = neighbor_mem_merge(xmm_regs[xmm1], xmm_regs[xmm2], 4, 4)
     else:
         xmm_regs[xmm1] = 'lps({}):lps({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
 
@@ -590,8 +606,9 @@ def xmm_unpcklpd_mem(xmm_name: str, mem_addr: str, size: int):
     global xmm_regs, mem_state
     mem_key = mem_addr + ',' + str(size)
     # assert xmm_regs[xmm_name].endswith('4') and mem_state[mem_key].endswith('4')
-    if xmm_regs[xmm_name].endswith('8') and size == 8:
-        xmm_regs[xmm_name] = '({}:{}),16'.format(mem_state[mem_key], xmm_regs[xmm_name])
+    if xmm_regs[xmm_name].endswith('8') and mem_state[mem_key].endswith('8'):
+        # xmm_regs[xmm_name] = '({}:{}),16'.format(mem_state[mem_key], xmm_regs[xmm_name])
+        xmm_regs[xmm_name] = neighbor_mem_merge(xmm_regs[xmm_name], mem_state[mem_key], 8, 8)
     else:
         xmm_regs[xmm_name] = 'lpd({}):lpd({})'.format(mem_state[mem_key], xmm_regs[xmm_name])
 
@@ -599,8 +616,9 @@ def xmm_unpcklpd_mem(xmm_name: str, mem_addr: str, size: int):
 def xmm_unpcklps_mem(xmm_name: str, mem_addr: str, size: int):
     global xmm_regs, mem_state
     mem_key = mem_addr + ',' + str(size)
-    if size == 4 and xmm_regs[xmm_name].endswith('4'):
-        xmm_regs[xmm_name] = '({}:{}),8'.format(mem_state[mem_key], xmm_regs[xmm_name])
+    if mem_state[mem_key].endswith('4') and xmm_regs[xmm_name].endswith('4'):
+        # xmm_regs[xmm_name] = '({}:{}),8'.format(mem_state[mem_key], xmm_regs[xmm_name])
+        xmm_regs[xmm_name] = neighbor_mem_merge(xmm_regs[xmm_name], mem_state[mem_key], 4, 4)
     else:
         xmm_regs[xmm_name] = 'lps({}):lps({})'.format(mem_state[mem_key], xmm_regs[xmm_name])
 
@@ -980,6 +998,9 @@ def handle_unpcklp(code_list, mem_addr):
             xmm_unpcklpd_xmm(op1, op2)
         elif code_list[0] == 'unpcklps':
             xmm_unpcklps_xmm(op1, op2)
+        else:
+            print('not implemented unpcklp')
+            exit(-1)
         # xmm_unpck_xmm(op1, op2)
     elif op1 in xmm_regs.keys() and '[' in op2:
         if 'xmmword' in op2:
@@ -992,6 +1013,11 @@ def handle_unpcklp(code_list, mem_addr):
             xmm_unpcklpd_mem(op1, mem_addr, size)
         elif code_list[0] == 'unpckhps':
             xmm_unpcklps_mem(op1, mem_addr, size)
+        elif code_list[0] == 'unpcklps':
+            xmm_unpcklps_mem(op1, mem_addr, size)
+        else:
+            print('not implemented unpcklp')
+            exit(-1)
         # xmm_unpck_mem(op1, mem_addr, size)
     else:
         print('not implemented: unpcklp')

@@ -165,6 +165,13 @@ def dump_dwords_2(prog_path: str, input_data_path: str, inst_addr: str, dwords_l
     project_dir = project_dir_backup
 
 
+def rm_log(log_path: str):
+    status, output = cmd("rm {}".format(log_path))
+    # print(output)
+    if status != 0:
+        print(output)
+
+
 def convert_dwords2float(dwords_txt: str, float_len: int):
     def dw2fl(hex_str: str):
         return struct.unpack('!f', bytes.fromhex(hex_str))[0]
