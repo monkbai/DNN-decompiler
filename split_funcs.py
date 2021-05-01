@@ -48,28 +48,37 @@ def split_tvm_asm(asm_txt: str):
                 new_funcs_list.append((func_name, func_body))
         return new_funcs_list
 
+    asm_txt = asm_txt[asm_txt.find(';; Code Segment'):]
+    asm_txt = asm_txt[:asm_txt.find(';; Data Segment')]
+    print('lines {}'.format(asm_txt.count('\n')))
+
     funcs_list = get_funcs_list(asm_txt)
+    count1 = len(funcs_list)
+    print('{} funcs in total'.format(count1))
+
+    """
     funcs_list = filt_funcs(funcs_list)
+    count2 = len(funcs_list)
+    print('{} funcs after filteration'.format(count2))
+    print('{} funcs have been ignored'.format(count1 - count2))
+    if count1 - count2 != 154:
+        input('it is not 154, continue?')
     # print(funcs_list)
+    """
     return funcs_list
 
 
 def save_tvm_funcs(funcs_list, output_dir):
-    current_func_name = ''
+    writen_funcs_count = 0
     current_index = 0
-    sub_func_index = 0
     for func_name, func_body in funcs_list:
-        if func_name.startswith('fused'):
-            current_func_name = func_name
-            sub_func_index = 0
-
-        output_path = os.path.join(output_dir,
-                                   '{:0>4d}.txt.{}_{}'.format(current_index, current_func_name, sub_func_index))
+        output_path = os.path.join(output_dir, '{:0>4d}.{}.txt'.format(current_index, func_name))
         with open(output_path, 'w') as f:
             f.write(func_body)
             current_index += 1
-            sub_func_index += 1
             print('written {}'.format(output_path))
+            writen_funcs_count += 1
+    print('{} funcs have been written'.format(writen_funcs_count))
 
 
 def test():
@@ -82,8 +91,8 @@ if __name__ == '__main__':
     if len(sys.argv) == 3:
         asm_path = sys.argv[1]
         output_dir = sys.argv[2]
-        input("asm file: {}, continue?".format(asm_path))
-        input("output dir: {}, continue?".format(output_dir))
+        print("asm file: {}, continue".format(asm_path))
+        print("output dir: {}, continue".format(output_dir))
         asm_txt = open(asm_path, 'r').read()
         funcs = split_tvm_asm(asm_txt)
         save_tvm_funcs(funcs, output_dir)
