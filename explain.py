@@ -340,8 +340,6 @@ def explain_glow_conv2d_result(mem_log_path: str):
 # Heuristics used to recover shape for TVM dense/fully-connected layer
 # ==============================================================
 def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
-    # assume the mem_log comes from a convolution layer
-
     name, exp = choose_one_4bytes(exp_log_path)
     if len(name) == 0:
         exit(-1)
@@ -354,6 +352,45 @@ def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
             big_mem = mem_blk
     output_size = (big_mem[1] - big_mem[0]) / 4
     return input_size, output_size
+
+
+# ==============================================================
+# Heuristics used to recover shape for TVM add layer
+# ==============================================================
+def explain_tvm_add_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+    # TODO: cannot assume the order of input and bias
+    # name, exp = choose_one_16bytes(exp_log_path)
+    # match = re.search(r'\+ 0x([0-9a-f]+),4', exp)
+    # bias_addr = int(match.group(1), 16)
+
+    output_size = 0
+    small_blk = (0, 0x7ffffff)
+    for mem_blk in mem_read_regions:
+        if (mem_blk[1] - mem_blk[0]) < (small_blk[1] - small_blk[0]):
+            small_blk = mem_blk
+    output_size = (small_blk[1] - small_blk[0]) / 4
+    return output_size
+
+
+# ==============================================================
+# Heuristics used to recover shape for TVM add layer
+# ==============================================================
+def explain_tvm_maxpool_result(exp_log_path: str):
+    with open(exp_log_path, 'r') as f:
+        exp_txt = f.read()
+        lines = exp_txt.split('\n')
+        name1 = lines[0]
+        exp1 = lines[1]
+        name2 = lines[2]
+        exp2 = lines[3]
+
+    kernel_size = math.sqrt(exp1.count('max'))
+    match = re.search(r', 0x([0-9a-f]+),4\)', exp1)
+    addr1 = int(match.group(1), 16)
+    match = re.search(r', 0x([0-9a-f]+),4\)', exp2)
+    addr2 = int(match.group(1), 16)
+    stride = (addr2 - addr1) / 4
+    return kernel_size, stride
 
 
 if __name__ == '__main__':
