@@ -172,19 +172,29 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         # read three lines of log
         log_line = log_lines[index]
         index += 1
-        mem_line = log_lines[index]
-        while mem_line.startswith('  '):
+        while log_line.startswith('RAX'):
+            log_line = log_lines[index]
             index += 1
-            mem_line = log_lines[index]
+        mem_line = log_lines[index]
         index += 1
+        while mem_line.startswith('  '):
+            mem_line = log_lines[index]
+            index += 1
         mem_value_line = log_lines[index]
+        index += 1
         asm_addr, code_list, mnemonic, mem_addr, mem_size, mem_value = parse_three_lines(log_line, mem_line, mem_value_line)
+        if mnemonic == 'call' and log_lines[index].startswith('RAX'):
+            rax_line = log_lines[index]
+            rax_value = rax_line.split(':')[1].strip()
+            index += 1
+        elif mnemonic == 'call':
+            rax_value = ''
 
         # debug
-        #if asm_addr == '0x4298d5':
-        #    print('debug')
-        #if asm_addr == '0x42974a':
-        #    print('debug')
+        if asm_addr == '0x402ff5':
+            print('debug')
+        if asm_addr == '0x402ff2':
+            print('debug')
         #if asm_addr == '0x4297dd':
         #    print('debug')
         #if '0x22f700a0,4' in mem_state.keys():
@@ -278,25 +288,26 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         elif mnemonic.startswith('call'):
             if code_list[1] in extern_functions.keys():
                 if 'memset' == extern_functions[code_list[1]]:
-                    handle_memset(code_list)  # how to handle the function call
+                    handle_memset(code_list, rax_value)  # how to handle the function call
                 elif 'expf' == extern_functions[code_list[1]]:
-                    handle_expf(code_list)
+                    handle_expf(code_list, rax_value)
                 else:
-                    print('call not implemented')
-                    handle_unknown_call(code_list)
+                    print('call not implemented: {}'.format(extern_functions[code_list[1]]))
+                    # TODO: even if the function is unknown, we should get the RAX value
+                    handle_unknown_call(code_list, rax_value)
             else:
                 print('call not implemented')
-                handle_unknown_call(code_list)
+                handle_unknown_call(code_list, rax_value)
         elif mnemonic == 'add' or mnemonic.startswith('sub') or \
                 mnemonic.startswith('idiv') or mnemonic.startswith('imul') or \
                 mnemonic.startswith('xor') or mnemonic.startswith('inc') or \
                 mnemonic.startswith('shr') or mnemonic.startswith('sar') or \
                 mnemonic.startswith('shl') or mnemonic.startswith('or') or \
                 mnemonic.startswith('not') or mnemonic.startswith('dec') or \
-                mnemonic.startswith('and') or mnemonic.startswith('test') or mnemonic.startswith('sete'):
+                mnemonic.startswith('and') or mnemonic.startswith('sete'):
             handle_arith(code_list, mem_addr)
         elif mnemonic.startswith('j') or mnemonic.startswith('cmp') or \
-                mnemonic.startswith('push') or mnemonic.startswith('pop'):
+                mnemonic.startswith('push') or mnemonic.startswith('pop') or mnemonic.startswith('test'):
             pass
         elif mnemonic.startswith('nop') or mnemonic.startswith('cdq') or mnemonic.startswith('cmov'):
             pass
@@ -305,7 +316,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
                 print(log_line)
             else:
                 print(log_line)  # ret,
-        index += 1
+
     # show the result
 
     end_time = time.time()
@@ -1155,7 +1166,7 @@ def handle_arith(code_list, mem_addr):
         index += 1
 
 
-def handle_memset(code_list):
+def handle_memset(code_list, rax_value):
     # TODO: currently can only set memory to zero --syntax=intel
     global mem_state
     addr = reg_state['rdi']
@@ -1164,25 +1175,28 @@ def handle_memset(code_list):
     if len(addr) > 0 and ',' not in addr:  # if addr is not an address
         remove_overlap_mem(addr, size, set_zero=True)
 
-    handle_unknown_call(code_list)
+    handle_unknown_call(code_list, rax_value)
 
 
-def handle_expf(code_list):
+def handle_expf(code_list, rax_value):
     global xmm_regs
     xmm_regs['xmm0'] = 'expf({})'.format(xmm_regs['xmm0'])
 
-    handle_unknown_call(code_list)
+    handle_unknown_call(code_list, rax_value)
 
 
-def handle_unknown_call(code_list):
+def handle_unknown_call(code_list, rax_value: str):
     global reg_state
+    if len(rax_value) < 2:
+        return
     # function call will update rax register
     # but we don't know which function is called
-    reg_state['al'] = ''
-    reg_state['ah'] = ''
-    reg_state['ax'] = ''
-    reg_state['eax'] = ''
-    reg_state['rax'] = ''
+    rax_int = int(rax_value, 16)
+    reg_state['al'] = hex(rax_int & 0xff)
+    reg_state['ah'] = hex((rax_int & 0xff00) >> 8)
+    reg_state['ax'] = hex(rax_int & 0xffff)
+    reg_state['eax'] = hex(rax_int & 0xffffffff)
+    reg_state['rax'] = rax_value
 
 
 # -----------------------------------------------

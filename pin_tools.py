@@ -37,10 +37,11 @@ def run(prog_path):
 
 project_dir = './'
 
-pin_home = '/export/d1/zliudc/TOOL/pin-3.14-98223-gb010a12c6-gcc-linux'
+pin_home = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux'
 
-mypintool_dir = '/export/d1/zliudc/TOOL/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/'
+mypintool_dir = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/'
 
+test_cmd = "../../../pin -t obj-intel64/Test.so -o {} -addrs_file {} -- {} {}"
 func_call_cmd = "../../../pin -t obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
 # output_path, start_addr, end_addr, program, input_data
 inst_trace_cmd = "timeout 15s ../../../pin -t obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
@@ -50,7 +51,7 @@ mem_dump_log_cmd = "../../../pin -t obj-intel64/MemoryDump.so -o {} -dump_addr {
 mme_dump_2_log_cmd = "../../../pin -t obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -- {} {}"
 
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
-tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemWrite", "MemDump"]
+tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemWrite", "MemDump", "MemDump_2", "FusedRdi"]
 
 
 def compile_all_tools():
@@ -67,6 +68,27 @@ def compile_all_tools():
 # ==============================================================
 # Instrumentation tools below
 # ==============================================================
+
+
+def fused_rdi(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
+    global project_dir
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+    # ------- set project_dir before instrumentation
+
+    addrs_file_path = './addrs_fused_tmp.log'
+    addrs_file_path = os.path.abspath(addrs_file_path)
+    with open(addrs_file_path, 'w') as f:
+        for addr in addr_list:
+            f.write(addr + '\n')
+        f.close()
+
+    status, output = cmd(test_cmd.format(log_path, addrs_file_path, prog_path, input_data_path))
+
+    status, output = cmd("rm {}".format(addrs_file_path))
+
+    # ------- end reset project_dir
+    project_dir = project_dir_backup
 
 
 def func_call_trace(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
@@ -190,3 +212,4 @@ def convert_dwords2float(dwords_txt: str, float_len: int):
 
 if __name__ == '__main__':
     print('tmp')
+    compile_all_tools()
