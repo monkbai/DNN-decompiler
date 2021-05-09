@@ -7,8 +7,17 @@ import collections
 # ==============================================================
 # Utils
 # ==============================================================
-def choose_one_4bytes(exp_log_path: str):
+def output_region(mem_write_regions: list):
+    big_mem = (0, 0)
+    for mem_blk in mem_write_regions:
+        if (mem_blk[1] - mem_blk[0]) > (big_mem[1] - big_mem[0]):
+            big_mem = mem_blk
+    return big_mem
+
+
+def choose_one_4bytes(exp_log_path: str, mem_write_regions: list, num=0):
     """ Choose one expression from the exp_log to recover the filter shape """
+    out_mem = output_region(mem_write_regions)
     exp_log_path = os.path.abspath(exp_log_path)
     with open(exp_log_path, 'r') as f:
         exp_txt = f.read()
@@ -26,11 +35,15 @@ def choose_one_4bytes(exp_log_path: str):
             if name.endswith('16') or name.startswith('0x7ff'):
                 continue
             else:  # choose the first expression of one 4 bytes memory block
-                return name, exp
+                if out_mem[0] <= int(name.split(',')[0], 16) <= out_mem[1]:
+                    num -= 1
+                if num < 0:
+                    return name, exp
         return '', ''
 
 
-def choose_one_16bytes(exp_log_path: str):
+def choose_one_16bytes(exp_log_path: str, mem_write_regions: list, num=0):
+    out_mem = output_region(mem_write_regions)
     exp_log_path = os.path.abspath(exp_log_path)
     with open(exp_log_path, 'r') as f:
         exp_txt = f.read()
@@ -50,7 +63,10 @@ def choose_one_16bytes(exp_log_path: str):
             elif exp_txt.count(name) > 1:
                 continue
             else:  # choose the first expression of one 4 bytes memory block
-                return name, exp
+                if out_mem[0] <= int(name.split(',')[0], 16) <= out_mem[1]:
+                    num -= 1
+                if num < 0:
+                    return name, exp
         return name, exp
 
 
@@ -100,45 +116,73 @@ def get_input_shape(name, exp, mem_regions, input_channel, size):
 def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
     # assume the mem_log comes from a convolution layer
 
-    name, exp = choose_one_4bytes(exp_log_path)
+    name, exp = choose_one_4bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
-        name, exp = choose_one_16bytes(exp_log_path)
+        name, exp = choose_one_16bytes(exp_log_path, mem_write_regions)
         return explain_tvm_conv2d_result_16(name, exp, mem_read_regions, mem_write_regions)
     mem_list = [(name, exp)]
+    mem_list.append(tuple(choose_one_4bytes(exp_log_path, mem_write_regions, 1)))
 
     # TODO: here assume width==height
     input_shape = [1, 1, 1, 1]
     filter_shape = [1, 1, 1, 1]
     output_shape = [1, 1, 1, 1]
 
-    # get the filter shape and input shape from first output
-    offset_list = get_offset_list(mem_list[0][1], compiler='tvm')  # analyze the first expression (with the smallest address)
-    stride = offset_list[1] - offset_list[0]
-    index = 0
-    while index < len(offset_list) - 1:
-        if offset_list[index+1] - offset_list[index] > stride:
-            tmp1 = offset_list[index + 1]  # input[1] * input[2]
-            tmp2 = offset_list[index] + stride  # filter[1] * filter[2]
-            filter_shape[3] = len(offset_list)/tmp2
-            filter_shape[2] = filter_shape[3]  # TODO assume
-            filter_shape[1] = tmp2/filter_shape[2]
-            # input[1] = filter[1]
-            input_shape[1] = filter_shape[1]
-            input_shape[2] = tmp1 / input_shape[1]
-            input_shape[3] = input_shape[2]  # TODO assume
-            break
-        elif offset_list[index+1] - offset_list[index] < stride:
-            filter_shape[3] = index + 1
-            filter_shape[2] = filter_shape[3]  # TODO assume
-            filter_shape[1] = len(offset_list) / (filter_shape[2] * filter_shape[3])
-            # input[1] = filter[1]
-            input_shape[1] = filter_shape[1]
-            input_shape[2] = input_shape[3] = get_input_shape(name, exp, mem_read_regions, input_shape[1], 4)
-            break
-        index += 1
+    if len(mem_read_regions) > 10:
+        kernel_num, input_num = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
+        filter_shape[1] = kernel_num
+        input_shape[1] = kernel_num
+        input_shape[2] = input_shape[3] = input_num
+        output_shape[2] = output_shape[3] = math.ceil(input_num/2)
+    else:
+        # get the filter shape and input shape from first output
+        offset_list = get_offset_list(mem_list[0][1], compiler='tvm')  # analyze the first expression (with the smallest address)
+        stride = offset_list[1] - offset_list[0]  # not the real stride
+        index = 0
+        while index < len(offset_list) - 1:
+            if offset_list[index+1] - offset_list[index] > stride:
+                tmp1 = offset_list[index + 1]  # input[1] * input[2]
+                tmp2 = offset_list[index] + stride  # filter[1] * filter[2]
+                filter_shape[3] = len(offset_list)/tmp2
+                filter_shape[2] = filter_shape[3]  # TODO assume
+                filter_shape[1] = tmp2/filter_shape[2]
+                # input[1] = filter[1]
+                input_shape[1] = filter_shape[1]
+                input_shape[2] = tmp1 / input_shape[1]
+                input_shape[3] = input_shape[2]  # TODO assume
+                break
+            elif offset_list[index+1] - offset_list[index] < stride:
+                filter_shape[3] = index + 1
+                filter_shape[2] = filter_shape[3]  # TODO assume
+                filter_shape[1] = len(offset_list) / (filter_shape[2] * filter_shape[3])
+                # input[1] = filter[1]
+                input_shape[1] = filter_shape[1]
+                input_shape[2] = input_shape[3] = get_input_shape(name, exp, mem_read_regions, input_shape[1], 4)
+                break
+            index += 1
 
-    output_shape[2] = input_shape[2] - filter_shape[2] + 1
-    output_shape[3] = input_shape[3] - filter_shape[3] + 1
+        addr_list_0 = get_addr_list(mem_list[0][1], 'tvm', 4)
+        if addr_list_0[0] > addr_list_0[-1]:
+            addr_list_0.reverse()  # addr_list_0.sort()
+        addr_list_1 = get_addr_list(mem_list[1][1], 'tvm', 4)
+        if addr_list_1[0] > addr_list_1[-1]:
+            addr_list_1.reverse()  # addr_list_1.sort()
+        addr_1 = addr_list_1[0]
+        # idx_0 = addr_list_0.index(addr_1)
+        idx_0 = 0
+        while idx_0 < len(addr_list_0):
+            if addr_list_0[idx_0] >= addr_1:
+                break
+            idx_0 += 1
+        if idx_0 == 1:
+            stride = 1
+        elif idx_0 <= 3:
+            stride = idx_0  # / filter_shape[1]  # TODO: calculate the stride, can be wrong
+        else:
+            stride = idx_0 / filter_shape[1]
+
+        output_shape[2] = math.ceil((input_shape[2] - filter_shape[2] + 1)/stride)
+        output_shape[3] = math.ceil((input_shape[3] - filter_shape[3] + 1)/stride)
     # get output shape
     # TODO: cannot get output_channel easily, because we do not have all mem_log (too huge and too slow)
     # filter_size = filter_shape[1] * filter_shape[2] * filter_shape[3]
@@ -148,14 +192,39 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
 
     output_shape[1] = output_channel
     filter_shape[0] = output_shape[1]
-    output_shape[2] = input_shape[2] - filter_shape[2] + 1
-    output_shape[3] = input_shape[3] - filter_shape[3] + 1
 
     # final shape
     print('input shape', input_shape)
     print('filter shape', filter_shape)
     print('output shape', output_shape)
     return filter_shape, input_shape, output_shape
+
+
+def kernel_1_1(name, exp, mem_read_regions: list, mem_write_regions: list):
+    """ function to handle layer with 1*1 kernel """
+    mem_start = 0x7f0000000000
+    mem_end = 0
+    target_size = dict()
+    for mem_blk in mem_read_regions:
+        mem_size = mem_blk[1] - mem_blk[0]
+        if mem_size in target_size:
+            target_size[mem_size] += 1
+        else:
+            target_size[mem_size] = 1
+
+    target_list = list(target_size.items())
+    target_list = sorted(target_list, key=lambda x: x[1])
+    mem_size = target_list[-1][0]
+    for mem_blk in mem_read_regions:
+        if mem_blk[1] - mem_blk[0] == mem_size:
+            if mem_blk[0] < mem_start:
+                mem_start = mem_blk[0]
+            if mem_blk[1] > mem_end:
+                mem_end = mem_blk[1]
+    offset_list = get_offset_list(exp, compiler='tvm')
+    kernel_num = len(offset_list)
+    input_shape = math.sqrt((mem_end-mem_start)/4/kernel_num)
+    return kernel_num, input_shape
 
 
 def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, mem_write_regions: list):
@@ -214,7 +283,7 @@ def get_offset_list(value: str, compiler: str, size=4):
     start_addr = min(offset_list)
     for i in range(len(offset_list)):
         offset_list[i] = (offset_list[i] - start_addr) / 4
-    if size == 4:
+    if size == 4 and offset_list[0] > offset_list[-1]:
         offset_list.reverse()  # offset_list.sort()
     elif size == 16:
         offset_list.reverse()
@@ -340,7 +409,7 @@ def explain_glow_conv2d_result(mem_log_path: str):
 # Heuristics used to recover shape for TVM dense/fully-connected layer
 # ==============================================================
 def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
-    name, exp = choose_one_4bytes(exp_log_path)
+    name, exp = choose_one_4bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
         exit(-1)
 
@@ -366,7 +435,7 @@ def explain_tvm_add_result(exp_log_path: str, mem_read_regions: list, mem_write_
     output_size = 0
     small_blk = (0, 0x7ffffff)
     for mem_blk in mem_read_regions:
-        if (mem_blk[1] - mem_blk[0]) < (small_blk[1] - small_blk[0]):
+        if 4 < (mem_blk[1] - mem_blk[0]) < (small_blk[1] - small_blk[0]):
             small_blk = mem_blk
     output_size = (small_blk[1] - small_blk[0]) / 4
     return output_size
@@ -375,19 +444,32 @@ def explain_tvm_add_result(exp_log_path: str, mem_read_regions: list, mem_write_
 # ==============================================================
 # Heuristics used to recover shape for TVM add layer
 # ==============================================================
-def explain_tvm_maxpool_result(exp_log_path: str):
+def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
+    out_mem = (0, 0)
+    for mem_blk in mem_write_regions:
+        if (mem_blk[1] - mem_blk[0]) > (out_mem[1] - out_mem[1]):
+            out_mem = mem_blk
     with open(exp_log_path, 'r') as f:
         exp_txt = f.read()
         lines = exp_txt.split('\n')
-        name1 = lines[0]
-        exp1 = lines[1]
-        name2 = lines[2]
-        exp2 = lines[3]
+        idx = 0
+        while idx < len(lines):
+            name1 = lines[idx]
+            idx += 1
+            exp1 = lines[idx]
+            idx += 1
+            if out_mem[0] <= int(name1.split(',')[0].strip(), 16) <= out_mem[1] and \
+                    int(math.sqrt(exp1.count('max')))**2 == exp1.count('max'):
+                break
+        name2 = lines[idx]
+        idx += 1
+        exp2 = lines[idx]
+        idx += 1
 
     kernel_size = math.sqrt(exp1.count('max'))
-    match = re.search(r', 0x([0-9a-f]+),4\)', exp1)
+    match = re.search(r', 0x([0-9a-f]+),4\)', exp1[exp1.find(')'):])
     addr1 = int(match.group(1), 16)
-    match = re.search(r', 0x([0-9a-f]+),4\)', exp2)
+    match = re.search(r', 0x([0-9a-f]+),4\)', exp2[exp2.find(')'):])
     addr2 = int(match.group(1), 16)
     stride = (addr2 - addr1) / 4
     return kernel_size, stride

@@ -191,10 +191,10 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             rax_value = ''
 
         # debug
-        if asm_addr == '0x402ff5':
-            print('debug')
-        if asm_addr == '0x402ff2':
-            print('debug')
+        #if asm_addr == '0x402ff5':
+        #    print('debug')
+        #if asm_addr == '0x402ff2':
+        #    print('debug')
         #if asm_addr == '0x4297dd':
         #    print('debug')
         #if '0x22f700a0,4' in mem_state.keys():
@@ -646,6 +646,15 @@ def xmm_unpckhps_mem(xmm_name: str, mem_addr: str, size: int):
     xmm_regs[xmm_name] = 'hps({}):hps({})'.format(mem_state[mem_key], xmm_regs[xmm_name])
 
 
+def xmm_mul_mem(xmm_name: str, mem_addr: str, size: int):
+    # global xmm_regs, mem_state
+    # xmm_regs[xmm1] = '({} * {})'.format(xmm_regs[xmm1], xmm_regs[xmm2])
+    global xmm_regs, mem_state
+    mem_key = mem_addr + ',' + str(size)
+    if mem_key in mem_state.keys():
+        xmm_regs[xmm_name] = '({} * {})'.format(xmm_regs[xmm_name], mem_state[mem_key])
+
+
 def xmm_add_mem(xmm_name: str, mem_addr: str, size: int):
     global xmm_regs, mem_state
     mem_key = mem_addr + ',' + str(size)
@@ -880,8 +889,19 @@ def handle_mulps(code_list, mem_addr):
     assert len(code_list) == 3
     op1 = code_list[1]
     op2 = code_list[2]
-    assert op1 in xmm_regs.keys() and op2 in xmm_regs.keys()
-    xmm_mul_xmm(op1, op2)
+    if '[' in op2:
+        assert 'dword' in op2 or 'xmm' in op2
+        if 'dword' in op2:
+            size = 4
+        elif 'xmm' in op2:
+            size = 16
+        mem_key = mem_addr+','+str(size)
+    assert op1 in xmm_regs.keys() and (op2 in xmm_regs.keys() or mem_key in mem_state.keys())
+    if op2 in xmm_regs.keys():
+        xmm_mul_xmm(op1, op2)
+    elif mem_key in mem_state.keys():
+        xmm_mul_mem(op1, mem_addr, size)
+
 
 
 def handle_divss(code_list, mem_addr):
