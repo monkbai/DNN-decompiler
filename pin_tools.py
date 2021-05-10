@@ -48,7 +48,7 @@ inst_trace_cmd = "timeout 15s ../../../pin -t obj-intel64/InstTrace.so -o {} -st
 mem_read_log_cmd = "../../../pin -t obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
 mem_write_log_cmd = "../../../pin -t obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
 mem_dump_log_cmd = "../../../pin -t obj-intel64/MemoryDump.so -o {} -dump_addr {} -length {} -dump_point {} -- {} {}"
-mme_dump_2_log_cmd = "../../../pin -t obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -- {} {}"
+mme_dump_2_log_cmd = "../../../pin -t obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -data_index {} -- {} {}"
 
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
 tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemWrite", "MemDump", "MemDump_2", "FusedRdi"]
@@ -174,12 +174,12 @@ def dump_dwords(prog_path: str, input_data_path: str, inst_addr: str, mem_addr:s
     project_dir = project_dir_backup
 
 
-def dump_dwords_2(prog_path: str, input_data_path: str, inst_addr: str, dwords_len: int, log_path: str):
+def dump_dwords_2(prog_path: str, input_data_path: str, inst_addr: str, dwords_len: int, log_path: str, data_index=1):
     global project_dir
     project_dir_backup = project_dir
     project_dir = mypintool_dir
 
-    status, output = cmd(mme_dump_2_log_cmd.format(log_path, dwords_len, inst_addr, prog_path, input_data_path))
+    status, output = cmd(mme_dump_2_log_cmd.format(log_path, dwords_len, inst_addr, data_index, prog_path, input_data_path))
     # print(output)
     if status != 0:
         print(output)
