@@ -32,7 +32,7 @@ def choose_one_4bytes(exp_log_path: str, mem_write_regions: list, num=0):
             index += 1
             exp = lines[index].strip('<>')
             index += 1
-            if name.endswith('16') or name.startswith('0x7ff'):
+            if name.endswith('32') or name.endswith('16') or name.startswith('0x7ff'):
                 continue
             else:  # choose the first expression of one 4 bytes memory block
                 if out_mem[0] <= int(name.split(',')[0], 16) <= out_mem[1]:
@@ -88,7 +88,7 @@ def get_output_channel(exp: str, one_channel_size: int, mem_regions: list, compi
     output_channel = (weights_region[1] - weights_region[0]) / 4 / filter_size
     """
     big_mem = (0, 0)
-    if compiler == 'tvm':
+    if compiler == 'tvm' or compiler == 'glow' :
         for mem_blk in mem_regions:
             if (mem_blk[1]-mem_blk[0]) > (big_mem[1]-big_mem[0]):
                 big_mem = mem_blk
@@ -339,36 +339,22 @@ def get_addr_list(value: str, compiler: str, size=4):
 # ==============================================================
 # Heuristics used to recover shape for Glow Conv2d
 # ==============================================================
-def explain_glow_conv2d_result(mem_log_path: str):
-    # read the mem_log
-    with open(mem_log_path, 'r') as f:
-        mem_log = f.read()
-    log_lines = mem_log.split('\n')
-    index = 0
-    mem_sta = collections.OrderedDict()
-    longest_expression = [('', ''), ]
-    while index < len(log_lines)-1:
-        key = log_lines[index]
-        index += 1
-        value = log_lines[index]
-        if key.startswith('0x7ff') or key.endswith(',32'):
-            index += 1
-            continue
-        mem_sta[key] = value.strip('<>')
+def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+    name, exp = choose_one_4bytes(exp_log_path, mem_write_regions)
+    if len(name) == 0:
+        name, exp = choose_one_16bytes(exp_log_path, mem_write_regions)
+        return explain_tvm_conv2d_result_16(name, exp, mem_read_regions, mem_write_regions)
+    mem_list = [(name, exp)]
+    mem_list.append(tuple(choose_one_4bytes(exp_log_path, mem_write_regions, 1)))
 
-        # looking for the longest expression
-        if len(mem_sta[key]) > len(longest_expression[0][1]):
-            longest_expression[0] = (key, mem_sta[key])
 
-        index += 1
-    mem_list = list(mem_sta.items())
     # TODO: here assume width==height
     input_shape = [1, 1, 1, 1]
     filter_shape = [1, 1, 1, 1]
     output_shape = [1, 1, 1, 1]
 
     # get the filter shape and input shape from first output
-    offset_list = get_offset_list(longest_expression[0][1], compiler='glow')
+    offset_list = get_offset_list(mem_list[0][1], compiler='glow')
     stride = offset_list[1]-offset_list[0]
     index = 0
     while index < len(offset_list) - 1:
@@ -384,20 +370,39 @@ def explain_glow_conv2d_result(mem_log_path: str):
             input_shape[3] = input_shape[2]  # TODO assume
             break
         index += 1
+    """
+    addr_list_0 = get_addr_list(mem_list[0][1], 'glow', 4)
+    if addr_list_0[0] > addr_list_0[-1]:
+        addr_list_0.reverse()  # addr_list_0.sort()
+    addr_list_1 = get_addr_list(mem_list[1][1], 'glow', 4)
+    if addr_list_1[0] > addr_list_1[-1]:
+        addr_list_1.reverse()  # addr_list_1.sort()
+    addr_1 = addr_list_1[0]
+    # idx_0 = addr_list_0.index(addr_1)
+    idx_0 = 0
+    while idx_0 < len(addr_list_0):
+        if addr_list_0[idx_0] >= addr_1:
+            break
+        idx_0 += 1
+    if idx_0 == 1:
+        stride = 1
+    elif idx_0 <= 3:
+        stride = idx_0  # / filter_shape[1]  # TODO: calculate the stride, can be wrong
+    else:
+        stride = idx_0 / filter_shape[1]
+    """
+    # Does not work for GLOW, how could wew get the stride?
+    output_shape[2] = math.ceil((input_shape[2] - filter_shape[2] + 1) / stride)
+    output_shape[3] = math.ceil((input_shape[3] - filter_shape[3] + 1) / stride)
 
     # get output shape
     output_channel = 0
-    first_addr_list = get_addr_list(longest_expression[0][1], compiler='glow')
-    for key, value in mem_list:
-        current_addr_list = get_addr_list(value, compiler='glow')
-        if current_addr_list == first_addr_list:
-            output_channel += 1
+    one_channel_size = output_shape[2] * output_shape[3]
+    weights_region, output_channel = get_output_channel(mem_list[0][1], one_channel_size, mem_write_regions,
+                                                        compiler='glow')
 
     output_shape[1] = output_channel
     filter_shape[0] = output_shape[1]
-    # without padding
-    output_shape[2] = math.sqrt(len(mem_list)/output_shape[1])
-    output_shape[3] = output_shape[2]
 
     # final shape
     print('input shape', input_shape)
@@ -442,7 +447,7 @@ def explain_tvm_add_result(exp_log_path: str, mem_read_regions: list, mem_write_
 
 
 # ==============================================================
-# Heuristics used to recover shape for TVM add layer
+# Heuristics used to recover shape for TVM max-pool2d layer
 # ==============================================================
 def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
     out_mem = (0, 0)
@@ -466,13 +471,22 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
         exp2 = lines[idx]
         idx += 1
 
-    kernel_size = math.sqrt(exp1.count('max'))
-    match = re.search(r', 0x([0-9a-f]+),4\)', exp1[exp1.find(')'):])
-    addr1 = int(match.group(1), 16)
-    match = re.search(r', 0x([0-9a-f]+),4\)', exp2[exp2.find(')'):])
-    addr2 = int(match.group(1), 16)
-    stride = (addr2 - addr1) / 4
-    return kernel_size, stride
+    if name1.endswith(',4') and name2.endswith(',4'):
+        kernel_size = math.sqrt(exp1.count('max'))
+        match = re.search(r', 0x([0-9a-f]+),4\)', exp1[exp1.find(')'):])
+        addr1 = int(match.group(1), 16)
+        match = re.search(r', 0x([0-9a-f]+),4\)', exp2[exp2.find(')'):])
+        addr2 = int(match.group(1), 16)
+        stride = (addr2 - addr1) / 4
+        return kernel_size, stride
+    elif name1.endswith(',32') and name2.endswith(',32'):
+        kernel_size = math.sqrt(exp1.count('max'))
+        match = re.search(r'\(0x([0-9a-f]+),32, ', exp1[:exp1.find(')')])
+        addr1 = int(match.group(1), 16)
+        match = re.search(r'\(0x([0-9a-f]+),32, ', exp2[:exp2.find(')')])
+        addr2 = int(match.group(1), 16)
+        stride = (addr2 - addr1) / 16
+        return kernel_size, stride
 
 
 if __name__ == '__main__':

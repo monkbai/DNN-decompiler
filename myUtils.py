@@ -162,6 +162,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
     start_time = time.time()
 
     index = 0
+    debug_count = 0
     log_length = len(log_lines)
     while index < log_length-2:
         # print('line {}'.format(index))  # debug
@@ -191,8 +192,9 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             rax_value = ''
 
         # debug
-        #if asm_addr == '0x402ff5':
-        #    print('debug')
+        if asm_addr == '0x401ccd':
+            debug_count += 1
+            print('debug')
         #if asm_addr == '0x402ff2':
         #    print('debug')
         #if asm_addr == '0x4297dd':
@@ -211,7 +213,11 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             handle_movss(code_list, mem_addr)
         elif mnemonic.startswith('vfmadd213ss'):
             handle_vfmadd_ss(code_list, mem_addr)
-        elif mnemonic.startswith('vfmadd231ss'):
+        elif mnemonic.startswith('vfmadd231ss'):  # vfmadd231ss
+            handle_vfmadd_ss(code_list, mem_addr)
+        elif mnemonic.startswith('vfmadd213ps'):  # TODO: vfmadd213ps
+            handle_vfmadd_ss(code_list, mem_addr)
+        elif mnemonic.startswith('vfmadd231ps'):  # TODO: vfmadd231ps
             handle_vfmadd_ss(code_list, mem_addr)
         elif mnemonic.startswith('vmulss'):
             handle_vmulss(code_list, mem_addr)
@@ -311,6 +317,11 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             pass
         elif mnemonic.startswith('nop') or mnemonic.startswith('cdq') or mnemonic.startswith('cmov'):
             pass
+        elif mnemonic.startswith('sete') or mnemonic.startswith('setz') or \
+                mnemonic.startswith('setb') or mnemonic.startswith('setnbe'):
+            pass
+        elif mnemonic.startswith('data16'):
+            pass
         else:
             if len(code_list) > 2 and ('[' in code_list[1] or '[' in code_list[2]):
                 print(log_line)
@@ -335,6 +346,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             f.write(mem_state[key]+'\n')
         f.flush()
         f.close()
+    print('debug count {}'.format(debug_count))
 
 
 # /* ===================================================================== */
@@ -826,6 +838,23 @@ def handle_vfmadd_ss(code_list, mem_addr):
             vfmadd231ss(op1, op2, mem_addr, size)
         else:
             print('not implemented: vfmadd231ss')
+            exit(-1)
+    elif code_list[0] == 'vfmadd213ps':
+        if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
+            xmm_mul_xmm(op1, op2)
+            if 'ymmword' in op3:
+                size = 32
+            xmm_add_mem(op1, mem_addr, size)
+        else:
+            print('not implemented: vfmadd213ps')
+            exit(-1)
+    elif code_list[0] == 'vfmadd231ps':
+        if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
+            if 'ymmword' in op3:
+                size = 32
+            vfmadd231ss(op1, op2, mem_addr, size)
+        else:
+            print('not implemented: vfmadd231ps')
             exit(-1)
     else:
         print('not implemented: vfmadd')
