@@ -70,6 +70,34 @@ def choose_one_16bytes(exp_log_path: str, mem_write_regions: list, num=0):
         return name, exp
 
 
+def choose_one_bytes(exp_log_path: str, mem_write_regions: list, size=4, num=0):
+    out_mem = output_region(mem_write_regions)
+    exp_log_path = os.path.abspath(exp_log_path)
+    with open(exp_log_path, 'r') as f:
+        exp_txt = f.read()
+        lines = exp_txt.split('\n')
+        f.close()
+        index = 0
+        length = len(lines)
+        name = ''
+        exp = ''
+        while index < length-2:
+            name = lines[index]
+            index += 1
+            exp = lines[index].strip('<>')
+            index += 1
+            if (not name.endswith(str(size))) or name.startswith('0x7ff'):
+                continue
+            elif exp_txt.count(name) > 1:
+                continue
+            else:  # choose the first expression of one 4 bytes memory block
+                if out_mem[0] <= int(name.split(',')[0], 16) <= out_mem[1]:
+                    num -= 1
+                if num < 0:
+                    return name, exp
+        return name, exp
+
+
 def get_output_channel(exp: str, one_channel_size: int, mem_regions: list, compiler='tvm', on_the_right=True):
     # get one weight address
     """
@@ -339,7 +367,7 @@ def get_addr_list(value: str, compiler: str, size=4):
 # ==============================================================
 # Heuristics used to recover shape for Glow Conv2d
 # ==============================================================
-def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list, guess_stride=1, guess_padding=0):
     name, exp = choose_one_4bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
         name, exp = choose_one_16bytes(exp_log_path, mem_write_regions)
@@ -370,30 +398,10 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
             input_shape[3] = input_shape[2]  # TODO assume
             break
         index += 1
-    """
-    addr_list_0 = get_addr_list(mem_list[0][1], 'glow', 4)
-    if addr_list_0[0] > addr_list_0[-1]:
-        addr_list_0.reverse()  # addr_list_0.sort()
-    addr_list_1 = get_addr_list(mem_list[1][1], 'glow', 4)
-    if addr_list_1[0] > addr_list_1[-1]:
-        addr_list_1.reverse()  # addr_list_1.sort()
-    addr_1 = addr_list_1[0]
-    # idx_0 = addr_list_0.index(addr_1)
-    idx_0 = 0
-    while idx_0 < len(addr_list_0):
-        if addr_list_0[idx_0] >= addr_1:
-            break
-        idx_0 += 1
-    if idx_0 == 1:
-        stride = 1
-    elif idx_0 <= 3:
-        stride = idx_0  # / filter_shape[1]  # TODO: calculate the stride, can be wrong
-    else:
-        stride = idx_0 / filter_shape[1]
-    """
-    # Does not work for GLOW, how could wew get the stride?
-    output_shape[2] = math.ceil((input_shape[2] - filter_shape[2] + 1) / stride)
-    output_shape[3] = math.ceil((input_shape[3] - filter_shape[3] + 1) / stride)
+    # cannot get stride in the case of glow, because glow use NHWC
+    # the output shape can be wrong, because of the implicit padding
+    output_shape[2] = math.ceil((input_shape[2] + guess_padding - filter_shape[2] + 1) / guess_stride)
+    output_shape[3] = math.ceil((input_shape[3] + guess_padding - filter_shape[3] + 1) / guess_stride)
 
     # get output shape
     output_channel = 0
@@ -404,10 +412,38 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
     output_shape[1] = output_channel
     filter_shape[0] = output_shape[1]
 
-    # final shape
-    print('input shape', input_shape)
-    print('filter shape', filter_shape)
-    print('output shape', output_shape)
+    # since the stride and padding are guessed, we need to check if the shapes are reasonable
+    weights_addrs = get_weights_addrs(mem_list[0][0], mem_list[0][1])
+    weights_mem = (0, 0)
+    for mem_blk in mem_read_regions:
+        if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
+            weights_mem = mem_blk
+
+    ignore_flag = True
+    if int(filter_shape[0]) == filter_shape[0]:
+        weights_size = filter_shape[0] * filter_shape[1] * filter_shape[2] * filter_shape[3] * 4  # float --> 4 bytes
+        if weights_size == weights_mem[1] - weights_mem[0]:
+            # then it is a possible shape
+            ignore_flag = False
+
+    if not ignore_flag:
+        # final shape
+        print('input shape', input_shape)
+        print('filter shape', filter_shape)
+        print('output shape', output_shape)
+        return filter_shape, input_shape, output_shape
+    else:
+        print('not a reasonable guess, ignored')
+        return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0)
+
+
+def get_weights_addrs(name: str, exp: str):
+    addr_list = []
+    it = re.finditer(r'\* (0x[0-9a-f]+),4', exp)
+    for match in it:
+        addr = match.group(1)
+        addr_list.append(int(addr, 16))
+    return addr_list
 
 
 # ==============================================================
@@ -487,6 +523,24 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
         addr2 = int(match.group(1), 16)
         stride = (addr2 - addr1) / 16
         return kernel_size, stride
+
+
+# ==============================================================
+# Heuristics used to recover shape for GLOW dense/matmul layer
+# ==============================================================
+def explain_glow_dense_result(exp_log_path: str, mem_write_regions: list):
+    name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=32)
+    if len(name) == 0:
+        exit(-1)
+
+    input_size = exp.count('*')
+    output_size = 0
+    big_mem = (0, 0)
+    for mem_blk in mem_write_regions:
+        if (mem_blk[1] - mem_blk[0]) > (big_mem[1] - big_mem[0]):
+            big_mem = mem_blk
+    output_size = (big_mem[1] - big_mem[0]) / 4
+    return input_size, output_size
 
 
 if __name__ == '__main__':

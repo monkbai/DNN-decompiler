@@ -162,7 +162,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
     start_time = time.time()
 
     index = 0
-    debug_count = 0
+    #debug_count = 0
     log_length = len(log_lines)
     while index < log_length-2:
         # print('line {}'.format(index))  # debug
@@ -192,9 +192,9 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             rax_value = ''
 
         # debug
-        if asm_addr == '0x401ccd':
-            debug_count += 1
-            print('debug')
+        #if asm_addr == '0x401ccd':
+        #    debug_count += 1
+        #    print('debug')
         #if asm_addr == '0x402ff2':
         #    print('debug')
         #if asm_addr == '0x4297dd':
@@ -346,7 +346,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             f.write(mem_state[key]+'\n')
         f.flush()
         f.close()
-    print('debug count {}'.format(debug_count))
+    #print('debug count {}'.format(debug_count))
 
 
 # /* ===================================================================== */

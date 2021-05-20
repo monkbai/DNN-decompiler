@@ -95,4 +95,5 @@ def memory_slices(mem_read_trace: str):
 
 
 if __name__ == '__main__':
-    memory_slices("/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/tmp.log")
+    # memory_slices("/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/tmp.log")
+    memory_slices("../mem_write.log")
