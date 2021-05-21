@@ -42,6 +42,8 @@ void * stack_border = (void *)0x7f0000000000;
 uint64_t start_addr = 0;
 uint64_t end_addr = 0;
 
+uint64_t early_stop = 0;
+
 int end_flag = 0; // when end_flag > 0, stop logging
 
 /* ===================================================================== */
@@ -56,6 +58,8 @@ KNOB<uint64_t>   KnobStartAddr(KNOB_MODE_WRITEONCE,  "pintool",
 KNOB<uint64_t>   KnobEndAddr(KNOB_MODE_WRITEONCE,  "pintool",
     "end", "0x424b6a", "count instructions, basic blocks and threads in the application");
 
+KNOB<uint64_t>   KnobEarlyStop(KNOB_MODE_WRITEONCE,  "pintool",
+    "early_stop", "0", "");
 
 /* ===================================================================== */
 // Utilities
@@ -124,7 +128,7 @@ VOID Instruction(INS ins, VOID *v)
     }
     */
     
-    if (ins_addr == end_addr){
+    if (ins_addr == end_addr or ins_addr == early_stop){
         INS_InsertPredicatedCall(
             ins, IPOINT_BEFORE, (AFUNPTR)SetEndFlag,
             IARG_INST_PTR,
@@ -207,9 +211,10 @@ int main(int argc, char *argv[])
     //trace = fopen("pinatrace.out", "w");
     start_addr = KnobStartAddr.Value();
     end_addr = KnobEndAddr.Value();
+    early_stop = KnobEarlyStop.Value();
 
     // debug
-    printf("output: %s, start: %p, end: %p\n", fileName.c_str(), (void *)start_addr, (void *)end_addr);
+    printf("output: %s, start: %p, end: %p, early_stop: %p\n", fileName.c_str(), (void *)start_addr, (void *)end_addr, (void *)early_stop);
     //return 0;
 
     INS_AddInstrumentFunction(Instruction, 0);

@@ -39,7 +39,7 @@ uint64_t dump_addr = 0;
 uint64_t length = 0;
 uint64_t dump_point = 0;
 
-
+uint32_t rdx_rcx = 0;  // rdx -> weights, rcx -> biases
 /* ===================================================================== */
 // Command line switches
 /* ===================================================================== */
@@ -54,6 +54,9 @@ KNOB<uint64_t>   KnobDumpLen(KNOB_MODE_WRITEONCE,  "pintool",
 
 KNOB<uint64_t>   KnobDumpPoint(KNOB_MODE_WRITEONCE,  "pintool",
     "dump_point", "", "no description");
+    
+KNOB<int32_t>   KnobRdxRcx(KNOB_MODE_WRITEONCE,  "pintool",
+    "rdx_rcx", "0", "no description");
 
 
 /* ===================================================================== */
@@ -69,35 +72,30 @@ VOID PrintDword(const int * addr, int length){
     fprintf(trace, "end\n");
 }
 
-VOID Dump(VOID * ip){
-    //fprintf(trace, "Start:\n");
-    PrintDword((const int *)dump_addr, (int)length);
+VOID Dump(VOID * ip, ADDRINT rdx_value, ADDRINT rcx_value){
+    // get address from register rdx/rcx
+    if (rdx_rcx == 0){  // rdx
+        printf("rdx: %p\n", (void *)rdx_value);
+        PrintDword((const int *)rdx_value, (int)length);
+    }
+    else if (rdx_rcx == 1){  // rcx
+        printf("rcx: %p\n", (void *)rcx_value);
+        PrintDword((const int *)rcx_value, (int)length);
+    }
 }
 
 VOID RecordInst(VOID * ip)
 {
-    // do nothing
-    //std::string ins_str = str_of_ins_at[(ADDRINT)ip];
-    //fprintf(trace,"%p:\t%s\n", ip, ins_str.c_str());
-    //fprintf(trace,"N:\t%p:\t%d\n", (void *)0xDEADBEEF, 7); // not real memory op
 }
 
 // Print a memory read record
 VOID RecordMemRead(VOID * ip, VOID * mem_addr, USIZE mem_size)
 {
-    // do nothing
-    //std::string ins_str = str_of_ins_at[(ADDRINT)ip];
-    //fprintf(trace,"%p:\t%s\n", ip, ins_str.c_str());
-    //fprintf(trace,"R:\t%p:\t%lu\n", mem_addr, mem_size);
 }
 
 // Print a memory write record
 VOID RecordMemWrite(VOID * ip, VOID * mem_addr, USIZE mem_size)
 {
-    // do nothing
-    //std::string ins_str = str_of_ins_at[(ADDRINT)ip];
-    //fprintf(trace,"%p:\t%s\n", ip, ins_str.c_str());
-    //fprintf(trace,"W:\t%p:\t%lu\n", mem_addr, mem_size);
 }
 
 // Is called for every instruction and instruments reads and writes
@@ -114,6 +112,8 @@ VOID Instruction(INS ins, VOID *v)
         INS_InsertPredicatedCall(
             ins, IPOINT_BEFORE, (AFUNPTR)Dump,
             IARG_INST_PTR,
+            IARG_REG_VALUE, LEVEL_BASE::REG_RDX,
+            IARG_REG_VALUE, LEVEL_BASE::REG_RCX,
             IARG_END);
         return;
     }
@@ -192,9 +192,10 @@ int main(int argc, char *argv[])
     dump_addr = KnobDumpAddr.Value();
     length = KnobDumpLen.Value();
     dump_point = KnobDumpPoint.Value();
+    rdx_rcx = KnobRdxRcx.Value();
 
     // debug
-    printf("output: %s, dump_addr: %p, dump_length: %lu, dump_point: %p\n", fileName.c_str(), (void *)dump_addr, length, (void *)dump_point);
+    printf("output: %s, dump_addr: %p, dump_length: %lu, dump_point: %p, rdx_rcx: %d\n", fileName.c_str(), (void *)dump_addr, length, (void *)dump_point, rdx_rcx);
     //return 0;
 
     INS_AddInstrumentFunction(Instruction, 0);

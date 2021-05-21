@@ -25,6 +25,10 @@ FILE * trace;
 uint64_t start_addr = 0;
 uint64_t end_addr = 0;
 
+uint64_t early_stop = 0;
+
+int xmm_only_flag = 0;
+
 int end_flag = 0; // when end_flag > 0, stop logging
 
 int after_call_flag = 0; // is current instruction after a call  
@@ -41,6 +45,11 @@ KNOB<uint64_t>   KnobStartAddr(KNOB_MODE_WRITEONCE,  "pintool",
 KNOB<uint64_t>   KnobEndAddr(KNOB_MODE_WRITEONCE,  "pintool",
     "end", "0x424b6a", "count instructions, basic blocks and threads in the application");
 
+KNOB<uint64_t>   KnobEarlyStop(KNOB_MODE_WRITEONCE,  "pintool",
+    "early_stop", "0", "");
+    
+KNOB<int>   KnobXmmOnly(KNOB_MODE_WRITEONCE,  "pintool",
+    "xmm_only", "0", "");  // whether we record xmm/ymm instructions only depends on the implementation of compilers (TVM: no, Glow: yes)
 
 /* ===================================================================== */
 // Utilities
@@ -121,13 +130,14 @@ VOID Instruction(INS ins, VOID *v)
     }
     str_of_ins_at[INS_Address(ins)] = INS_Disassemble(ins);
     std::string ins_asm = INS_Disassemble(ins);
-    /*
-    if (!(ins_asm.find("xmm")!=ins_asm.npos || ins_asm.find("ymm")!=ins_asm.npos)){
-        return;
-    }
-    */
     
-    if (ins_addr == end_addr){
+    // if xmm_only_flag is set, we only record instructions related to xmm and ymm register 
+    if (xmm_only_flag != 0 && (!(ins_asm.find("xmm")!=ins_asm.npos || ins_asm.find("ymm")!=ins_asm.npos))){
+        return;
+    } // does not change too much
+    
+    
+    if (ins_addr == end_addr or ins_addr == early_stop){
         INS_InsertPredicatedCall(
             ins, IPOINT_BEFORE, (AFUNPTR)SetEndFlag,
             IARG_INST_PTR,
@@ -231,9 +241,11 @@ int main(int argc, char *argv[])
     //trace = fopen("pinatrace.out", "w");
     start_addr = KnobStartAddr.Value();
     end_addr = KnobEndAddr.Value();
+    early_stop = KnobEarlyStop.Value();
+    xmm_only_flag = KnobXmmOnly.Value();
 
     // debug
-    //printf("output: %s, start: %p, end: %p\n", fileName.c_str(), (void *)start_addr, (void *)end_addr);
+    printf("output: %s, start: %p, end: %p, early_stop: %p, xmm_only: %d\n", fileName.c_str(), (void *)start_addr, (void *)end_addr, (void *)early_stop, xmm_only_flag);
     //return 0;
 
     INS_AddInstrumentFunction(Instruction, 0);
