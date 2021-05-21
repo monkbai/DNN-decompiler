@@ -1,17 +1,19 @@
 #! /usr/bin/python3
+import sys
+sys.path.append("..")
 from scripts import utils
 
 if __name__ == '__main__':
-    utils.funcs_dir = '../../vgg16_glow_funcs/'
-    prog_path = '../../vgg16.out'
-    in_data = './cat.bin'
-    log_path = '../../vgg16_glow_func_call.log'
-    label_file = '../../step1.txt'
+    utils.funcs_dir = './vgg16_glow_O0/vgg16_glow_funcs/'
+    prog_path = './vgg16_glow_O0/vgg16.out'
+    in_data = './vgg16_glow_O0/cat.bin'
+    log_path = './vgg16_glow_O0/vgg16_glow_func_call.log'
+    label_file = './vgg16_glow_O0/step1.txt'
 
-    tmp_log_path = '../../inst_trace.log'
-    exp_log_path = '../../mem_exp.log'
-    mem_read_log_path = '../../mem_read.log'
-    mem_write_log_path = '../../mem_write.log'
+    tmp_log_path = './vgg16_glow_O0/inst_trace.log'
+    exp_log_path = './vgg16_glow_O0/mem_exp.log'
+    mem_read_log_path = './vgg16_glow_O0/mem_read.log'
+    mem_write_log_path = './vgg16_glow_O0/mem_write.log'
 
     # compile_all_tools()
     # ==============================================================
@@ -111,7 +113,7 @@ if __name__ == '__main__':
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================
-    mem_dump_log_path = 'mem_dump.log'
+    mem_dump_log_path = './vgg16_glow_O0/mem_dump.log'
     func_meta_data = [('0017.libjit_conv2d_f.txt', (64, 3, 3, 3), '0x4017b0', 'conv2d'),
                       ('0017.libjit_conv2d_f.txt', (1, 64), '0x4017b0', 'add'),
                       ('0018.libjit_conv2d_f.txt', (64, 64, 3, 3), '0x401ea0', 'conv2d'),
@@ -138,26 +140,19 @@ if __name__ == '__main__':
                       ('0032.libjit_batchedadd_f.txt', (1, 4096), '0x407200', 'dense add'),
                       ('0037.libjit_batchedadd_f.txt', (1, 1000), '0x408180', 'dense add'),
                       ]
-    # Glow store data as (N,C,H,W)
-    #utils.extract_params_glow_conv2d(prog_path, in_data, (64, 3, 3, 3), '0x4017b0', mem_dump_log_path, '0017.libjit_conv2d_f.txt', 0)
-    #utils.extract_params_glow_conv2d(prog_path, in_data, (1, 64), '0x4017b0', mem_dump_log_path, '0017.libjit_conv2d_f.txt', 1)
-    #exit(0)
     for fun_data in func_meta_data:
         func_name = fun_data[0]
         w_shape = fun_data[1]
         dump_point = fun_data[2]
         func_type = fun_data[3]
         if func_type == 'conv2d':
-            continue
             w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
             utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
                                              mem_dump_log_path, func_name, 1)
         elif func_type == 'add':
-            continue
             utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
                                              mem_dump_log_path, func_name, 2)
         elif func_type == 'dense':
-            continue
             utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
                                              mem_dump_log_path, func_name, 1)
         elif func_type == 'dense add':
