@@ -384,10 +384,13 @@ def extract_params_glow_conv2d(prog_path: str, in_data: str, w_shape: tuple, dum
             w = w.reshape(w_shape)
             if reg_num == 1 and len(w_shape) == 4:
                 w = np.transpose(w, (0, 3, 1, 2))  # store weights in (N,H,W,C) format
+            if reg_num == 1 and len(w_shape) == 2 and w_shape[0] != 1:
+                w = np.transpose(w, (0, 1))
             # print(type(w))
             lists = w.tolist()
             json_str = json.dumps(lists)
             # print(json_str)
+            json_str = json_str.replace('],', '],\n')
             if reg_num == 1 and len(w_shape) == 4:
                 json_name = func_name[:func_name.rfind('.')] + '.weights_{}.json'.format(i)
             elif reg_num == 1 and len(w_shape) == 2:

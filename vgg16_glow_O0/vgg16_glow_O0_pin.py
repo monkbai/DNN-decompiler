@@ -131,17 +131,13 @@ if __name__ == '__main__':
                       ('0029.libjit_conv2d_f.txt', (512, 512, 3, 3), '0x406000', 'conv2d'),
                       ('0029.libjit_conv2d_f.txt', (1, 512), '0x406000', 'add'),
 
-                      ('0031.libjit_matmul_f.txt', (4096, 25088), '0x406c00', 'dense'),
+                      ('0031.libjit_matmul_f.txt', (25088, 4096), '0x406c00', 'dense'),
                       ('0034.libjit_matmul_f.txt', (4096, 4096), '0x407490', 'dense'),
-                      ('0036.libjit_matmul_f.txt', (1000, 4096), '0x407b50', 'dense'),
+                      ('0036.libjit_matmul_f.txt', (4096, 1000), '0x407b50', 'dense'),
 
                       ('0032.libjit_batchedadd_f.txt', (1, 4096), '0x407200', 'dense add'),
                       ('0037.libjit_batchedadd_f.txt', (1, 1000), '0x408180', 'dense add'),
                       ]
-    # Glow store data as (N,C,H,W)
-    #utils.extract_params_glow_conv2d(prog_path, in_data, (64, 3, 3, 3), '0x4017b0', mem_dump_log_path, '0017.libjit_conv2d_f.txt', 0)
-    #utils.extract_params_glow_conv2d(prog_path, in_data, (1, 64), '0x4017b0', mem_dump_log_path, '0017.libjit_conv2d_f.txt', 1)
-    #exit(0)
     for fun_data in func_meta_data:
         func_name = fun_data[0]
         w_shape = fun_data[1]
@@ -157,9 +153,9 @@ if __name__ == '__main__':
             utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
                                              mem_dump_log_path, func_name, 2)
         elif func_type == 'dense':
-            continue
             utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
                                              mem_dump_log_path, func_name, 1)
         elif func_type == 'dense add':
+            continue
             utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
                                              mem_dump_log_path, func_name, 1)
