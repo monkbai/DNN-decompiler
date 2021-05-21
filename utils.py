@@ -359,7 +359,7 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
     rm_log(log_path)
 
 
-def extract_params_glow_conv2d(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, reg_num=1):
+def extract_params_glow_conv2d(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, reg_num=1, func_type=''):
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)
@@ -382,10 +382,14 @@ def extract_params_glow_conv2d(prog_path: str, in_data: str, w_shape: tuple, dum
 
             w = np.asarray(float_array)
             w = w.reshape(w_shape)
-            if reg_num == 1 and len(w_shape) == 4:
+            if reg_num == 1 and len(w_shape) == 4 and func_type!='dense':
                 w = np.transpose(w, (0, 3, 1, 2))  # store weights in (N,H,W,C) format
-            if reg_num == 1 and len(w_shape) == 2 and w_shape[0] != 1:
-                w = np.transpose(w, (0, 1))
+            elif reg_num == 1 and len(w_shape) == 4 and func_type=='dense':
+                w = np.transpose(w, (3, 2, 0, 1))
+                print('new shape', (w_shape[3], w_shape[0] * w_shape[1] * w_shape[2]))
+                w = w.reshape(w_shape[3], w_shape[0] * w_shape[1] * w_shape[2])
+            elif reg_num == 1 and len(w_shape) == 2 and w_shape[0] != 1:
+                w = np.transpose(w, (1, 0))
             # print(type(w))
             lists = w.tolist()
             json_str = json.dumps(lists)
