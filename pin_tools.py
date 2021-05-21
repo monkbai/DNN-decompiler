@@ -48,7 +48,7 @@ func_call_cmd = "../../../pin -t obj-intel64/FunCallTrace.so -o {} -addrs_file {
 inst_trace_cmd = "timeout 15s ../../../pin -t obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
 mem_read_log_cmd = "../../../pin -t obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
 mem_write_log_cmd = "../../../pin -t obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
-mem_dump_log_cmd = "../../../pin -t obj-intel64/MemoryDump.so -o {} -dump_addr {} -length {} -dump_point {} -- {} {}"
+mem_dump_log_cmd = "../../../pin -t obj-intel64/MemoryDump.so -o {} -length {} -dump_point {} -reg_num {} -- {} {}"
 mme_dump_2_log_cmd = "../../../pin -t obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -data_index {} -- {} {}"
 
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
@@ -183,13 +183,11 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
     project_dir = project_dir_backup
 
 
-# DO NOT USE THIS ONE
-def dump_dwords(prog_path: str, input_data_path: str, inst_addr: str, mem_addr:str, dwords_len: int, log_path: str):
+def dump_dwords(prog_path: str, input_data_path: str, inst_addr: str, dwords_len: int, log_path: str, reg_num=0):
     global project_dir
     project_dir_backup = project_dir
     project_dir = mypintool_dir
-
-    status, output = cmd(mem_dump_log_cmd.format(log_path, mem_addr, dwords_len, inst_addr, prog_path, input_data_path))
+    status, output = cmd(mem_dump_log_cmd.format(log_path, dwords_len, inst_addr, reg_num, prog_path, input_data_path))
     # print(output)
     if status != 0:
         print(output)

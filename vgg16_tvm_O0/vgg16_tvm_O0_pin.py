@@ -5,7 +5,7 @@ import json
 import numpy as np
 from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log, dump_dwords_2, \
     convert_dwords2float, rm_log
-from scripts.myUtils import lightweight_SymEx
+from scripts.se_engine import lightweight_SymEx
 from scripts.mem_slices import memory_slices
 from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
 

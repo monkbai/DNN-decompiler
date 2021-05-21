@@ -4,7 +4,7 @@ import random
 import sys
 import json
 import numpy as np
-from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log, dump_dwords_2
+from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log, dump_dwords, dump_dwords_2
 from scripts.pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools
 from scripts.se_engine import lightweight_SymEx
 from scripts.mem_slices import memory_slices
@@ -359,13 +359,15 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
     rm_log(log_path)
 
 
-def extract_params_glow_conv2d(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str):
+def extract_params_glow_conv2d(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, reg_num=1):
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)
-    dwords_len = w_shape[0] * w_shape[1] * w_shape[2] * w_shape[3]
+    dwords_len = 1
+    for w in w_shape:
+        dwords_len *= w
     rm_log(log_path)
-    dump_dwords_2(prog_path, in_data, dump_point, dwords_len, log_path)
+    dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
 
     # then convert dwords to floats
     with open(log_path, 'r') as f:
@@ -380,11 +382,18 @@ def extract_params_glow_conv2d(prog_path: str, in_data: str, w_shape: tuple, dum
 
             w = np.asarray(float_array)
             w = w.reshape(w_shape)
+            if reg_num == 1 and len(w_shape) == 4:
+                w = np.transpose(w, (0, 3, 1, 2))  # store weights in (N,H,W,C) format
             # print(type(w))
             lists = w.tolist()
             json_str = json.dumps(lists)
             # print(json_str)
-            json_name = func_name[:func_name.rfind('.')] + '.weights_{}.json'.format(i)
+            if reg_num == 1 and len(w_shape) == 4:
+                json_name = func_name[:func_name.rfind('.')] + '.weights_{}.json'.format(i)
+            elif reg_num == 1 and len(w_shape) == 2:
+                json_name = func_name[:func_name.rfind('.')] + '.params_{}.json'.format(i)
+            elif reg_num == 2:
+                json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
 
             with open(json_name, 'w') as wf:
                 wf.write(json_str)
