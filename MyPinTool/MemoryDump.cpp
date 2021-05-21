@@ -39,7 +39,7 @@ uint64_t dump_addr = 0;
 uint64_t length = 0;
 uint64_t dump_point = 0;
 
-uint32_t rdx_rcx = 0;  // rdx -> weights, rcx -> biases
+uint32_t reg_num = 0;  // 1-> rdx -> weights, rcx -> biases
 /* ===================================================================== */
 // Command line switches
 /* ===================================================================== */
@@ -55,8 +55,8 @@ KNOB<uint64_t>   KnobDumpLen(KNOB_MODE_WRITEONCE,  "pintool",
 KNOB<uint64_t>   KnobDumpPoint(KNOB_MODE_WRITEONCE,  "pintool",
     "dump_point", "", "no description");
     
-KNOB<int32_t>   KnobRdxRcx(KNOB_MODE_WRITEONCE,  "pintool",
-    "rdx_rcx", "0", "no description");
+KNOB<int32_t>   KnobRegNum(KNOB_MODE_WRITEONCE,  "pintool",
+    "reg_num", "0", "no description");
 
 
 /* ===================================================================== */
@@ -72,13 +72,17 @@ VOID PrintDword(const int * addr, int length){
     fprintf(trace, "end\n");
 }
 
-VOID Dump(VOID * ip, ADDRINT rdx_value, ADDRINT rcx_value){
-    // get address from register rdx/rcx
-    if (rdx_rcx == 0){  // rdx
+VOID Dump(VOID * ip, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value){
+    // get address from register rsi/rdx/rcx
+    if (reg_num == 0){  // rsi
+        printf("rsi: %p\n", (void *)rsi_value);
+        PrintDword((const int *)rsi_value, (int)length);
+    }
+    else if (reg_num == 1){  // rdx
         printf("rdx: %p\n", (void *)rdx_value);
         PrintDword((const int *)rdx_value, (int)length);
     }
-    else if (rdx_rcx == 1){  // rcx
+    else if (reg_num == 2){  // rcx
         printf("rcx: %p\n", (void *)rcx_value);
         PrintDword((const int *)rcx_value, (int)length);
     }
@@ -112,6 +116,7 @@ VOID Instruction(INS ins, VOID *v)
         INS_InsertPredicatedCall(
             ins, IPOINT_BEFORE, (AFUNPTR)Dump,
             IARG_INST_PTR,
+            IARG_REG_VALUE, LEVEL_BASE::REG_RSI,
             IARG_REG_VALUE, LEVEL_BASE::REG_RDX,
             IARG_REG_VALUE, LEVEL_BASE::REG_RCX,
             IARG_END);
@@ -192,10 +197,10 @@ int main(int argc, char *argv[])
     dump_addr = KnobDumpAddr.Value();
     length = KnobDumpLen.Value();
     dump_point = KnobDumpPoint.Value();
-    rdx_rcx = KnobRdxRcx.Value();
+    reg_num = KnobRegNum.Value();
 
     // debug
-    printf("output: %s, dump_addr: %p, dump_length: %lu, dump_point: %p, rdx_rcx: %d\n", fileName.c_str(), (void *)dump_addr, length, (void *)dump_point, rdx_rcx);
+    printf("output: %s, dump_addr: %p, dump_length: %lu, dump_point: %p, reg_num: %d\n", fileName.c_str(), (void *)dump_addr, length, (void *)dump_point, reg_num);
     //return 0;
 
     INS_AddInstrumentFunction(Instruction, 0);
