@@ -148,17 +148,17 @@ if __name__ == '__main__':
         if func_type == 'conv2d':
             continue
             w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
-            utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
-                                             mem_dump_log_path, func_name, 1)
+            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
+                                      mem_dump_log_path, func_name, 1)
         elif func_type == 'add':
             continue
-            utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
-                                             mem_dump_log_path, func_name, 2)
+            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
+                                      mem_dump_log_path, func_name, 2)
         elif func_type == 'dense':
             # continue
-            utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
-                                             mem_dump_log_path, func_name, reg_num=1, func_type='dense')
+            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
+                                      mem_dump_log_path, func_name, reg_num=1, func_type='dense')
         elif func_type == 'dense add':
             continue
-            utils.extract_params_glow_conv2d(prog_path, in_data, w_shape, dump_point,
-                                             mem_dump_log_path, func_name, 1)
+            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
+                                      mem_dump_log_path, func_name, 1)

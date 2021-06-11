@@ -5,7 +5,7 @@ import sys
 import json
 import numpy as np
 from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log, dump_dwords, dump_dwords_2
-from scripts.pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools
+from scripts.pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
 from scripts.se_engine import lightweight_SymEx
 from scripts.mem_slices import memory_slices
 from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
@@ -36,7 +36,7 @@ funcs_dir = './vgg16_glow_funcs/'
 # ==============================================================
 
 
-def get_addr_list(label_path: str):
+def get_addr_list(label_path: str, fused=False):
     addr_list = []
     with open(label_path, 'r') as f:
         label_txt = f.read()
@@ -49,27 +49,72 @@ def get_addr_list(label_path: str):
                 start_addr, end_addr = get_func_range(os.path.join(funcs_dir, name.strip()))
                 addr = start_addr
 
-                addr_list.append(addr)
-
                 addr2label[addr] = label.strip()
                 addr2funcs[addr] = name.strip()
+                if fused and 'fused' not in label:
+                    continue
+                elif not fused and 'fused' in label:
+                    continue
+
+                addr_list.append(addr)
     return addr_list
 
 
-def get_funcs_trace(prog_path: str, in_data: str, log_path: str, label_file: str):
+def get_funcs_trace(prog_path: str, in_data: str, log_path: str, label_file: str, compiler='glow', only_fused=False):
 
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)
     label_file = os.path.abspath(label_file)
 
-    addr_list = get_addr_list(label_file)
+    if compiler == 'tvm':
+        addr_list = get_addr_list(label_file, fused=only_fused)
+    else:
+        addr_list = get_addr_list(label_file)
 
-    # func_call_trace(prog_path, in_data, addr_list, log_path)
-    fun_call_rdi_rsi(prog_path, in_data, addr_list, log_path)
+    if compiler == 'tvm' and only_fused:
+        fused_rdi(prog_path, in_data, addr_list, log_path)
+    elif compiler == 'glow':
+        fun_call_rdi_rsi(prog_path, in_data, addr_list, log_path)
+    elif compiler == 'tvm' and not only_fused:
+        func_call_trace(prog_path, in_data, addr_list, log_path)
+    else:
+        assert False, 'unknown compiler: {}'.format(compiler)
 
     dict_to_json(addr2label, './addr2label.json')
     dict_to_json(addr2funcs, './addr2funcs.json')
+
+
+def print_layer_label_tvm(trace_log_path: str, only_fused=False):
+    global addr2label, addr2funcs, addr2param
+    addr2label = json_to_dict('./addr2label.json') # type: dict
+    addr2funcs = json_to_dict('./addr2funcs.json') # type: dict
+
+    trace_log_path = os.path.abspath(trace_log_path)
+    if not only_fused:
+        with open(trace_log_path, 'r') as f:
+            trace_txt = f.read()
+            lines = trace_txt.split('\n')
+            for line in lines:
+                if not line.startswith('0x'):
+                    continue
+                addr = hex(int(line.split(':')[0].strip(), 16))
+                if 'reshape' != addr2label[addr]:
+                    print('{}: {}'.format(addr, addr2label[addr]))
+    else:
+        with open(trace_log_path, 'r') as f:
+            trace_txt = f.read()
+            lines = trace_txt.split('\n')
+            for line in lines:
+                if not line.startswith('0x'):
+                    continue
+                addr = hex(int(line.split(':')[0].strip(), 16))
+                addr_list = list(addr2label.keys())  # type: list
+                addr_list.sort()
+                idx = addr_list.index(addr) + 1
+                label = addr2label[addr_list[idx]]
+
+                print('{}: {}: {}'.format(addr, label, line.split(':')[1]))
 
 
 def print_layer_label(trace_log_path: str):
@@ -234,6 +279,59 @@ def recover_shape(func_name: str, mem_exp_log: str,
         return kernel_size, stride
 
 
+def recover_shape_tvm(func_name: str, mem_exp_log: str,
+                  mem_read_log_path: str, mem_write_log_path: str,
+                  prog_path: str, data_path: str, func_type='conv2d', optimized=False):
+    mem_read_log_path = os.path.abspath(mem_read_log_path)
+    mem_write_log_path = os.path.abspath(mem_write_log_path)
+    prog_path = os.path.abspath(prog_path)
+    data_path = os.path.abspath(data_path)
+
+    func_asm_path = os.path.join(funcs_dir, func_name)
+    func_asm_path = os.path.abspath(func_asm_path)
+    start_addr, end_addr = get_func_range(func_asm_path)
+
+    if 'conv2d' in func_type:
+        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
+        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
+        read_mem_regions = memory_slices(mem_read_log_path)
+        write_mem_regions = memory_slices(mem_write_log_path)
+        for stride in range(1, 4):
+            print('try with stride: {}'.format(stride))
+            tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_layout_shape = \
+                explain_tvm_conv2d_result(mem_exp_log, read_mem_regions,
+                                          write_mem_regions, guess_stride=stride,
+                                          optimized=optimized)
+            if tmp_filter_shape[0] != 0:
+                filter_shape = tmp_filter_shape
+                input_shape = tmp_input_shape
+                output_shape = tmp_output_shape
+                layout_shape = tmp_layout_shape
+                break
+        return filter_shape, layout_shape
+    elif 'dense' in func_type:
+        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
+        write_mem_regions = memory_slices(mem_write_log_path)
+        input_size, output_size = explain_tvm_dense_result(mem_exp_log, write_mem_regions)
+        return output_size, input_size
+    elif 'add' in func_type:
+        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
+        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
+        read_mem_regions = memory_slices(mem_read_log_path)
+        write_mem_regions = memory_slices(mem_write_log_path)
+        if len(read_mem_regions) > 1 and \
+                read_mem_regions[0][1] - read_mem_regions[0][0] == read_mem_regions[1][1] - read_mem_regions[1][0]:
+            # the case of add layer after dense/fully-connected layer
+            return (read_mem_regions[0][1] - read_mem_regions[0][0]) / 4
+        bias_length = explain_tvm_add_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        return bias_length
+    elif 'max' in func_type:
+        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
+        write_mem_regions = memory_slices(mem_write_log_path)
+        kernel_size, stride = explain_tvm_maxpool_result(mem_exp_log, write_mem_regions)
+        return kernel_size, stride
+
+
 # ==============================================================
 # Handle all conv2d functions
 # ==============================================================
@@ -316,7 +414,8 @@ def find_rand_addr(prog_path: str, in_data: str, log_path: str, label_file_path:
     return func_addrs
 
 
-def handle_all_conv(prog_path: str, in_data: str, label_file_path: str, func_trace_map: dict):
+def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
+                    func_trace_map=dict(), compiler='tvm', optimized=False):
     label_file_path = os.path.abspath(label_file_path)
     # --- get conv2d functions' name
     funcs_name_list = []
@@ -338,16 +437,25 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str, func_tra
         print(func_name)
         # --- recover the shape of each layer
         # tmp_log_path = './inst_trace.log'
-        tmp_log_path = func_trace_map[func_name]  # generate_inst_trace(func_name, tmp_log_path, prog_path, in_data)
+        if func_name in func_trace_map:
+            tmp_log_path = func_trace_map[func_name]
+        else:
+            tmp_log_path = './inst_trace.log'
+            generate_inst_trace(func_name, tmp_log_path, prog_path, in_data)
         exp_log_path = './mem_exp.log'  # tmp file
         generate_symbolic_expression(func_name, tmp_log_path, exp_log_path)
 
         # --- try to interpret the filter shape from symbolic expression log
         mem_read_log_path = 'mem_read.log'  # tmp file
         mem_write_log_path = 'mem_write.log'  # tmp file
-        filter_shape = recover_shape(func_name, exp_log_path,
-                                     mem_read_log_path, mem_write_log_path,
-                                     prog_path, in_data, func_type=func_types[func_name])
+        if compiler == 'tvm':
+            filter_shape = recover_shape_tvm(func_name, exp_log_path,
+                                             mem_read_log_path, mem_write_log_path,
+                                             prog_path, in_data, func_type=func_types[func_name], optimized=optimized)
+        else:
+            filter_shape = recover_shape(func_name, exp_log_path,
+                                         mem_read_log_path, mem_write_log_path,
+                                         prog_path, in_data, func_type=func_types[func_name])
         func_shape[func_name] = filter_shape
     return func_shape
 
@@ -357,21 +465,16 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str, func_tra
 # ==============================================================
 
 
-def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, func_type='conv2d'):
-    """
-    :param dump_point: the start address of layer function (before reshaping the parameters)
-    """
+def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point: str,
+                       log_path: str, func_name: str, func_type='conv2d', data_idx=1, special_layout=()):
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)
-    if func_type == 'conv2d':
-        dwords_len = w_shape[0] * w_shape[1] * w_shape[2] * w_shape[3]
-    elif func_type == 'dense':
-        dwords_len = w_shape[0] * w_shape[1]
-    elif func_type == 'add':
-        dwords_len = w_shape[0] * w_shape[1]
+    dwords_len = 1
+    for w_dim in w_shape:
+        dwords_len *= w_dim
     rm_log(log_path)
-    dump_dwords_2(prog_path, in_data, dump_point, dwords_len, log_path)
+    dump_dwords_2(prog_path, in_data, dump_point, dwords_len, log_path, data_index=data_idx)
 
     # then convert dwords to floats
     with open(log_path, 'r') as f:
@@ -385,7 +488,12 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
             float_array = convert_dwords2float(dw_txt, dwords_len)
 
             w = np.asarray(float_array)
-            w = w.reshape(w_shape)
+            if len(special_layout) > 0:
+                w = w.reshape(special_layout)
+                w = np.transpose(w, (0, 5, 1, 4, 2, 3))
+                w = w.reshape(w_shape)
+            else:
+                w = w.reshape(w_shape)
             # print(type(w))
             lists = w.tolist()
             json_str = json.dumps(lists)
@@ -402,7 +510,7 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
     rm_log(log_path)
 
 
-def extract_params_glow_conv2d(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, reg_num=1, func_type=''):
+def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, reg_num=1, func_type=''):
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)

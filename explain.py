@@ -21,9 +21,12 @@ def biggest_region(mem_regions: list, target_addr=0):
         return target_mem
 
 
-def choose_one_4bytes(exp_log_path: str, mem_write_regions: list, num=0):
+def choose_one_4bytes(exp_log_path: str, mem_write_regions=[], num=0):
     """ Choose one expression from the exp_log to recover the filter shape """
-    out_mem = biggest_region(mem_write_regions)
+    if len(mem_write_regions) == 0:
+        out_mem = (0, 0xffffffff)
+    else:
+        out_mem = biggest_region(mem_write_regions)
     exp_log_path = os.path.abspath(exp_log_path)
     with open(exp_log_path, 'r') as f:
         exp_txt = f.read()
@@ -49,7 +52,10 @@ def choose_one_4bytes(exp_log_path: str, mem_write_regions: list, num=0):
 
 
 def choose_one_16bytes(exp_log_path: str, mem_write_regions: list, num=0):
-    out_mem = biggest_region(mem_write_regions)
+    if len(mem_write_regions) == 0:
+        out_mem = (0, 0xffffffff)
+    else:
+        out_mem = biggest_region(mem_write_regions)
     exp_log_path = os.path.abspath(exp_log_path)
     with open(exp_log_path, 'r') as f:
         exp_txt = f.read()
@@ -160,7 +166,7 @@ def get_output_channel(exp: str, one_channel_size: int, mem_regions: list, compi
 def get_input_shape(name, exp, mem_regions, input_channel, size):
     offset_list = get_addr_list(exp, 'tvm', size)
     input_start_addr = min(offset_list)
-    print(hex(input_start_addr))
+    print('input start addr', hex(input_start_addr))
     for mem_start, mem_end in mem_regions:
         if mem_start <= input_start_addr < mem_end:
             return math.sqrt(((mem_end-input_start_addr)/input_channel)/4)
@@ -174,15 +180,18 @@ def get_input_shape(name, exp, mem_regions, input_channel, size):
 # -----------------------------------------------
 # how to interpret the taint analysis result
 # can we assume that we know the start addresses of inputs and output?
-def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list, guess_stride=1, optimized=False):
     # assume the mem_log comes from a convolution layer
+    tmp_mem_write_regions = []
+    if not optimized:
+        tmp_mem_write_regions = mem_write_regions
 
-    name, exp = choose_one_4bytes(exp_log_path, mem_write_regions)
+    name, exp = choose_one_4bytes(exp_log_path, tmp_mem_write_regions)
     if len(name) == 0:
-        name, exp = choose_one_16bytes(exp_log_path, mem_write_regions)
+        name, exp = choose_one_16bytes(exp_log_path, tmp_mem_write_regions)  # TODO
         return explain_tvm_conv2d_result_16(name, exp, mem_read_regions, mem_write_regions)
     mem_list = [(name, exp)]
-    mem_list.append(tuple(choose_one_4bytes(exp_log_path, mem_write_regions, 1)))
+    mem_list.append(tuple(choose_one_4bytes(exp_log_path, tmp_mem_write_regions, 1)))
 
     # TODO: here assume width==height
     input_shape = [1, 1, 1, 1]
@@ -221,7 +230,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
                 input_shape[2] = input_shape[3] = get_input_shape(name, exp, mem_read_regions, input_shape[1], 4)
                 break
             index += 1
-
+        """
         addr_list_0 = get_addr_list(mem_list[0][1], 'tvm', 4)
         if addr_list_0[0] > addr_list_0[-1]:
             addr_list_0.reverse()  # addr_list_0.sort()
@@ -241,6 +250,8 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             stride = idx_0  # / filter_shape[1]  # TODO: calculate the stride, can be wrong
         else:
             stride = idx_0 / filter_shape[1]
+        """
+        stride = guess_stride  # if we cannot get accurate stride, guess one
 
         output_shape[2] = math.ceil((input_shape[2] - filter_shape[2] + 1)/stride)
         output_shape[3] = math.ceil((input_shape[3] - filter_shape[3] + 1)/stride)
@@ -254,11 +265,37 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     output_shape[1] = output_channel
     filter_shape[0] = output_shape[1]
 
-    # final shape
-    print('input shape', input_shape)
-    print('filter shape', filter_shape)
-    print('output shape', output_shape)
-    return filter_shape, input_shape, output_shape
+    # since the stride and padding are guessed, we need to check if the shapes are reasonable
+    weights_addrs = get_weights_addrs(mem_list[0][0], mem_list[0][1], size=16)
+    weights_mem = (0, 0)
+    for mem_blk in mem_read_regions:
+        if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
+            weights_mem = mem_blk
+
+    ignore_flag = True
+    if int(filter_shape[0]) == filter_shape[0]:
+        weights_size = filter_shape[0] * filter_shape[1] * filter_shape[2] * filter_shape[3] * 4  # float --> 4 bytes
+        if weights_size == weights_mem[1] - weights_mem[0]:
+            # then it is a possible shape
+            ignore_flag = False
+
+    if not ignore_flag:
+        # try to get the weights layout indicators
+        ind_a, ind_b = get_weights_layout_info(mem_list[0][1])
+        # final shape
+        print('input shape', input_shape)
+        print('filter shape', filter_shape)
+        print('output shape', output_shape)
+        print('layout indicators: {}, {}'.format(ind_a, ind_b))
+        if ind_a != 0:
+            layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
+        else:
+            layout_shape = [filter_shape[0] / ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
+        print('layout shape', layout_shape)
+        return filter_shape, input_shape, output_shape, layout_shape
+    else:
+        print('not a reasonable guess, ignored')
+        return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0, 0, 0)
 
 
 def kernel_1_1(name, exp, mem_read_regions: list, mem_write_regions: list, compiler='tvm'):
@@ -313,7 +350,7 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
             break
         index += 1
 
-    output_shape[2] = input_shape[2] - filter_shape[2] + 1
+    output_shape[2] = input_shape[2] - filter_shape[2] + 1  # here, stride is assumed to be 1
     output_shape[3] = input_shape[3] - filter_shape[3] + 1
     # get output shape
     # TODO: cannot get output_channel easily, because we do not have all mem_log (too huge and too slow)
@@ -323,11 +360,20 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
     output_shape[1] = output_channel
     filter_shape[0] = output_shape[1]
 
+    # try to get the weights layout indicators
+    ind_a, ind_b = get_weights_layout_info(mem_list[0][1], size=16)
     # final shape
     print('input shape', input_shape)
     print('filter shape', filter_shape)
     print('output shape', output_shape)
-    return filter_shape, input_shape, output_shape
+    print('layout indicators: {}, {}'.format(ind_a, ind_b))
+    if ind_a != 0:
+        layout_shape = [filter_shape[0] / ind_b, filter_shape[1] / ind_a, filter_shape[2], filter_shape[3], ind_a,
+                        ind_b]
+    else:
+        layout_shape = [filter_shape[0] / ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
+    print('layout shape', layout_shape)
+    return filter_shape, input_shape, output_shape, layout_shape
 
 
 def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
@@ -391,6 +437,48 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
                 addr_list.append(addr)
         addr_list.sort()
         return addr_list
+
+
+def get_weights_layout_info(value: str, compiler='tvm', size=4):
+    offset_list = get_weights_list(value, compiler=compiler, size=size)
+    offset_list.reverse()
+    a = 0
+    b = 0
+    ab = (offset_list[1] - offset_list[0]) / 4
+    index = 2
+    while index < len(offset_list):
+        tmp = (offset_list[index] - offset_list[index - 1])/4
+        if tmp != ab:
+            tmp_index = index - 1
+            while tmp_index >= 0 and offset_list[index] < offset_list[tmp_index]:
+                tmp_index -= 1
+            tmp = (offset_list[index] - offset_list[tmp_index]) / 4
+            a = ab / tmp
+            b = tmp
+            break
+        index += 1
+    if a == 0:
+        return a, ab
+    return a, b
+
+
+def get_weights_list(value: str, compiler='tvm', size=4):
+    global input_on_the_left
+    addr_list = []
+    if compiler == 'tvm' and size == 4:
+        it = re.finditer(r'\* (0x[0-9a-f]+),16', value)  # it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+        for match in it:
+            addr = match.group(1)
+            addr_list.append(int(addr, 16))
+        return addr_list
+    if compiler == 'tvm' and size == 16:
+        it = re.finditer(r'(0x[0-9a-f]+),16 \*', value)
+        for match in it:
+            addr = match.group(1)
+            addr_list.append(int(addr, 16))
+        return addr_list
+    elif compiler == 'glow':
+        assert False, 'does Glow need this function?'
 
 
 # ==============================================================
@@ -491,6 +579,7 @@ def get_weights_addrs(name: str, exp: str, size=4):
     for match in it:
         addr = match.group(1)
         addr_list.append(int(addr, 16))
+    print('one weights addr', hex(addr_list[0]))
     return addr_list
 
 
@@ -566,6 +655,19 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
             match = re.search(r'\(0x([0-9a-f]+),4, ', exp2)
         addr2 = int(match.group(1), 16)
         stride = (addr2 - addr1) / 4
+        return kernel_size, stride
+    elif name1.endswith(',16') and name2.endswith(',16'):
+        kernel_size = math.sqrt(exp1.count('max'))
+        match = re.search(r', 0x([0-9a-f]+),16\)', exp1[exp1.find(')'):])
+        #if not match:
+        #    match = re.search(r'\(0x([0-9a-f]+),16, ', exp1)
+        addr1 = int(match.group(1), 16)
+        match = re.search(r', 0x([0-9a-f]+),16\)', exp2[exp2.find(')'):])
+        #if not match:
+        #    match = re.search(r'\(0x([0-9a-f]+),16, ', exp2)
+        addr2 = int(match.group(1), 16)
+        # stride = ((addr2 - addr1) / 16) * kernel_size  # stride = (addr2 - addr1) / 8  # which one?
+        stride = ((addr2 - addr1) / 4) / kernel_size
         return kernel_size, stride
     elif name1.endswith(',32') and name2.endswith(',32'):
         kernel_size = math.sqrt(exp1.count('max'))

@@ -323,13 +323,14 @@ def handle_inst(read_buf: list):
         mem_addr = mem_line.split(':')[1].strip()
         if opcode.startswith('mov') or opcode.startswith('lea'):
             kept = handle_mov(opcode, operands, mem_addr)
-        elif opcode.startswith('vmovss') or opcode.startswith('vmovups'):
+        elif opcode.startswith('vmovss') or opcode.startswith('vmovups') or opcode.startswith('vmovaps'):
             kept = handle_two(opcode, operands, mem_addr)
         elif opcode.startswith('vbroadcastss'):
             kept = handle_two(opcode, operands, mem_addr)
-        elif opcode.startswith('vmaxss') or opcode.startswith('vaddss') or opcode.startswith('vmulss'):
+        elif opcode.startswith('vmaxss') or opcode.startswith('vaddss') or opcode.startswith(
+                'vmulss') or opcode.startswith('vaddps'):
             kept = handle_three(opcode, operands, mem_addr)
-        elif opcode.startswith('vfmadd231ss') or opcode.startswith('vfmadd213ps'):
+        elif opcode.startswith('vfmadd231ss') or opcode.startswith('vfmadd213ps') or opcode.startswith('vfmadd231ps'):
             kept = handle_three(opcode, operands, mem_addr, read_op1=True)
         elif opcode.startswith('vxorps'):
             kept = handle_vxor(opcode, operands, mem_addr)
@@ -472,6 +473,14 @@ def handle_two(opcode: str, operands: list, mem_addr: str):
             tainted_regs.remove(op1)
             for m_addr in m_addr_list:
                 tainted_mems.add(m_addr)
+    elif op1 in xmm_regs and op2 in xmm_regs:
+        # move from register to register
+        if op1 in tainted_regs:
+            kept_flag = True
+            tainted_regs.remove(op1)
+            tainted_regs.add(op2)
+            # for m_addr in m_addr_list:
+            #    tainted_mems.add(m_addr)
     else:
         assert False, 'undefined {} {}'.format(opcode, operands)
     return kept_flag
@@ -568,3 +577,18 @@ if __name__ == '__main__':
         reverse_taint(reverse_log, slice_log)
     else:
         print('Usage: this_script.py <input_reverse.log> <output_slice.log> <target address> <length/size>')
+        reverse_log = './0x4029c0-0x4030f9_reverse.log'
+        slice_log = '0x4029c0-0x4030f9_slice.log'
+        target_addr = '0x32354f0'
+        length = 256
+        # print('debug {} {} {} {}'.format(reverse_log, slice_log, target_addr, length))
+        # exit(0)
+
+        mem_list = []
+        addr_int = int(target_addr, 16)
+        size = length
+        for step in range(0, size, 4):  # the smallest unit is 4 bytes
+            m_addr = hex(addr_int + step)
+            mem_list.append(m_addr)
+        set_tainted(mem_list)
+        reverse_taint(reverse_log, slice_log)
