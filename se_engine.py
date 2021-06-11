@@ -209,6 +209,8 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         # ymm register related instructions
         if mnemonic.startswith('vmovups'):
             handle_movaps(code_list, mem_addr)  # TODO how to handle ymm register
+        elif mnemonic.startswith('vmovaps'):
+            handle_movaps(code_list, mem_addr)
         elif mnemonic.startswith('vmovss'):
             handle_movss(code_list, mem_addr)
         elif mnemonic.startswith('vfmadd213ss'):
@@ -223,6 +225,8 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             handle_vmulss(code_list, mem_addr)
         elif mnemonic.startswith('vaddss'):
             handle_vaddss(code_list, mem_addr)
+        elif mnemonic.startswith('vaddps'):
+            handle_vaddss(code_list, mem_addr)  # TODO
         elif mnemonic.startswith('vmaxss'):
             handle_vmaxss(code_list, mem_addr)
         elif mnemonic.startswith('vmaxps'):
@@ -310,7 +314,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
                 mnemonic.startswith('shr') or mnemonic.startswith('sar') or \
                 mnemonic.startswith('shl') or mnemonic.startswith('or') or \
                 mnemonic.startswith('not') or mnemonic.startswith('dec') or \
-                mnemonic.startswith('and') or mnemonic.startswith('sete'):
+                mnemonic.startswith('and') or mnemonic.startswith('sete') or mnemonic.startswith('neg'):
             handle_arith(code_list, mem_addr)
         elif mnemonic.startswith('j') or mnemonic.startswith('cmp') or \
                 mnemonic.startswith('push') or mnemonic.startswith('pop') or mnemonic.startswith('test'):
@@ -318,7 +322,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         elif mnemonic.startswith('nop') or mnemonic.startswith('cdq') or mnemonic.startswith('cmov'):
             pass
         elif mnemonic.startswith('sete') or mnemonic.startswith('setz') or \
-                mnemonic.startswith('setb') or mnemonic.startswith('setnbe'):
+                mnemonic.startswith('setb') or mnemonic.startswith('setnbe') or mnemonic.startswith('setnle'):
             pass
         elif mnemonic.startswith('data16'):
             pass
@@ -724,7 +728,7 @@ def xmm_vmul_mem(xmm_write: str, xmm_read: str, mem_addr: str, size: int):
         xmm_regs[xmm_write] = '({} * {})'.format(xmm_regs[xmm_read], mem_key)
 
 
-def vfmadd231ss(xmm_1: str, xmm_2: str, mem_addr: str, size: int):
+def vfmadd231_mem(xmm_1: str, xmm_2: str, mem_addr: str, size: int):
     global xmm_regs, mem_state
     mem_key = mem_addr + ',' + str(size)
     if mem_key in mem_state.keys():
@@ -732,6 +736,12 @@ def vfmadd231ss(xmm_1: str, xmm_2: str, mem_addr: str, size: int):
     else:
         # TODO sub-memory check?
         xmm_regs[xmm_1] = '({} * {} + {})'.format(xmm_regs[xmm_2], mem_key, xmm_regs[xmm_1])
+
+
+def vfmadd231_reg(xmm_1: str, xmm_2: str, xmm_3: str):
+    global xmm_regs, mem_state
+    assert xmm_1 in xmm_regs.keys() and xmm_2 in xmm_regs.keys() and xmm_3 in xmm_regs.keys()
+    xmm_regs[xmm_1] = '({} * {} + {})'.format(xmm_regs[xmm_2], xmm_regs[xmm_3], xmm_regs[xmm_1])
 
 
 # -----------------------------------------------
@@ -835,7 +845,7 @@ def handle_vfmadd_ss(code_list, mem_addr):
         if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
             if 'dword' in op3:
                 size = 4
-            vfmadd231ss(op1, op2, mem_addr, size)
+            vfmadd231_mem(op1, op2, mem_addr, size)
         else:
             print('not implemented: vfmadd231ss')
             exit(-1)
@@ -845,6 +855,14 @@ def handle_vfmadd_ss(code_list, mem_addr):
             if 'ymmword' in op3:
                 size = 32
             xmm_add_mem(op1, mem_addr, size)
+        elif op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and op3 in xmm_regs.keys():
+            xmm_mul_xmm(op1, op2)
+            if op3.startswith('ymm'):
+                xmm_add_xmm(op1, op3, 32)
+            elif op3.startswith('xmm'):
+                xmm_add_xmm(op1, op3, 16)
+            else:
+                assert False, 'undefined vfmadd213ps {}'.format(code_list)
         else:
             print('not implemented: vfmadd213ps')
             exit(-1)
@@ -852,7 +870,9 @@ def handle_vfmadd_ss(code_list, mem_addr):
         if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
             if 'ymmword' in op3:
                 size = 32
-            vfmadd231ss(op1, op2, mem_addr, size)
+            vfmadd231_mem(op1, op2, mem_addr, size)
+        elif op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and op3 in xmm_regs.keys():
+            vfmadd231_reg(op1, op2, op3)
         else:
             print('not implemented: vfmadd231ps')
             exit(-1)
@@ -883,6 +903,10 @@ def handle_vaddss(code_list, mem_addr):
     if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
         if 'dword' in op3:
             size = 4
+        elif 'ymmword ptr' in op3:
+            size = 32
+        else:
+            assert False, '{} undefined size'.format(op3)
         xmm_vadd_mem(op1, op2, mem_addr, size)
     else:
         print('not implemented: vaddss')
@@ -930,7 +954,6 @@ def handle_mulps(code_list, mem_addr):
         xmm_mul_xmm(op1, op2)
     elif mem_key in mem_state.keys():
         xmm_mul_mem(op1, mem_addr, size)
-
 
 
 def handle_divss(code_list, mem_addr):
@@ -1054,6 +1077,9 @@ def handle_xorps(code_list, mem_addr):
         assert op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and op3 in xmm_regs.keys()
         if op1 == op2 == op3:
             set_xmm(op1, '0')
+            if op1.startswith('xmm'):
+                ymm_op = op1.replace('xmm', 'ymm')
+                set_xmm(ymm_op, '0')
         else:
             print('not implemented: vxorps')
             exit(-1)
@@ -1164,6 +1190,8 @@ def handle_mov(code_list, mem_addr):
             size = 8
         elif 'dword' in op2:
             size = 4
+        elif 'byte ptr' in op2:
+            size = 1
         mem2reg(op1, mem_addr, size)
     elif op2 in reg_state.keys() and '[' in op1:
         # rge --> mem
@@ -1171,6 +1199,8 @@ def handle_mov(code_list, mem_addr):
             size = 8
         elif 'dword' in op1:
             size = 4
+        elif 'byte ptr' in op1:
+            size = 1
         reg2mem(op2, mem_addr, size)
     elif op1 in reg_state.keys() and op2 in reg_state.keys():
         # reg --> reg
