@@ -1,6 +1,8 @@
 #! /usr/bin/python3
 import os
 import sys
+import sys
+sys.path.append("../..")
 import json
 import numpy as np
 from scripts import utils
@@ -247,10 +249,10 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = '/home/lifter/Documents/tvm_output/vgg16_tvm_O3_funcs'
+    utils.funcs_dir = '/export/d1/zliudc/TVM/vgg16_tvm_O3_funcs/'
 
-    prog_path = '/home/lifter/Documents/tvm_output/vgg16_tvm_O3'
-    in_data = '/home/lifter/Documents/tvm_output/cat.bin'
+    prog_path = '/export/d1/zliudc/TVM/scripts/vgg16_tvm_O3/vgg16_tvm_O3'
+    in_data = '/export/d1/zliudc/TVM/scripts/vgg16_tvm_O3/cat.bin'
     log_path = '/home/lifter/Documents/tvm_output/vgg16_tvm_O3_func_call.log'
     label_file = '/home/lifter/Documents/tvm_output/step1.txt'
 
