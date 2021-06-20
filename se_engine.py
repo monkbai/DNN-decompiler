@@ -986,14 +986,14 @@ def handle_addss(code_list, mem_addr):
     assert op1 in xmm_regs.keys()
     if op1 in xmm_regs.keys() and op2 in xmm_regs.keys():
         if xmm_regs[op1] == xmm_regs[op2]:
-            print('warning: skip addss')
+            # print('warning: skip addss')
             return
         elif xmm_regs[op1] in xmm_regs[op2]:
-            print('warning: skip addss')
+            # print('warning: skip addss')
             set_xmm(op1, xmm_regs[op2])
             return
         elif xmm_regs[op2] in xmm_regs[op1]:
-            print('warning: skip addss')
+            # print('warning: skip addss')
             return
         # TODO this maybe not correct, assume program will not add two same value (except for rearrange )
         xmm_add_xmm(op1, op2, 4)

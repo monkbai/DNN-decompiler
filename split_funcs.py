@@ -13,7 +13,7 @@ def split_tvm_asm(asm_txt: str):
         for line in txt_list:
             if line.startswith('; function: '):
                 func_name = line[line.find('function:') + 9:]
-                func_name = func_name[:func_name.rfind('at')]
+                func_name = func_name[:func_name.rfind(' at ')]
                 func_name = func_name.strip()
                 if in_func_flag:
                     funcs_list.append((current_func_name, current_func_body))

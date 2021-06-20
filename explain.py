@@ -189,7 +189,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     name, exp = choose_one_4bytes(exp_log_path, tmp_mem_write_regions)
     if len(name) == 0:
         name, exp = choose_one_16bytes(exp_log_path, tmp_mem_write_regions)  # TODO
-        return explain_tvm_conv2d_result_16(name, exp, mem_read_regions, mem_write_regions)
+        return explain_tvm_conv2d_result_16(name, exp, mem_read_regions, mem_write_regions, guess_stride, optimized)
     mem_list = [(name, exp)]
     mem_list.append(tuple(choose_one_4bytes(exp_log_path, tmp_mem_write_regions, 1)))
 
@@ -198,12 +198,14 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     filter_shape = [1, 1, 1, 1]
     output_shape = [1, 1, 1, 1]
 
+    blk_size = 0
     if len(mem_read_regions) > 10:
-        kernel_num, input_num = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
+        kernel_num, input_num, blk_size = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
         filter_shape[1] = kernel_num
         input_shape[1] = kernel_num
         input_shape[2] = input_shape[3] = input_num
         output_shape[2] = output_shape[3] = math.ceil(input_num/2)
+        print('special case: stride 2')
     else:
         # get the filter shape and input shape from first output
         offset_list = get_offset_list(mem_list[0][1], compiler='tvm')  # analyze the first expression (with the smallest address)
@@ -266,31 +268,23 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     filter_shape[0] = output_shape[1]
 
     # since the stride and padding are guessed, we need to check if the shapes are reasonable
-    weights_addrs = get_weights_addrs(mem_list[0][0], mem_list[0][1], size=16)
-    weights_mem = (0, 0)
-    for mem_blk in mem_read_regions:
-        if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
-            weights_mem = mem_blk
-
-    ignore_flag = True
-    if int(filter_shape[0]) == filter_shape[0]:
-        weights_size = filter_shape[0] * filter_shape[1] * filter_shape[2] * filter_shape[3] * 4  # float --> 4 bytes
-        if weights_size == weights_mem[1] - weights_mem[0]:
-            # then it is a possible shape
-            ignore_flag = False
+    ignore_flag = is_ignore(mem_list, mem_read_regions, filter_shape)
 
     if not ignore_flag:
         # try to get the weights layout indicators
-        ind_a, ind_b = get_weights_layout_info(mem_list[0][1])
+        ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions)
         # final shape
         print('input shape', input_shape)
         print('filter shape', filter_shape)
         print('output shape', output_shape)
         print('layout indicators: {}, {}'.format(ind_a, ind_b))
-        if ind_a != 0:
+        if blk_size:  # kernel --> 1, 1
+            ind_a = blk_size
+            layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
+        elif not smooth:
             layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
         else:
-            layout_shape = [filter_shape[0] / ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
+            layout_shape = [filter_shape[0]/ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1]/ind_a, ind_b]
         print('layout shape', layout_shape)
         return filter_shape, input_shape, output_shape, layout_shape
     else:
@@ -320,12 +314,21 @@ def kernel_1_1(name, exp, mem_read_regions: list, mem_write_regions: list, compi
             if mem_blk[1] > mem_end:
                 mem_end = mem_blk[1]
     offset_list = get_offset_list(exp, compiler=compiler)
+    blk_size = 1
+    stride = offset_list[1] - offset_list[0]
+    while blk_size < len(offset_list):
+        if offset_list[blk_size] - offset_list[blk_size - 1] != stride:
+            break
+        blk_size += 1
+
     kernel_num = len(offset_list)
-    input_shape = math.sqrt((mem_end-mem_start)/4/kernel_num)
-    return kernel_num, input_shape
+    input_shape = math.sqrt((mem_end - mem_start + mem_size)/4/kernel_num)
+    input_shape = math.ceil(input_shape)
+    return kernel_num, input_shape, blk_size
 
 
-def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, mem_write_regions: list):
+def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, mem_write_regions: list,
+                                 guess_stride=1, optimized=False):
     mem_list = [(name, exp)]
 
     # TODO: here assume width==height
@@ -333,25 +336,54 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
     filter_shape = [1, 1, 1, 1]
     output_shape = [1, 1, 1, 1]
 
-    offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16)
-    # print(offset_list)
-    stride = offset_list[1] - offset_list[0]
-    index = 0
-    while index < len(offset_list) - 1:
-        if offset_list[index+1] - offset_list[index] != stride:
-            tmp1 = offset_list[index + 1]  # input[1] * input[2]
-            tmp2 = offset_list[index] + stride  # filter[1] * filter[2]
-            filter_shape[3] = index + 1
-            filter_shape[2] = filter_shape[3]  # TODO assume
-            filter_shape[1] = len(offset_list) / (filter_shape[2] * filter_shape[3])
-            # input[1] = filter[1]
-            input_shape[1] = filter_shape[1]
-            input_shape[2] = input_shape[3] = get_input_shape(name, exp, mem_read_regions, input_shape[1], 16)
-            break
-        index += 1
+    blk_size = 0
+    if len(mem_read_regions) > 10:
+        kernel_num, input_num, blk_size = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
+        filter_shape[1] = kernel_num
+        input_shape[1] = kernel_num
+        input_shape[2] = input_shape[3] = input_num
+        output_shape[2] = output_shape[3] = math.ceil(input_num / 2)
+        print('special case: stride 2')
+    else:
+        offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16)
+        # print(offset_list)
+        stride = offset_list[1] - offset_list[0]
+        index = 0
+        while index < len(offset_list) - 1:
+            if offset_list[index + 1] - offset_list[index] > stride:
+                tmp1 = offset_list[index + 1]  # input[1] * input[2]
+                tmp2 = offset_list[index] + stride  # filter[1] * filter[2]
+                stride_2 = tmp1 - tmp2
+                length = index
+                while length < len(offset_list) - 1:
+                    length += 1
+                    tmp = offset_list[length]-offset_list[length - 1]
+                    if tmp != stride and tmp != stride + stride_2:
+                        break
+                filter_shape[3] = length / tmp2
+                filter_shape[2] = filter_shape[3]  # TODO assume
+                filter_shape[1] = tmp2 / filter_shape[2]
+                filter_shape[1] *= (len(offset_list) / length)
+                # input[1] = filter[1]
+                input_shape[1] = filter_shape[1]
+                input_shape[2] = tmp1 / input_shape[1]
+                input_shape[2] *= (len(offset_list) / length)
+                input_shape[3] = input_shape[2]  # TODO assume
+                break
+            elif offset_list[index + 1] - offset_list[index] < stride:
+                tmp1 = offset_list[index + 1]  # input[1] * input[2]
+                tmp2 = offset_list[index] + stride  # filter[1] * filter[2]
+                filter_shape[3] = index + 1
+                filter_shape[2] = filter_shape[3]  # TODO assume
+                filter_shape[1] = len(offset_list) / (filter_shape[2] * filter_shape[3])
+                # input[1] = filter[1]
+                input_shape[1] = filter_shape[1]
+                input_shape[2] = input_shape[3] = get_input_shape(name, exp, mem_read_regions, input_shape[1], 16)
+                break
+            index += 1
 
-    output_shape[2] = input_shape[2] - filter_shape[2] + 1  # here, stride is assumed to be 1
-    output_shape[3] = input_shape[3] - filter_shape[3] + 1
+        output_shape[2] = math.ceil((input_shape[2] - filter_shape[2] + 1) / guess_stride)
+        output_shape[3] = math.ceil((input_shape[3] - filter_shape[3] + 1) / guess_stride)
     # get output shape
     # TODO: cannot get output_channel easily, because we do not have all mem_log (too huge and too slow)
     # filter_size = filter_shape[1] * filter_shape[2] * filter_shape[3]
@@ -360,20 +392,48 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
     output_shape[1] = output_channel
     filter_shape[0] = output_shape[1]
 
-    # try to get the weights layout indicators
-    ind_a, ind_b = get_weights_layout_info(mem_list[0][1], size=16)
-    # final shape
-    print('input shape', input_shape)
-    print('filter shape', filter_shape)
-    print('output shape', output_shape)
-    print('layout indicators: {}, {}'.format(ind_a, ind_b))
-    if ind_a != 0:
-        layout_shape = [filter_shape[0] / ind_b, filter_shape[1] / ind_a, filter_shape[2], filter_shape[3], ind_a,
-                        ind_b]
+    ignore_flag = is_ignore(mem_list, mem_read_regions, filter_shape)
+
+    if not ignore_flag:
+        # try to get the weights layout indicators
+        ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions, size=16)
+        # final shape
+        print('input shape', input_shape)
+        print('filter shape', filter_shape)
+        print('output shape', output_shape)
+        print('layout indicators: {}, {}'.format(ind_a, ind_b))
+        if blk_size:  # kernel --> 1, 1
+            ind_a = blk_size
+            layout_shape = [filter_shape[0] / ind_b, filter_shape[1] / ind_a, filter_shape[2], filter_shape[3], ind_a,
+                            ind_b]
+        elif not smooth:
+            layout_shape = [filter_shape[0] / ind_b, filter_shape[1] / ind_a, filter_shape[2], filter_shape[3], ind_a,
+                            ind_b]
+        else:
+            layout_shape = [filter_shape[0] / ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1] / ind_a,
+                            ind_b]
+        print('layout shape', layout_shape)
+        return filter_shape, input_shape, output_shape, layout_shape
     else:
-        layout_shape = [filter_shape[0] / ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
-    print('layout shape', layout_shape)
-    return filter_shape, input_shape, output_shape, layout_shape
+        print('not a reasonable guess, ignored')
+        return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0, 0, 0)
+
+
+def is_ignore(mem_list: list, mem_read_regions: list, filter_shape: list):
+    # since the stride and padding are guessed, we need to check if the shapes are reasonable
+    weights_addrs = get_weights_addrs(mem_list[0][1], size=16)
+    weights_mem = (0, 0)
+    for mem_blk in mem_read_regions:
+        if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
+            weights_mem = mem_blk
+
+    ignore_flag = True
+    if int(filter_shape[0]) == filter_shape[0]:
+        weights_size = filter_shape[0] * filter_shape[1] * filter_shape[2] * filter_shape[3] * 4  # float --> 4 bytes
+        if weights_size == weights_mem[1] - weights_mem[0]:
+            # then it is a possible shape
+            ignore_flag = False
+    return ignore_flag
 
 
 def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
@@ -392,7 +452,7 @@ def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
         offset_list[i] = (offset_list[i] - start_addr) / 4
     if size == 4 and offset_list[0] > offset_list[-1]:
         offset_list.reverse()  # offset_list.sort()
-    elif size == 16:
+    elif size == 16 and offset_list[0] > offset_list[-1]:
         offset_list.reverse()
     return offset_list
 
@@ -410,13 +470,25 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
     """
     addr_list = []
     if compiler == 'tvm' and size == 4:
-        it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+        match = re.search(r'(0x[0-9a-f]+),4 \*', value)
+        if match:
+            it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+            input_on_the_left = True
+        else:
+            it = re.finditer(r'\* (0x[0-9a-f]+),4', value)
+            input_on_the_left = False
         for match in it:
             addr = match.group(1)
             addr_list.append(int(addr, 16))
         return addr_list
     if compiler == 'tvm' and size == 16:
-        it = re.finditer(r'\* (0x[0-9a-f]+),4', value)
+        match = re.search(r'\* (0x[0-9a-f]+),4', value)
+        if match:
+            it = re.finditer(r'\* (0x[0-9a-f]+),4', value)
+            input_on_the_left = False
+        else:
+            it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+            input_on_the_left = True
         for match in it:
             addr = match.group(1)
             addr_list.append(int(addr, 16))
@@ -439,9 +511,16 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
         return addr_list
 
 
-def get_weights_layout_info(value: str, compiler='tvm', size=4):
+def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', size=4):
+    weights_addrs = get_weights_addrs(value, size=16)
+    weights_mem = (0, 0)
+    for mem_blk in mem_read_regions:
+        if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
+            weights_mem = mem_blk
+
     offset_list = get_weights_list(value, compiler=compiler, size=size)
-    offset_list.reverse()
+    if offset_list[1] < offset_list[0]:
+        offset_list.reverse()
     a = 0
     b = 0
     ab = (offset_list[1] - offset_list[0]) / 4
@@ -458,21 +537,30 @@ def get_weights_layout_info(value: str, compiler='tvm', size=4):
             break
         index += 1
     if a == 0:
-        return a, ab
-    return a, b
+        smooth = True
+        a = (weights_mem[1] - weights_mem[0]) / (max(offset_list) - min(offset_list) + ab * 4)
+        return a, ab, smooth
+    smooth = False
+    return a, b, smooth
 
 
 def get_weights_list(value: str, compiler='tvm', size=4):
     global input_on_the_left
     addr_list = []
     if compiler == 'tvm' and size == 4:
-        it = re.finditer(r'\* (0x[0-9a-f]+),16', value)  # it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+        if input_on_the_left:
+            it = re.finditer(r'\* (0x[0-9a-f]+),16', value)  # it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+        else:
+            it = re.finditer(r'(0x[0-9a-f]+),16 \*', value)
         for match in it:
             addr = match.group(1)
             addr_list.append(int(addr, 16))
         return addr_list
     if compiler == 'tvm' and size == 16:
-        it = re.finditer(r'(0x[0-9a-f]+),16 \*', value)
+        if input_on_the_left:
+            it = re.finditer(r'\* (0x[0-9a-f]+),16', value)
+        else:
+            it = re.finditer(r'(0x[0-9a-f]+),16 \*', value)
         for match in it:
             addr = match.group(1)
             addr_list.append(int(addr, 16))
@@ -508,7 +596,7 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
     output_shape = [1, 1, 1, 1]
 
     if len(mem_read_regions) > 10:
-        kernel_num, input_num = kernel_1_1(name, exp, mem_read_regions, mem_write_regions, compiler='glow')
+        kernel_num, input_num, blk_size = kernel_1_1(name, exp, mem_read_regions, mem_write_regions, compiler='glow')
         input_num = math.ceil(input_num)
         filter_shape[1] = kernel_num
         input_shape[1] = kernel_num
@@ -548,7 +636,7 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
     filter_shape[0] = output_shape[1]
 
     # since the stride and padding are guessed, we need to check if the shapes are reasonable
-    weights_addrs = get_weights_addrs(mem_list[0][0], mem_list[0][1], size=element_size)
+    weights_addrs = get_weights_addrs(mem_list[0][1], size=element_size)
     weights_mem = (0, 0)
     for mem_blk in mem_read_regions:
         if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
@@ -573,7 +661,7 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
         return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), False
 
 
-def get_weights_addrs(name: str, exp: str, size=4):
+def get_weights_addrs(exp: str, size=4):
     addr_list = []
     it = re.finditer(r'\* (0x[0-9a-f]+),'+str(size), exp)
     for match in it:
@@ -658,16 +746,16 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
         return kernel_size, stride
     elif name1.endswith(',16') and name2.endswith(',16'):
         kernel_size = math.sqrt(exp1.count('max'))
-        match = re.search(r', 0x([0-9a-f]+),16\)', exp1[exp1.find(')'):])
+        match = re.findall(r', 0x([0-9a-f]+),16\)', exp1)[-1]  # match = re.search(r', 0x([0-9a-f]+),16\)', exp1[exp1.find(')'):])
         #if not match:
         #    match = re.search(r'\(0x([0-9a-f]+),16, ', exp1)
-        addr1 = int(match.group(1), 16)
-        match = re.search(r', 0x([0-9a-f]+),16\)', exp2[exp2.find(')'):])
+        addr1 = int(match, 16)
+        match = re.findall(r', 0x([0-9a-f]+),16\)', exp2)[-1]  # match = re.search(r', 0x([0-9a-f]+),16\)', exp2[exp2.find(')'):])
         #if not match:
         #    match = re.search(r'\(0x([0-9a-f]+),16, ', exp2)
-        addr2 = int(match.group(1), 16)
+        addr2 = int(match, 16)
         # stride = ((addr2 - addr1) / 16) * kernel_size  # stride = (addr2 - addr1) / 8  # which one?
-        stride = ((addr2 - addr1) / 4) / kernel_size
+        stride = (addr2 - addr1) / 8  # stride = ((addr2 - addr1) / 4) / kernel_size
         return kernel_size, stride
     elif name1.endswith(',32') and name2.endswith(',32'):
         kernel_size = math.sqrt(exp1.count('max'))
@@ -677,6 +765,24 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
         addr2 = int(match.group(1), 16)
         stride = (addr2 - addr1) / 16
         return kernel_size, stride
+
+
+# ==============================================================
+# Heuristics used to recover shape for TVM avg_pool2d layer
+# ==============================================================
+def explain_tvm_avgpool_result(exp_log_path: str, mem_write_regions: list):
+    name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4)
+    addr_list = []
+    it = re.finditer(r'(0x[0-9a-f]+),4', exp)
+    for match in it:
+        addr = match.group(1)
+        addr_list.append(int(addr, 16))
+    min_addr = min(addr_list)
+    offset_list = []
+    for addr in addr_list:
+        addr = (addr - min_addr) / 4
+        offset_list.append(addr)
+    return math.sqrt(len(offset_list)), 1
 
 
 # ==============================================================
