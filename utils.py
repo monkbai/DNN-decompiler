@@ -581,15 +581,16 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
     rm_log(log_path)
 
 
-def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, reg_num=1, func_type=''):
+def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point: str,
+                        log_path: str, func_name: str, reg_num=1, func_type=''):
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)
     dwords_len = 1
     for w in w_shape:
         dwords_len *= w
-    rm_log(log_path)
-    dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
+    #rm_log(log_path)
+    #dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
 
     # then convert dwords to floats
     with open(log_path, 'r') as f:

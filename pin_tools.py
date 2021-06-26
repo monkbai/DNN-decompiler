@@ -37,33 +37,43 @@ def run(prog_path):
 
 project_dir = './'
 
-pin_home = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux'
+pin_home = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/'
 
 mypintool_dir = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/'
 
-fun_call_rdi_rsi_cmd = "../../../pin -t obj-intel64/FunCallRdiRsi.so -o {} -addrs_file {} -- {} {}"
-fused_rdi_cmd = "../../../pin -t obj-intel64/FusedRdi.so -o {} -addrs_file {} -- {} {}"
-func_call_cmd = "../../../pin -t obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
+fun_call_rdi_rsi_cmd = pin_home + "pin -t " + \
+                       mypintool_dir + "obj-intel64/FunCallRdiRsi.so -o {} -addrs_file {} -- {} {}"
+fused_rdi_cmd = pin_home + "pin -t " + \
+                mypintool_dir + "obj-intel64/FusedRdi.so -o {} -addrs_file {} -- {} {}"
+func_call_cmd = pin_home + "pin -t " + \
+                mypintool_dir + "obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
 # output_path, start_addr, end_addr, program, input_data
-inst_trace_cmd = "timeout 15s ../../../pin -t obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
-mem_read_log_cmd = "../../../pin -t obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
-mem_write_log_cmd = "../../../pin -t obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
-mem_dump_log_cmd = "../../../pin -t obj-intel64/MemoryDump.so -o {} -length {} -dump_point {} -reg_num {} -- {} {}"
-mem_dump_2_log_cmd = "../../../pin -t obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -data_index {} -- {} {}"
-mem_dump_3_log_cmd = "../../../pin -t obj-intel64/MemoryDump_3.so -o {} -length {} -dump_point {} -dump_addr {} -- {} {}"
+inst_trace_cmd = "timeout 15s " + \
+                 pin_home + "pin -t " + \
+                 mypintool_dir + "obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
+mem_read_log_cmd = pin_home + "pin -t " + \
+                   mypintool_dir + "obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
+mem_write_log_cmd = pin_home + "pin -t " + \
+                    mypintool_dir + "obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
+mem_dump_log_cmd = pin_home + "pin -t " + \
+                   mypintool_dir + "obj-intel64/MemoryDump.so -o {} -length {} -dump_point {} -reg_num {} -- {} {}"
+mem_dump_2_log_cmd = pin_home + "pin -t " + \
+                     mypintool_dir + "obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -data_index {} -- {} {}"
+mem_dump_3_log_cmd = pin_home + "pin -t " + \
+                     mypintool_dir + "obj-intel64/MemoryDump_3.so -o {} -length {} -dump_point {} -dump_addr {} -- {} {}"
 
-nnfusion_conv_cmd = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/pin -t " \
-                    "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/obj-intel64/NNFusion_Conv.so" \
+nnfusion_conv_cmd = pin_home + "pin -t " + \
+                    mypintool_dir + "obj-intel64/NNFusion_Conv.so" \
                     " -o {} -addrs_file {} -- {} {}"
-nnfusion_gemm_cmd = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/pin -t " \
-                    "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/obj-intel64/NNFusion_Gemm.so" \
+nnfusion_gemm_cmd = pin_home + "pin -t " + \
+                    mypintool_dir + "obj-intel64/NNFusion_Gemm.so" \
                     " -o {} -addrs_file {} -- {} {}"
-nnfusion_pool_cmd = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/pin -t " \
-                    "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/obj-intel64/NNFusion_Pool.so" \
+nnfusion_pool_cmd = pin_home + "pin -t " + \
+                    mypintool_dir + "obj-intel64/NNFusion_Pool.so" \
                     " -o {} -addrs_file {} -- {} {}"
-nnfusion_trace_cmd = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/pin -t " \
-                    "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/obj-intel64/NNFusion_Trace.so" \
-                    " -o {} -addrs_file {} -- {} {}"
+nnfusion_trace_cmd = pin_home + "pin -t " + \
+                     mypintool_dir + "obj-intel64/NNFusion_Trace.so" \
+                     " -o {} -addrs_file {} -- {} {}"
 
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
 tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemoryWrite",
@@ -202,7 +212,8 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
 def dump_dwords(prog_path: str, input_data_path: str, inst_addr: str, dwords_len: int, log_path: str, reg_num=0):
     global project_dir
     project_dir_backup = project_dir
-    project_dir = mypintool_dir
+    project_dir = os.path.dirname(prog_path)  # project_dir = mypintool_dir
+
     status, output = cmd(mem_dump_log_cmd.format(log_path, dwords_len, inst_addr, reg_num, prog_path, input_data_path))
     # print(output)
     if status != 0:
@@ -214,7 +225,7 @@ def dump_dwords(prog_path: str, input_data_path: str, inst_addr: str, dwords_len
 def dump_dwords_2(prog_path: str, input_data_path: str, inst_addr: str, dwords_len: int, log_path: str, data_index=1):
     global project_dir
     project_dir_backup = project_dir
-    project_dir = mypintool_dir
+    project_dir = os.path.dirname(prog_path)  # project_dir = mypintool_dir
 
     status, output = cmd(mem_dump_2_log_cmd.format(log_path, dwords_len, inst_addr, data_index, prog_path, input_data_path))
     # print(output)

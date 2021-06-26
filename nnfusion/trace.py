@@ -1,5 +1,6 @@
 import os
 from scripts.pin_tools import nnfusion_conv, nnfusion_gemm, nnfusion_pool, nnfusion_trace
+from scripts import utils
 
 #
 # Find some special function addresses
@@ -183,7 +184,61 @@ def get_func_trace(op_list: list):
     nnfusion_trace(prog_path, data_path, fun_addr_list, trace_log_path)
 
 
+def extract_param():
+    func_meta_data = [('0068.sub_78E0.txt', (64, 3, 3, 3), '0x78e0', 'conv2d'),
+                      ('0055.sub_5A90.txt', (1, 64), '0x5a90', 'add'),
+                      ('0070.sub_7D50.txt', (128, 64, 3, 3), '0x7d50', 'conv2d'),
+                      ('0054.sub_5920.txt', (1, 128), '0x5920', 'add'),
+                      ('0046.sub_4F80.txt', (256, 128, 3, 3), '0x4f80', 'conv2d'),
+                      ('0052.sub_5640.txt', (1, 256), '0x5640', 'add'),
+                      ('0057.sub_5D70.txt', (256, 256, 3, 3), '0x5d70', 'conv2d'),
+                      # ('0052.sub_5640.txt', (1, 256), '0x5640', 'add'),
+                      ('0081.sub_94E0.txt', (512, 256, 3, 3), '0x94e0', 'conv2d'),
+                      ('0066.sub_74C0.txt', (1, 512), '0x74c0', 'add'),
+                      ('0051.sub_5470.txt', (512, 512, 3, 3), '0x5470', 'conv2d'),
+                      # ('0066.sub_74C0.txt', (1, 512), '0x74c0', 'add'),
+                      ('0044.sub_4D60.txt', (512, 512, 3, 3), '0x4d60', 'conv2d'),
+                      ('0056.sub_5C00.txt', (1, 512), '0x5c00', 'add'),
+                      # ('0044.sub_4D60.txt', (512, 512, 3, 3), '0x4d60', 'conv2d'),
+                      # ('0056.sub_5C00.txt', (1, 512), '0x5c00', 'add'),
+
+                      ('0050.sub_5420.txt', (25088, 4096), '0x5420', 'dense'),
+                      ('0049.sub_52F0.txt', (1, 4096), '0x52f0', 'add'),
+                      ('0045.sub_4F30.txt', (4096, 4096), '0x4f30', 'dense'),
+                      # ('0049.sub_52F0.txt', (1, 4096), '0x52f0', 'add'),
+                      ('0043.sub_4D10.txt', (4096, 1001), '0x4d10', 'dense'),
+                      ('0074.sub_85F0.txt', (1, 1001), '0x85f0', 'add'),
+
+                      ]
+    in_data = data_path
+    mem_dump_log_path = './mem_dump.log'
+    mem_dump_log_path = os.path.abspath(mem_dump_log_path)
+    utils.funcs_dir = funcs_dir
+    for fun_data in func_meta_data:
+        func_name = fun_data[0]
+        w_shape = fun_data[1]
+        dump_point = fun_data[2]
+        dump_point = runtime_addr(dump_point)
+        func_type = fun_data[3]
+
+        if not func_name.startswith('0050.'):  # debug
+            continue
+
+        if func_type == 'conv2d':
+            # w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
+            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
+                                      mem_dump_log_path, func_name, 1)
+        elif func_type == 'add':
+            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
+                                      mem_dump_log_path, func_name, 1)
+        elif func_type == 'dense':
+            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
+                                      mem_dump_log_path, func_name, reg_num=1)  # 0->rsi, 1->rdx, 2->rcx
+
+
 if __name__ == '__main__':
+    extract_param()
+    # ------------------
     #get_shape_info()
 
     operator_list = get_all_operator()
