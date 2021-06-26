@@ -52,9 +52,23 @@ mem_dump_log_cmd = "../../../pin -t obj-intel64/MemoryDump.so -o {} -length {} -
 mem_dump_2_log_cmd = "../../../pin -t obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -data_index {} -- {} {}"
 mem_dump_3_log_cmd = "../../../pin -t obj-intel64/MemoryDump_3.so -o {} -length {} -dump_point {} -dump_addr {} -- {} {}"
 
+nnfusion_conv_cmd = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/pin -t " \
+                    "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/obj-intel64/NNFusion_Conv.so" \
+                    " -o {} -addrs_file {} -- {} {}"
+nnfusion_gemm_cmd = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/pin -t " \
+                    "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/obj-intel64/NNFusion_Gemm.so" \
+                    " -o {} -addrs_file {} -- {} {}"
+nnfusion_pool_cmd = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/pin -t " \
+                    "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/obj-intel64/NNFusion_Pool.so" \
+                    " -o {} -addrs_file {} -- {} {}"
+nnfusion_trace_cmd = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/pin -t " \
+                    "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/obj-intel64/NNFusion_Trace.so" \
+                    " -o {} -addrs_file {} -- {} {}"
+
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
 tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemoryWrite",
-              "MemoryDump", "MemoryDump_2", "MemoryDump_3", "FusedRdi", "FunCallRdiRsi"]
+              "MemoryDump", "MemoryDump_2", "MemoryDump_3", "FusedRdi", "FunCallRdiRsi",
+              "NNFusion_Conv", "NNFusion_Gemm"]
 
 
 def compile_all_tools():
@@ -244,6 +258,44 @@ def convert_dwords2float(dwords_txt: str, float_len: int):
             float_array.append(dw2fl(hex_str))
         index += 1
     return float_array
+
+
+# ==================================================================
+def nnfusion_cmd(prog_path: str, input_data_path: str, addr_list: list, log_path: str, cmdline: str):
+    global project_dir
+    project_dir_backup = project_dir
+    project_dir = os.path.dirname(prog_path)
+    # ------- set project_dir before instrumentation
+
+    addrs_file_path = './addrs_tmp.log'
+    addrs_file_path = os.path.abspath(addrs_file_path)
+    with open(addrs_file_path, 'w') as f:
+        for addr in addr_list:
+            f.write(addr + '\n')
+        f.close()
+
+    status, output = cmd(cmdline.format(log_path, addrs_file_path, prog_path, input_data_path))
+
+    status, output = cmd("rm {}".format(addrs_file_path))
+
+    # ------- end reset project_dir
+    project_dir = project_dir_backup
+
+
+def nnfusion_conv(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
+    nnfusion_cmd(prog_path, input_data_path, addr_list, log_path, nnfusion_conv_cmd)
+
+
+def nnfusion_gemm(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
+    nnfusion_cmd(prog_path, input_data_path, addr_list, log_path, nnfusion_gemm_cmd)
+
+
+def nnfusion_pool(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
+    nnfusion_cmd(prog_path, input_data_path, addr_list, log_path, nnfusion_pool_cmd)
+
+
+def nnfusion_trace(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
+    nnfusion_cmd(prog_path, input_data_path, addr_list, log_path, nnfusion_trace_cmd)
 
 
 if __name__ == '__main__':
