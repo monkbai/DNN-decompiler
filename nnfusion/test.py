@@ -87,7 +87,7 @@ class SE_VGG(nn.Module):
         # define an empty container for Linear operations
         classifier = []
         classifier.append(nn.Linear(in_features=512*7*7, out_features=4096))
-        set_weights(classifier[-1], './00')
+        # set_weights(classifier[-1], './00')
         set_biases(classifier[-1], './0049.sub_52F0.params_0.json')
         classifier.append(nn.ReLU())
 

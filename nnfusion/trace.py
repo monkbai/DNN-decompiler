@@ -224,9 +224,11 @@ def extract_param():
 
         if func_name.startswith('0050.'):  # huge file, run with server
             continue
+        elif 'conv2d' not in func_type:
+            continue
 
         if func_type == 'conv2d':
-            # w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
+            w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
             utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
                                       mem_dump_log_path, func_name, 1)
         elif func_type == 'add':
@@ -239,6 +241,7 @@ def extract_param():
 
 if __name__ == '__main__':
     extract_param()
+    exit(0)
     # ------------------
     #get_shape_info()
 
