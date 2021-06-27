@@ -185,7 +185,8 @@ def get_func_trace(op_list: list):
 
 
 def extract_param():
-    func_meta_data = [('0068.sub_78E0.txt', (64, 3, 3, 3), '0x78e0', 'conv2d'),
+    func_meta_data = [
+                      ('0068.sub_78E0.txt', (64, 3, 3, 3), '0x78e0', 'conv2d'),
                       ('0055.sub_5A90.txt', (1, 64), '0x5a90', 'add'),
                       ('0070.sub_7D50.txt', (128, 64, 3, 3), '0x7d50', 'conv2d'),
                       ('0054.sub_5920.txt', (1, 128), '0x5920', 'add'),
@@ -221,7 +222,7 @@ def extract_param():
         dump_point = runtime_addr(dump_point)
         func_type = fun_data[3]
 
-        if not func_name.startswith('0050.'):  # debug
+        if func_name.startswith('0050.'):  # huge file, run with server
             continue
 
         if func_type == 'conv2d':
