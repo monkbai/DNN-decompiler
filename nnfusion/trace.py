@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append("../..")
 from scripts.pin_tools import nnfusion_conv, nnfusion_gemm, nnfusion_pool, nnfusion_trace
 from scripts import utils
 

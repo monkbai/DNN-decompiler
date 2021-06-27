@@ -37,9 +37,9 @@ def run(prog_path):
 
 project_dir = './'
 
-pin_home = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/'
+pin_home = '/export/d1/zliudc/TOOL/pin-3.14-98223-gb010a12c6-gcc-linux/'
 
-mypintool_dir = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/'
+mypintool_dir = '/export/d1/zliudc/TOOL/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/'
 
 fun_call_rdi_rsi_cmd = pin_home + "pin -t " + \
                        mypintool_dir + "obj-intel64/FunCallRdiRsi.so -o {} -addrs_file {} -- {} {}"
