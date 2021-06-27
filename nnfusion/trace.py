@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append("../..")
 from scripts.pin_tools import nnfusion_conv, nnfusion_gemm, nnfusion_pool, nnfusion_trace, convert_dwords2float
 from scripts import utils
 import numpy as np
