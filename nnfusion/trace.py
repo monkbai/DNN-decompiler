@@ -241,7 +241,7 @@ def extract_param():
 
 def read_param():
     mem_dump_log_path = './mem_dump.log'
-    constatn_folder = '/home/lifter/Documents/tvm_output/Constant/'
+    constatn_folder = "/export/d1/zliudc/TVM/nnfusion_vgg11/Constant/"
     func_meta_data = [
         ('Constant_17_0.bin', (64, 3, 3, 3)),
         ('Constant_16_0.bin', (1, 64), '0x5a90', 'add'),
