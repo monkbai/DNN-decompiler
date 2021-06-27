@@ -1,7 +1,8 @@
 import os
-from scripts.pin_tools import nnfusion_conv, nnfusion_gemm, nnfusion_pool, nnfusion_trace
+from scripts.pin_tools import nnfusion_conv, nnfusion_gemm, nnfusion_pool, nnfusion_trace, convert_dwords2float
 from scripts import utils
-
+import numpy as np
+import json
 #
 # Find some special function addresses
 # Automatically or manually
@@ -114,7 +115,6 @@ def identify_operator(func_name: str):
         print(callee_addr_list)
 
 
-
 def get_concurrency_func_ptr(op_file_path: str):
     func_ptr_list = []
     asm_path_list = []
@@ -203,7 +203,7 @@ def extract_param():
                       # ('0044.sub_4D60.txt', (512, 512, 3, 3), '0x4d60', 'conv2d'),
                       # ('0056.sub_5C00.txt', (1, 512), '0x5c00', 'add'),
 
-                      ('0050.sub_5420.txt', (25088, 4096), '0x5420', 'dense'),
+                      # too huge, run this on server ('0050.sub_5420.txt', (25088, 4096), '0x5420', 'dense'),
                       ('0049.sub_52F0.txt', (1, 4096), '0x52f0', 'add'),
                       ('0045.sub_4F30.txt', (4096, 4096), '0x4f30', 'dense'),
                       # ('0049.sub_52F0.txt', (1, 4096), '0x52f0', 'add'),
@@ -222,9 +222,7 @@ def extract_param():
         dump_point = runtime_addr(dump_point)
         func_type = fun_data[3]
 
-        if func_name.startswith('0050.'):  # huge file, run with server
-            continue
-        elif 'conv2d' not in func_type:
+        if not func_name.startswith('0068.'):  # huge file, run with server
             continue
 
         if func_type == 'conv2d':
@@ -239,7 +237,82 @@ def extract_param():
                                       mem_dump_log_path, func_name, reg_num=1)  # 0->rsi, 1->rdx, 2->rcx
 
 
+def read_param():
+    mem_dump_log_path = './mem_dump.log'
+    constatn_folder = '/home/lifter/Documents/tvm_output/Constant/'
+    func_meta_data = [
+        ('Constant_17_0.bin', (64, 3, 3, 3)),
+        ('Constant_16_0.bin', (1, 64), '0x5a90', 'add'),
+        ('Constant_19_0.bin', (128, 64, 3, 3), '0x7d50', 'conv2d'),
+        ('Constant_18_0.bin', (1, 128), '0x5920', 'add'),
+        ('Constant_21_0.bin', (256, 128, 3, 3), '0x4f80', 'conv2d'),
+        ('Constant_20_0.bin', (1, 256), '0x5640', 'add'),
+        ('Constant_23_0.bin', (256, 256, 3, 3), '0x5d70', 'conv2d'),
+        ('Constant_22_0.bin', (1, 256), '0x5640', 'add'),
+        ('Constant_25_0.bin', (512, 256, 3, 3), '0x94e0', 'conv2d'),
+        ('Constant_24_0.bin', (1, 512), '0x74c0', 'add'),
+        ('Constant_27_0.bin', (512, 512, 3, 3), '0x5470', 'conv2d'),
+        ('Constant_26_0.bin', (1, 512), '0x74c0', 'add'),
+        ('Constant_29_0.bin', (512, 512, 3, 3), '0x4d60', 'conv2d'),
+        ('Constant_28_0.bin', (1, 512), '0x5c00', 'add'),
+        ('Constant_31_0.bin', (512, 512, 3, 3), '0x4d60', 'conv2d'),
+        ('Constant_30_0.bin', (1, 512), '0x5c00', 'add'),
+
+        ('Constant_10_0.bin', (25088, 4096), '0x5420', 'dense'),
+        ('Constant_13_0.bin', (1, 4096), '0x52f0', 'add'),
+        ('Constant_11_0.bin', (4096, 4096), '0x4f30', 'dense'),
+        ('Constant_14_0.bin', (1, 4096), '0x52f0', 'add'),
+        ('Constant_12_0.bin', (4096, 1001), '0x4d10', 'dense'),
+        ('Constant_15_0.bin', (1, 1001), '0x85f0', 'add'),
+
+    ]
+    for func in func_meta_data:
+        print(func[0])
+        constant_path = os.path.join(constatn_folder, func[0])
+        w_shape = func[1]
+        float_len = 1
+        for w_l in w_shape:
+            float_len *= w_l
+        json_path = constant_path[:-4] + '.json'
+        convert_constant_to_txt(constant_path, mem_dump_log_path, float_len)
+        float_array = convert_txt_to_float(mem_dump_log_path, float_len)
+        w = np.asarray(float_array)
+        w = w.reshape(w_shape)
+        lists = w.tolist()
+        json_str = json.dumps(lists)
+        json_str = json_str.replace('],', '],\n')
+        with open(json_path, 'w') as wf:
+            wf.write(json_str)
+            wf.close()
+
+
+def convert_constant_to_txt(constant_path: str, txt_path: str, float_len: int):
+    constant_path = os.path.abspath(constant_path)
+    txt_path = os.path.abspath(txt_path)
+    with open(constant_path, 'rb') as f:
+        with open(txt_path, 'w') as w:
+
+            while float_len > 0:
+                float_bytes = f.read(4)
+                # print('0x'+float_bytes[::-1].hex()+'\n')
+                w.write('0x'+float_bytes[::-1].hex()+'\n')
+                float_len -= 1
+            w.close()
+        f.close()
+
+
+def convert_txt_to_float(txt_path: str, float_len: int):
+    txt_path = os.path.abspath(txt_path)
+    with open(txt_path, 'r') as f:
+        dwords_txt = f.read()
+        float_array = convert_dwords2float(dwords_txt, float_len)
+        return float_array
+
+
 if __name__ == '__main__':
+    read_param()
+    exit(0)
+    # ------------------
     extract_param()
     exit(0)
     # ------------------
