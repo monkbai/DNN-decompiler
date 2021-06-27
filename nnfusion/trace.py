@@ -187,7 +187,8 @@ def get_func_trace(op_list: list):
 
 
 def extract_param():
-    func_meta_data = [('0068.sub_78E0.txt', (64, 3, 3, 3), '0x78e0', 'conv2d'),
+    func_meta_data = [
+                      ('0068.sub_78E0.txt', (64, 3, 3, 3), '0x78e0', 'conv2d'),
                       ('0055.sub_5A90.txt', (1, 64), '0x5a90', 'add'),
                       ('0070.sub_7D50.txt', (128, 64, 3, 3), '0x7d50', 'conv2d'),
                       ('0054.sub_5920.txt', (1, 128), '0x5920', 'add'),
@@ -223,11 +224,13 @@ def extract_param():
         dump_point = runtime_addr(dump_point)
         func_type = fun_data[3]
 
-        if not func_name.startswith('0050.'):  # debug
+        if func_name.startswith('0050.'):  # huge file, run with server
+            continue
+        elif 'conv2d' not in func_type:
             continue
 
         if func_type == 'conv2d':
-            # w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
+            w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
             utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
                                       mem_dump_log_path, func_name, 1)
         elif func_type == 'add':
@@ -240,6 +243,7 @@ def extract_param():
 
 if __name__ == '__main__':
     extract_param()
+    exit(0)
     # ------------------
     #get_shape_info()
 

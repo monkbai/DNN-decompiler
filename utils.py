@@ -589,8 +589,8 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
     dwords_len = 1
     for w in w_shape:
         dwords_len *= w
-    #rm_log(log_path)
-    #dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
+    rm_log(log_path)
+    dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
 
     # then convert dwords to floats
     with open(log_path, 'r') as f:
