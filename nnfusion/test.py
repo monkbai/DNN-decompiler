@@ -117,11 +117,12 @@ class SE_VGG(nn.Module):
 
 if __name__ == "__main__":
     # x = torch.rand(size=(1, 3, 224, 224))
-    with open('cat.bin', 'br') as f:
+    with open('/home/lifter/Documents/tvm_output/scripts/cat.bin', 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)
-        np_arr = np_arr.reshape(3, 224, 224)
+        np_arr = np_arr.reshape(224, 224, 3)
+        np_arr = np.transpose(np_arr, (2, 0, 1))
         np_arr = np_arr.reshape((1, 3, 224, 224))
         x = torch.Tensor(np_arr)
         print(x.shape)
