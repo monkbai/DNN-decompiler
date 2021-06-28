@@ -225,19 +225,19 @@ def extract_param():
         dump_point = runtime_addr(dump_point)
         func_type = fun_data[3]
 
-        if not func_name.startswith('0068.'):  # huge file, run with server
+        if not func_name.startswith('0068.'):  # debug
             continue
 
         if func_type == 'conv2d':
-            w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
-            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
-                                      mem_dump_log_path, func_name, 1)
+            # w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
+            utils.extract_params_nnfusion(prog_path, in_data, w_shape, dump_point,
+                                          mem_dump_log_path, func_name, 1)
         elif func_type == 'add':
-            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
-                                      mem_dump_log_path, func_name, 1)
+            utils.extract_params_nnfusion(prog_path, in_data, w_shape, dump_point,
+                                          mem_dump_log_path, func_name, 1)
         elif func_type == 'dense':
-            utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
-                                      mem_dump_log_path, func_name, reg_num=1)  # 0->rsi, 1->rdx, 2->rcx
+            utils.extract_params_nnfusion(prog_path, in_data, w_shape, dump_point,
+                                          mem_dump_log_path, func_name, reg_num=1)  # 0->rsi, 1->rdx, 2->rcx
 
 
 def read_param():
@@ -313,8 +313,8 @@ def convert_txt_to_float(txt_path: str, float_len: int):
 
 
 if __name__ == '__main__':
-    read_param()
-    exit(0)
+    #read_param()
+    #exit(0)
     # ------------------
     extract_param()
     exit(0)

@@ -37,7 +37,7 @@ class SE_VGG(nn.Module):
 
         # block 1
         net.append(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1, stride=1))  # 0
-        set_weights(net[-1], './Constant_17_0.json')
+        set_weights(net[-1], './0068.sub_78E0.weights_0.json')
         set_biases(net[-1], './Constant_16_0.json')
         net.append(nn.ReLU())  # 1
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 2
@@ -84,11 +84,12 @@ class SE_VGG(nn.Module):
 
         # add net into class property
         self.extract_feature = nn.Sequential(*net)
+        self.net = net
 
         # define an empty container for Linear operations
         classifier = []
         classifier.append(nn.Linear(in_features=512*7*7, out_features=4096))
-        set_weights(classifier[-1], './Constant_10_0.json')
+        # set_weights(classifier[-1], './Constant_10_0.json')
         set_biases(classifier[-1], './Constant_13_0.json')
         classifier.append(nn.ReLU())
 
@@ -105,6 +106,9 @@ class SE_VGG(nn.Module):
         self.classifier = nn.Sequential(*classifier)
 
     def forward(self, x):
+        # for debug
+        out0 = self.net[0](x)
+        print(out0)
         feature = self.extract_feature(x)
         feature = feature.view(x.size(0), -1)
         classify_result = self.classifier(feature)
