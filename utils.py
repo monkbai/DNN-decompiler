@@ -639,6 +639,47 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
     rm_log(log_path)
 
 
+def extract_params_nnfusion(prog_path: str, in_data: str, w_shape: tuple, dump_point: str,
+                            log_path: str, func_name: str, reg_num=1, func_type=''):
+    prog_path = os.path.abspath(prog_path)
+    in_data = os.path.abspath(in_data)
+    log_path = os.path.abspath(log_path)
+    dwords_len = 1
+    for w in w_shape:
+        dwords_len *= w
+    rm_log(log_path)
+    dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
+
+    # then convert dwords to floats
+    with open(log_path, 'r') as f:
+        dw_txt = f.read()
+        f.close()
+        end_count = dw_txt.count('end')
+        dw_segs = dw_txt.split('end')[:end_count]
+        for i in range(end_count):
+            dw_txt = dw_segs[i].strip()
+            dw_txt = dw_txt[dw_txt.find('\n')+1:]
+            float_array = convert_dwords2float(dw_txt, dwords_len)
+
+            w = np.asarray(float_array)
+            w = w.reshape(w_shape)
+            lists = w.tolist()
+            json_str = json.dumps(lists)
+            # print(json_str)
+            json_str = json_str.replace('],', '],\n')
+            if reg_num == 1 and len(w_shape) == 4:
+                json_name = func_name[:func_name.rfind('.')] + '.weights_{}.json'.format(i)
+            elif reg_num == 1 and len(w_shape) == 2:
+                json_name = func_name[:func_name.rfind('.')] + '.params_{}.json'.format(i)
+            elif reg_num == 2:
+                json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
+
+            with open(json_name, 'w') as wf:
+                wf.write(json_str)
+                wf.close()
+    rm_log(log_path)
+
+
 if __name__ == '__main__':
     def tmp_handle_func_call(func_call_trace: str):
         id_list = []
