@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import sys
 sys.path.append("../..")
@@ -243,7 +244,7 @@ def read_param():
     mem_dump_log_path = './mem_dump.log'
     constatn_folder = "/export/d1/zliudc/TVM/nnfusion_vgg11/Constant/"
     func_meta_data = [
-        ('Constant_17_0.bin', (64, 3, 3, 3)),
+        ('Constant_17_0.bin', (64, 3, 3, 3), '0x', 'conv2d'),
         ('Constant_16_0.bin', (1, 64), '0x5a90', 'add'),
         ('Constant_19_0.bin', (128, 64, 3, 3), '0x7d50', 'conv2d'),
         ('Constant_18_0.bin', (1, 128), '0x5920', 'add'),
