@@ -2,3 +2,6 @@
 *.log
 __pycache__/
 *.json
+*.asm
+*.lst
+*.bin
