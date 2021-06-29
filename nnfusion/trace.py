@@ -206,7 +206,7 @@ def extract_param():
                       # ('0044.sub_4D60.txt', (512, 512, 3, 3), '0x4d60', 'conv2d'),
                       # ('0056.sub_5C00.txt', (1, 512), '0x5c00', 'add'),
 
-                      # too huge, run this on server ('0050.sub_5420.txt', (25088, 4096), '0x5420', 'dense'),
+                      ('0050.sub_5420.txt', (25088, 4096), '0x5420', 'dense'),
                       ('0049.sub_52F0.txt', (1, 4096), '0x52f0', 'add'),
                       ('0045.sub_4F30.txt', (4096, 4096), '0x4f30', 'dense'),
                       # ('0049.sub_52F0.txt', (1, 4096), '0x52f0', 'add'),
@@ -225,7 +225,7 @@ def extract_param():
         dump_point = runtime_addr(dump_point)
         func_type = fun_data[3]
 
-        if not func_name.startswith('0068.'):  # debug
+        if not func_name.startswith('0050.'):  # debug
             continue
 
         if func_type == 'conv2d':
