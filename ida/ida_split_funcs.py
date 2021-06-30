@@ -1,4 +1,31 @@
+#!/usr/bin/python3
+import subprocess
 import os
+import sys
+
+
+
+class cd:
+    def __init__(self, newPath):
+        self.newPath = os.path.expanduser(newPath)
+
+    def __enter__(self):
+        self.savedPath = os.getcwd()
+        os.chdir(self.newPath)
+
+    def __exit__(self, etype, value, traceback):
+        os.chdir(self.savedPath)
+
+
+def cmd(commandline):
+    with cd(project_dir):
+        print(commandline)
+        status, output = subprocess.getstatusoutput(commandline)
+        # print(output)
+        return status, output
+
+
+project_dir = rootdir = r"./TVM_binaries/"
 
 
 def clean_asm_code(asm_txt: str):
@@ -7,7 +34,7 @@ def clean_asm_code(asm_txt: str):
     for line in lines:
         if not line.startswith('.text:'):
             continue
-        elif 'S U B R O U T I N E' in line or '  proc ' in line:
+        elif 'S U B R O U T I N E' in line or ' proc ' in line:
             pass
         elif ' ' not in line:
             continue
@@ -83,9 +110,23 @@ def handle_lst_file(lst_path: str, asm_path: str, output_dir: str):
     split_funcs(asm_path, output_dir)
 
 
+def main():
+    for root, dirs, files in os.walk(rootdir):
+        root = os.path.abspath(root)
+        for file in files:
+            if file.endswith('.lst'):
+                file_path = os.path.join(root, file)
+                asm_path = file_path[:-4] + '.asm'
+                output_dir = os.path.join(root, file[:-4]+'_funcs')
+                status, output = cmd('rm -r {}'.format(output_dir))
+                status, output = cmd('mkdir {}'.format(output_dir))
+                handle_lst_file(file_path, asm_path, output_dir)
+
+
 if __name__ == '__main__':
-    lst_file = '/home/lifter/Documents/tvm_output/scripts/nnfusion/vgg11_nnfusion_strip.lst'
-    asm_file = '/home/lifter/Documents/tvm_output/scripts/nnfusion/vgg11_nnfusion_strip.asm'
-    output_dir = '/home/lifter/Documents/tvm_output/vgg11_nnfusion_funcs/'
-    handle_lst_file(lst_file, asm_file, output_dir)
+    # lst_file = './tmp.lst'
+    # asm_file = './tmp.asm'
+    # output_dir = './tmp'
+    # handle_lst_file(lst_file, asm_file, output_dir)
+    main()
 
