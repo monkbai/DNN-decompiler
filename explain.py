@@ -521,6 +521,17 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
     offset_list = get_weights_list(value, compiler=compiler, size=size)
     if offset_list[1] < offset_list[0]:
         offset_list.reverse()
+
+    for i in range(1, len(offset_list)):
+        offset_list[i] = (offset_list[i]-offset_list[0])/4
+    offset_list[0] = 0
+    for i in range(len(offset_list)):
+        print(offset_list[i], end=', ')
+        if (i + 1) % 3==0:
+            print('')
+            if i > 3 and i < len(offset_list)-1 and offset_list[i+1] - offset_list[i-2] != 32:
+                print('not')
+
     a = 0
     b = 0
     ab = (offset_list[1] - offset_list[0]) / 4

@@ -25,7 +25,7 @@ def cmd(commandline):
         return status, output
 
 
-project_dir = rootdir = r"./TVM_binaries/"
+project_dir = rootdir = r"./test_data/"
 
 
 def clean_asm_code(asm_txt: str):

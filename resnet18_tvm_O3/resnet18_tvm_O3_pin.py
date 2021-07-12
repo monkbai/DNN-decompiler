@@ -368,9 +368,9 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
 """
 
 if __name__ == '__main__':
-    utils.funcs_dir = '/home/lifter/Documents/tvm_output/resnet18_tvm_O3_funcs/'
+    utils.funcs_dir = '/home/lifter/Documents/tvm_output/resnet18_tvm_O3/resnet18_tvm_O3_funcs/'
 
-    prog_path = '/home/lifter/Documents/tvm_output/resnet18_tvm_O3'
+    prog_path = '/home/lifter/Documents/tvm_output/resnet18_tvm_O3/resnet18_tvm_O3'
     in_data = '/home/lifter/Documents/tvm_output/cat.bin'
     log_path = './resnet18_tvm_O3_func_call_trace.log'
     label_file = './step1.txt'
@@ -401,12 +401,12 @@ if __name__ == '__main__':
         print(result)
     exit(0)
     """
-    """
+
     # conv2d layers
-    # func_type = 'conv2d'
+    func_type = 'conv2d'
     # func_name = '0008.txt.fused_nn_contrib_conv2d_NCHWc_add_2_2'  # ([512.0, 512.0, 3, 3], [16.0, 1.0, 3, 3, 512.0, 32.0])
     # func_name = '0011.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_7_2'  # ([512.0, 512.0, 3, 3], [16.0, 1.0, 3, 3, 512.0, 32.0])
-    # func_name = '0014.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_4_2'  # ([256.0, 128.0, 3, 3], [8.0, 16.0, 3, 3, 8.0, 32.0])
+    func_name = '0014.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_4_2'  # ([256.0, 128.0, 3, 3], [8.0, 16.0, 3, 3, 8.0, 32.0])
     # func_name = '0017.txt.fused_nn_contrib_conv2d_NCHWc_add_add_nn_relu_4_2'  # ([128.0, 128.0, 3, 3], [4.0, 1.0, 3, 3, 128.0, 32.0])
     # func_name = '0020.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_2_2'  # <-- this one is harder
     # ([128.0, 64.0, 3.0, 3.0], [2.0, 2.0, 3.0, 3.0, 32.0, 64.0])
@@ -432,13 +432,13 @@ if __name__ == '__main__':
     # max-poll layers
     # func_type = 'max'
     # func_name = '0047.txt.fused_nn_max_pool2d_1'  # max 3, 2, kernel, stride
-    func_type = 'avg'
-    func_name = '0077.txt.fused_nn_global_avg_pool2d_1'  # 7, 1
+    # func_type = 'avg'
+    # func_name = '0077.txt.fused_nn_global_avg_pool2d_1'  # 7, 1
     #func_name = '0078.txt.fused_nn_global_avg_pool2d_2'  # which one?
 
-    utils.generate_inst_trace(func_name, tmp_log_path, prog_path, in_data)
+    #utils.generate_inst_trace(func_name, tmp_log_path, prog_path, in_data)
     
-    utils.generate_symbolic_expression(func_name, tmp_log_path, exp_log_path, max_inst=5000000)
+    #utils.generate_symbolic_expression(func_name, tmp_log_path, exp_log_path, max_inst=5000000)
 
     # --- try to interpret the filter shape from symbolic expression log
     shape = utils.recover_shape_tvm(func_name, exp_log_path,
@@ -446,7 +446,7 @@ if __name__ == '__main__':
                                     prog_path, in_data, func_type=func_type, optimized=True)
     print(shape)
     exit(0)
-    """
+
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================
