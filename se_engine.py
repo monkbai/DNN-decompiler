@@ -221,8 +221,12 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             handle_vfmadd_ss(code_list, mem_addr)
         elif mnemonic.startswith('vfmadd231ps'):  # TODO: vfmadd231ps
             handle_vfmadd_ss(code_list, mem_addr)
+        elif mnemonic.startswith('vfmadd132ss'):
+            handle_vfmadd_ss(code_list, mem_addr)
         elif mnemonic.startswith('vmulss'):
             handle_vmulss(code_list, mem_addr)
+        elif mnemonic.startswith('vmulps'):
+            handle_vmulps(code_list, mem_addr)
         elif mnemonic.startswith('vaddss'):
             handle_vaddss(code_list, mem_addr)
         elif mnemonic.startswith('vaddps'):
@@ -546,6 +550,11 @@ def xmm_mul_xmm(xmm1: str, xmm2: str):
     xmm_regs[xmm1] = '({} * {})'.format(xmm_regs[xmm1], xmm_regs[xmm2])
 
 
+def xmm_vmul_xmm(xmm1: str, xmm2: str, xmm3: str):
+    global xmm_regs, mem_state
+    xmm_regs[xmm1] = '({} * {})'.format(xmm_regs[xmm2], xmm_regs[xmm3])
+
+
 def xmm_div_xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
     xmm_regs[xmm1] = '({} / {})'.format(xmm_regs[xmm1], xmm_regs[xmm2])
@@ -738,6 +747,16 @@ def vfmadd231_mem(xmm_1: str, xmm_2: str, mem_addr: str, size: int):
         xmm_regs[xmm_1] = '({} * {} + {})'.format(xmm_regs[xmm_2], mem_key, xmm_regs[xmm_1])
 
 
+def vfmadd132_mem(xmm_1: str, xmm_2: str, mem_addr: str, size: int):
+    global xmm_regs, mem_state
+    mem_key = mem_addr + ',' + str(size)
+    if mem_key in mem_state.keys():
+        xmm_regs[xmm_1] = '({} * {} + {})'.format(xmm_regs[xmm_1], mem_state[mem_key], xmm_regs[xmm_2])
+    else:
+        # TODO sub-memory check?
+        xmm_regs[xmm_1] = '({} * {} + {})'.format(xmm_regs[xmm_1], mem_key, xmm_regs[xmm_2])
+
+
 def vfmadd231_reg(xmm_1: str, xmm_2: str, xmm_3: str):
     global xmm_regs, mem_state
     assert xmm_1 in xmm_regs.keys() and xmm_2 in xmm_regs.keys() and xmm_3 in xmm_regs.keys()
@@ -849,6 +868,14 @@ def handle_vfmadd_ss(code_list, mem_addr):
         else:
             print('not implemented: vfmadd231ss')
             exit(-1)
+    elif code_list[0] == 'vfmadd132ss':
+        if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
+            if 'dword' in op3:
+                size = 4
+            vfmadd132_mem(op1, op2, mem_addr, size)
+        else:
+            print('not implemented: vfmadd132ss')
+            exit(-1)
     elif code_list[0] == 'vfmadd213ps':
         if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
             xmm_mul_xmm(op1, op2)
@@ -890,8 +917,22 @@ def handle_vmulss(code_list, mem_addr):
         if 'dword' in op3:
             size = 4
         xmm_vmul_mem(op1, op2, mem_addr, size)
+    elif op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and op3 in xmm_regs.keys():
+        xmm_vmul_xmm(op1, op2, op3)
     else:
         print('not implemented: vmulss')
+        exit(-1)
+
+
+def handle_vmulps(code_list, mem_addr):
+    assert len(code_list) == 4
+    op1 = code_list[1]
+    op2 = code_list[2]
+    op3 = code_list[3]
+    if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and op3 in xmm_regs.keys():
+        xmm_vmul_xmm(op1, op2, op3)
+    else:
+        print('not implemented: vmulps')
         exit(-1)
 
 

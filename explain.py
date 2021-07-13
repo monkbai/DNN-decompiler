@@ -802,8 +802,7 @@ def explain_tvm_avgpool_result(exp_log_path: str, mem_write_regions: list):
 def explain_glow_dense_result(exp_log_path: str, mem_write_regions: list):
     name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=32)
     if len(name) == 0:
-        print('failed to choose one ')
-        exit(-1)
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4)
 
     input_size = exp.count('*')
     output_size = 0
@@ -851,6 +850,29 @@ def explain_glow_maxpool_result(exp_log_path: str, mem_read_regions: list, mem_w
         size_diff = (in_mem[1]-in_mem[0]) / (out_mem[1]-out_mem[0])
         stride = math.sqrt(size_diff)
         return kernel_size, stride
+
+
+def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_read_regions: list, vector_size=0):
+    name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4)
+    block_size = 4
+    if len(name) == 0:
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=32)
+        block_size = 32
+    addr_list = []
+    it = re.finditer(r'(0x[0-9a-f]+),'+str(block_size), exp)
+    input_mem = biggest_region(mem_read_regions)
+    for match in it:
+        addr = match.group(1)
+        addr = int(addr, 16)
+        if input_mem[0] <= addr <= input_mem[1]:
+            addr_list.append(addr)
+    min_addr = min(addr_list)
+    offset_list = []
+    for addr in addr_list:
+        addr = (addr - min_addr) / 4
+        offset_list.append(addr)
+    # TODO: is it possible that stride != kernel ?
+    return len(offset_list), 1
 
 
 if __name__ == '__main__':

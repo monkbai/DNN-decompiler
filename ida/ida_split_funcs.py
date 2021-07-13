@@ -25,7 +25,7 @@ def cmd(commandline):
         return status, output
 
 
-project_dir = rootdir = r"./test_data/"
+project_dir = rootdir = r"./embedding/"
 
 
 def clean_asm_code(asm_txt: str):

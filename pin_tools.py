@@ -99,6 +99,11 @@ def compile_all_tools():
 # For GLOW
 def fun_call_rdi_rsi(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
     global project_dir
+
+    prog_path = os.path.abspath(prog_path)
+    input_data_path = os.path.abspath(input_data_path)
+    log_path = os.path.abspath(log_path)
+
     project_dir_backup = project_dir
     project_dir = mypintool_dir
     # ------- set project_dir before instrumentation
@@ -166,6 +171,11 @@ def func_call_trace(prog_path: str, input_data_path: str, addr_list: list, log_p
 
 def mem_read_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str):
     global project_dir
+
+    log_path = os.path.abspath(log_path)
+    prog_path = os.path.abspath(prog_path)
+    data_path = os.path.abspath(data_path)
+
     project_dir_backup = project_dir
     project_dir = mypintool_dir
 

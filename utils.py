@@ -4,14 +4,15 @@ import random
 import sys
 import json
 import numpy as np
-from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log, dump_dwords, dump_dwords_2
+from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
+from scripts.pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
 from scripts.pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
 from scripts.se_engine import lightweight_SymEx
 from scripts.mem_slices import memory_slices
 from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
 from scripts.explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
 from scripts.explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
-
+from scripts.explain import explain_glow_avgpool_result
 
 def dict_to_json(dict_obj: dict, output_path: str):
     j = json.dumps(dict_obj)
@@ -29,6 +30,7 @@ def json_to_dict(json_path: str):
 addr2label = dict()
 addr2funcs = dict()
 addr2param = dict()
+func2param = dict()
 
 funcs_dir = './vgg16_glow_funcs/'
 # ==============================================================
@@ -47,7 +49,7 @@ def get_addr_list(label_path: str, fused=False):
             name, label = line.split(':')
             if len(label.strip()) > 0:
                 start_addr, end_addr = get_func_range(os.path.join(funcs_dir, name.strip()))
-                addr = start_addr
+                addr = start_addr.lower()
 
                 addr2label[addr] = label.strip()
                 addr2funcs[addr] = name.strip()
@@ -63,7 +65,8 @@ def get_addr_list(label_path: str, fused=False):
 def get_funcs_trace(prog_path: str, in_data: str, log_path: str, label_file: str, compiler='glow', only_fused=False):
 
     prog_path = os.path.abspath(prog_path)
-    in_data = os.path.abspath(in_data)
+    if len(in_data) > 0:
+        in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)
     label_file = os.path.abspath(label_file)
 
@@ -178,10 +181,13 @@ def print_input_id(trace_log_path: str):
         print(input_id_list[param[0]])
 
 
-def print_layer_label(trace_log_path: str):
-    global addr2label, addr2funcs, addr2param
+def print_layer_label(trace_log_path: str, config_path=''):
+    global addr2label, addr2funcs, addr2param, func2param
     addr2label = json_to_dict('./addr2label.json')
     addr2funcs = json_to_dict('./addr2funcs.json')
+    if len(config_path) > 0:
+        config_path = os.path.abspath(config_path)
+        func2param = json_to_dict(config_path)  # type: dict
 
     trace_log_path = os.path.abspath(trace_log_path)
     with open(trace_log_path, 'r') as f:
@@ -191,6 +197,27 @@ def print_layer_label(trace_log_path: str):
             if not line.startswith('0x'):
                 continue
             addr = hex(int(line.split(':')[0].strip(), 16))
+            addr_1, addr_2, addr_3 = line.split(':')[1].split(',')  # type: str
+            addr_1 = addr_1.replace('rdi ', '').strip()
+            addr_2 = addr_2.replace('rsi ', '').strip()
+            addr_3 = addr_3.replace('rdx ', '').strip()
+            for key, param_list in func2param.items():
+                if key in addr2label[addr]:
+                    print('{}: {:<16}: {} {}, {} {}, {} {}'.format(addr, addr2label[addr],
+                                                            param_list[0], addr_1,
+                                                            param_list[1], addr_2,
+                                                            param_list[2], addr_3))
+                    if 'in/out' in param_list[0]:
+                        addr2param[addr] = (addr_1, addr_1)
+                    elif 'in' in param_list[0] and 'out' in param_list[1]:
+                        addr2param[addr] = (addr_1, addr_2)
+                    elif 'out' in param_list[0] and 'in' in param_list[1]:
+                        addr2param[addr] = (addr_2, addr_1)
+                    break
+            if key not in addr2label[addr]:
+                print('{}: {:<16}: param1 {}, param2 {}, param3 {}'.format(addr, addr2label[addr], addr_1, addr_2, addr_3))
+                addr2param[addr] = (addr_1, addr_2)  # TODO: not accurate
+            """
             if 'reshape' != addr2label[addr]:
                 if 'max-pool' in addr2label[addr] or 'avg-pool' in addr2label[addr]:
                     in_addr, out_addr = line.split(':')[1].split(',')
@@ -215,6 +242,7 @@ def print_layer_label(trace_log_path: str):
                     print('{}: {:<16}:{}'.format(addr, addr2label[addr], line.split(':')[1]))
                     if addr not in addr2param.keys():
                         addr2param[addr] = (in_addr, out_addr)
+            """
     dict_to_json(addr2param, './addr2param.json')
 
 
@@ -239,7 +267,7 @@ def get_func_range(func_asm_path: str):
                 continue
             end_addr = line.split(':')[0]
             break
-    return start_addr, end_addr
+    return start_addr.lower(), end_addr.lower()
 
 
 def generate_inst_trace(func_name: str, log_path: str, prog_path, data_path: str):
@@ -288,11 +316,17 @@ def recover_shape(func_name: str, mem_exp_log: str,
     in_addr = int(in_addr, 16)
     out_addr = int(out_addr, 16)
 
+    mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
+    mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
+    read_mem_regions = memory_slices(mem_read_log_path)
+    write_mem_regions = memory_slices(mem_write_log_path)
     if func_type == 'conv2d':
+        '''
         mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
         mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
         read_mem_regions = memory_slices(mem_read_log_path)
         write_mem_regions = memory_slices(mem_write_log_path)
+        '''
         # try with different stride
         filter_shape = (0, 0, 0, 0)
         input_shape = (0, 0, 0, 0)
@@ -316,27 +350,42 @@ def recover_shape(func_name: str, mem_exp_log: str,
                         print('stride: 2')
                         return filter_shape  # no need to guess padding/stride
         return filter_shape
-    elif func_type == 'dense':
+    elif func_type == 'matmul':  # dense in tvm
+        '''
         mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
         write_mem_regions = memory_slices(mem_write_log_path)
+        '''
         input_size, output_size = explain_glow_dense_result(mem_exp_log, write_mem_regions)
         return output_size, input_size
     elif func_type == 'add':
+        '''
         mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
         mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
         read_mem_regions = memory_slices(mem_read_log_path)
         write_mem_regions = memory_slices(mem_write_log_path)
+        '''
         if read_mem_regions[0][1] - read_mem_regions[0][0] == read_mem_regions[1][1] - read_mem_regions[1][0]:
             # the case of add layer after dense/fully-connected layer
             return (read_mem_regions[0][1] - read_mem_regions[0][0]) / 4
         bias_length = explain_tvm_add_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return bias_length
-    elif func_type.startswith('max'):
+    elif func_type.startswith('max'):  # max_pool
+        '''
         mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
         mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
         read_mem_regions = memory_slices(mem_read_log_path)
         write_mem_regions = memory_slices(mem_write_log_path)
+        '''
         kernel_size, stride = explain_glow_maxpool_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        return kernel_size, stride
+    elif func_type.startswith('avg'):  # avg_pool
+        '''
+        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
+        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
+        read_mem_regions = memory_slices(mem_read_log_path)
+        write_mem_regions = memory_slices(mem_write_log_path)
+        '''
+        kernel_size, stride = explain_glow_avgpool_result(mem_exp_log, write_mem_regions, read_mem_regions)
         return kernel_size, stride
 
 
@@ -673,6 +722,42 @@ def extract_params_nnfusion(prog_path: str, in_data: str, w_shape: tuple, dump_p
                 json_name = func_name[:func_name.rfind('.')] + '.params_{}.json'.format(i)
             elif reg_num == 2:
                 json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
+
+            with open(json_name, 'w') as wf:
+                wf.write(json_str)
+                wf.close()
+    rm_log(log_path)
+
+
+def extract_params_general(prog_path: str, in_data: str, w_shape: tuple, dump_point: str,
+                           log_path: str, func_name: str, dump_addr: str):
+    prog_path = os.path.abspath(prog_path)
+    in_data = os.path.abspath(in_data)
+    log_path = os.path.abspath(log_path)
+    dwords_len = 1
+    for w in w_shape:
+        dwords_len *= w
+    rm_log(log_path)
+    dump_dwords_3(prog_path, in_data, dump_point, dwords_len, log_path, dump_addr=dump_addr)
+
+    # then convert dwords to floats
+    with open(log_path, 'r') as f:
+        dw_txt = f.read()
+        f.close()
+        end_count = dw_txt.count('end')
+        dw_segs = dw_txt.split('end')[:end_count]
+        for i in range(end_count):
+            dw_txt = dw_segs[i].strip()
+            dw_txt = dw_txt[dw_txt.find('\n')+1:]
+            float_array = convert_dwords2float(dw_txt, dwords_len)
+
+            w = np.asarray(float_array)
+            w = w.reshape(w_shape)
+            lists = w.tolist()
+            json_str = json.dumps(lists)
+            # print(json_str)
+            json_str = json_str.replace('],', '],\n')
+            json_name = func_name[:func_name.rfind('.')] + '.params_{}.json'.format(i)
 
             with open(json_name, 'w') as wf:
                 wf.write(json_str)
