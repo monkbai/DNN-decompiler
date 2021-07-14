@@ -690,7 +690,7 @@ def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
     if len(name) == 0:
         exit(-1)
 
-    input_size = exp.count('*') * 4
+    input_size = exp.count('*')
     output_size = 0
     big_mem = (0, 0)
     for mem_blk in mem_write_regions:
@@ -781,19 +781,46 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
 # ==============================================================
 # Heuristics used to recover shape for TVM avg_pool2d layer
 # ==============================================================
-def explain_tvm_avgpool_result(exp_log_path: str, mem_write_regions: list):
-    name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4)
+def explain_tvm_avgpool_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+    item_size = 4
+    name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=item_size)
+    if len(name) == 0:
+        item_size = 16
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=item_size)
+    if len(name) == 0:
+        item_size = 32
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=item_size)
+
+    read_mem = biggest_region(mem_read_regions)
     addr_list = []
-    it = re.finditer(r'(0x[0-9a-f]+),4', exp)
+    it = re.finditer(r'(0x[0-9a-f]+),'+str(item_size), exp)
     for match in it:
         addr = match.group(1)
-        addr_list.append(int(addr, 16))
+        addr = int(addr, 16)
+        if read_mem[0] <= addr <= read_mem[1]:
+            addr_list.append(addr)
     min_addr = min(addr_list)
     offset_list = []
     for addr in addr_list:
         addr = (addr - min_addr) / 4
         offset_list.append(addr)
-    return math.sqrt(len(offset_list)), 1
+
+    stride_size = offset_list[1] - offset_list[0]
+    kernel_size = (len(offset_list), 1)
+    for h in range(1, len(offset_list)):
+        if offset_list[h]-offset_list[h-1] != stride_size:
+            kernel_size = (h, len(offset_list)/h)  # TODO: check resnet
+            break
+    return kernel_size, 1
+
+
+# ==============================================================
+# Heuristics used to recover embedding (TVM take layer)
+# ==============================================================
+def explain_tvm_embedding_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+    one_vec = biggest_region(mem_read_regions)
+    vec_size = (one_vec[1] - one_vec[0]) / 4
+    return vec_size
 
 
 # ==============================================================

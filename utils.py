@@ -12,7 +12,8 @@ from scripts.mem_slices import memory_slices
 from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
 from scripts.explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
 from scripts.explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
-from scripts.explain import explain_glow_avgpool_result
+from scripts.explain import explain_glow_avgpool_result, explain_tvm_embedding_result
+
 
 def dict_to_json(dict_obj: dict, output_path: str):
     j = json.dumps(dict_obj)
@@ -21,6 +22,8 @@ def dict_to_json(dict_obj: dict, output_path: str):
 
 
 def json_to_dict(json_path: str):
+    if not os.path.exists(json_path):
+        return dict()
     with open(json_path, 'r') as f:
         j_txt = f.read()
         dict_obj = json.loads(s=j_txt)
@@ -53,9 +56,9 @@ def get_addr_list(label_path: str, fused=False):
 
                 addr2label[addr] = label.strip()
                 addr2funcs[addr] = name.strip()
-                if fused and 'fused' not in label:
+                if fused and ('fused' not in label and 'entry' not in label):
                     continue
-                elif not fused and 'fused' in label:
+                elif not fused and ('fused' in label or 'entry' in label):
                     continue
 
                 addr_list.append(addr)
@@ -94,6 +97,7 @@ def print_layer_label_tvm(trace_log_path: str, only_fused=False):
     addr2funcs = json_to_dict('./addr2funcs.json')  # type: dict
 
     trace_log_path = os.path.abspath(trace_log_path)
+    param_list = []
     if not only_fused:
         with open(trace_log_path, 'r') as f:
             trace_txt = f.read()
@@ -102,8 +106,9 @@ def print_layer_label_tvm(trace_log_path: str, only_fused=False):
                 if not line.startswith('0x'):
                     continue
                 addr = hex(int(line.split(':')[0].strip(), 16))
-                if 'reshape' != addr2label[addr]:
-                    print('{}: {}'.format(addr, addr2label[addr]))
+                print('{}: {}'.format(addr, addr2label[addr]))
+                #if 'reshape' != addr2label[addr]:
+                #    print('{}: {}'.format(addr, addr2label[addr]))
     else:
         with open(trace_log_path, 'r') as f:
             trace_txt = f.read()
@@ -118,7 +123,13 @@ def print_layer_label_tvm(trace_log_path: str, only_fused=False):
                 label = addr2label[addr_list[idx]]
 
                 print('{}: {}: {}'.format(addr, label, line.split(':')[1]))
-
+                params = line.split(':')[1].strip()
+                params = params.split(',')[:-1]
+                for i in range(len(params)):
+                    params[i] = int(params[i].strip(), 16)
+                param_list += params
+    param_list.sort()
+    return param_list
 
 def print_input_id(trace_log_path: str):
     global addr2label, addr2funcs, addr2param
@@ -185,6 +196,7 @@ def print_layer_label(trace_log_path: str, config_path=''):
     global addr2label, addr2funcs, addr2param, func2param
     addr2label = json_to_dict('./addr2label.json')
     addr2funcs = json_to_dict('./addr2funcs.json')
+    addr2param = json_to_dict('./addr2param.json')
     if len(config_path) > 0:
         config_path = os.path.abspath(config_path)
         func2param = json_to_dict(config_path)  # type: dict
@@ -196,27 +208,40 @@ def print_layer_label(trace_log_path: str, config_path=''):
         for line in lines:
             if not line.startswith('0x'):
                 continue
+            line = line.strip(',')
             addr = hex(int(line.split(':')[0].strip(), 16))
-            addr_1, addr_2, addr_3 = line.split(':')[1].split(',')  # type: str
-            addr_1 = addr_1.replace('rdi ', '').strip()
-            addr_2 = addr_2.replace('rsi ', '').strip()
-            addr_3 = addr_3.replace('rdx ', '').strip()
+            addr_list = line.split(':')[1].split(',')  # type: list
+            for i in range(len(addr_list)):
+                if 'rdi' in addr_list[i]:
+                    addr_list[i] = addr_list[i].replace('rdi ', '').strip()
+                elif 'rsi' in addr_list[i]:
+                    addr_list[i] = addr_list[i].replace('rsi ', '').strip()
+                elif 'rdx' in addr_list[i]:
+                    addr_list[i] = addr_list[i].replace('rdx ', '').strip()
             for key, param_list in func2param.items():
                 if key in addr2label[addr]:
                     print('{}: {:<16}: {} {}, {} {}, {} {}'.format(addr, addr2label[addr],
-                                                            param_list[0], addr_1,
-                                                            param_list[1], addr_2,
-                                                            param_list[2], addr_3))
+                                                            param_list[0], addr_list[0],
+                                                            param_list[1], addr_list[1],
+                                                            param_list[2], addr_list[2]))
                     if 'in/out' in param_list[0]:
-                        addr2param[addr] = (addr_1, addr_1)
+                        addr2param[addr] = (addr_list[0], addr_list[0])
                     elif 'in' in param_list[0] and 'out' in param_list[1]:
-                        addr2param[addr] = (addr_1, addr_2)
+                        addr2param[addr] = (addr_list[0], addr_list[1])
                     elif 'out' in param_list[0] and 'in' in param_list[1]:
-                        addr2param[addr] = (addr_2, addr_1)
+                        addr2param[addr] = (addr_list[1], addr_list[0])
                     break
             if key not in addr2label[addr]:
-                print('{}: {:<16}: param1 {}, param2 {}, param3 {}'.format(addr, addr2label[addr], addr_1, addr_2, addr_3))
-                addr2param[addr] = (addr_1, addr_2)  # TODO: not accurate
+                #print('{}: {:<16}: param1 {}, param2 {}, param3 {}'.format(addr, addr2label[addr],
+                #                                                           addr_list[0], addr_list[1], addr_list[2]))
+                print('{}: {:<16}:'.format(addr, addr2label[addr]), end=' ')
+                for i in range(len(addr_list)):
+                    if i == len(addr_list)-1:
+                        end_str = '\n'
+                    else:
+                        end_str = ', '
+                    print('param{} {}'.format(i + 1, addr_list[i]), end=end_str)
+                addr2param[addr] = (addr_list[0], addr_list[1])  # TODO: not accurate
             """
             if 'reshape' != addr2label[addr]:
                 if 'max-pool' in addr2label[addr] or 'avg-pool' in addr2label[addr]:
@@ -312,9 +337,9 @@ def recover_shape(func_name: str, mem_exp_log: str,
     func_asm_path = os.path.abspath(func_asm_path)
     start_addr, end_addr = get_func_range(func_asm_path)
     in_addr = addr2param[start_addr][0]
-    out_addr= addr2param[start_addr][1]
+    #out_addr= addr2param[start_addr][1]
     in_addr = int(in_addr, 16)
-    out_addr = int(out_addr, 16)
+    #out_addr = int(out_addr, 16)
 
     mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
     mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
@@ -401,11 +426,11 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
     func_asm_path = os.path.abspath(func_asm_path)
     start_addr, end_addr = get_func_range(func_asm_path)
 
+    mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
+    mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
+    read_mem_regions = memory_slices(mem_read_log_path)
+    write_mem_regions = memory_slices(mem_write_log_path)
     if 'conv2d' in func_type:
-        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        read_mem_regions = memory_slices(mem_read_log_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
         for stride in range(1, 4):
             print('try with stride: {}'.format(stride))
             tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_layout_shape = \
@@ -419,16 +444,10 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
                 layout_shape = tmp_layout_shape
                 break
         return filter_shape, layout_shape
-    elif 'dense' in func_type:
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
+    elif 'dense' in func_type or 'matmul' in func_type:
         input_size, output_size = explain_tvm_dense_result(mem_exp_log, write_mem_regions)
         return output_size, input_size
     elif 'add' in func_type:
-        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        read_mem_regions = memory_slices(mem_read_log_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
         if len(read_mem_regions) > 1 and \
                 read_mem_regions[0][1] - read_mem_regions[0][0] == read_mem_regions[1][1] - read_mem_regions[1][0]:
             # the case of add layer after dense/fully-connected layer
@@ -436,19 +455,14 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
         bias_length = explain_tvm_add_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return bias_length
     elif 'max' in func_type:
-        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        read_mem_regions = memory_slices(mem_read_log_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
         kernel_size, stride = explain_tvm_maxpool_result(mem_exp_log, write_mem_regions)
         return kernel_size, stride
     elif 'avg' in func_type:
-        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        read_mem_regions = memory_slices(mem_read_log_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
-        kernel_size, stride = explain_tvm_avgpool_result(mem_exp_log, write_mem_regions)
+        kernel_size, stride = explain_tvm_avgpool_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return kernel_size, stride
+    elif 'embedding' in func_type:
+        vector_size = explain_tvm_embedding_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        return vector_size
 
 
 # ==============================================================

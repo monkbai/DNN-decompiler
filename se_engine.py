@@ -254,6 +254,8 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             handle_movss(code_list, mem_addr)
         elif mnemonic.startswith('mulps'):
             handle_mulps(code_list, mem_addr)
+        elif mnemonic.startswith('mulss'):
+            handle_mulps(code_list, mem_addr)
         elif mnemonic.startswith('divps'):
             handle_divss(code_list, mem_addr)
         elif mnemonic.startswith('divss'):
@@ -678,6 +680,8 @@ def xmm_mul_mem(xmm_name: str, mem_addr: str, size: int):
     mem_key = mem_addr + ',' + str(size)
     if mem_key in mem_state.keys():
         xmm_regs[xmm_name] = '({} * {})'.format(xmm_regs[xmm_name], mem_state[mem_key])
+    else:
+        xmm_regs[xmm_name] = '({} * {})'.format(xmm_regs[xmm_name], mem_key)
 
 
 def xmm_add_mem(xmm_name: str, mem_addr: str, size: int):
@@ -990,10 +994,11 @@ def handle_mulps(code_list, mem_addr):
         elif 'xmm' in op2:
             size = 16
         mem_key = mem_addr+','+str(size)
-    assert op1 in xmm_regs.keys() and (op2 in xmm_regs.keys() or mem_key in mem_state.keys())
     if op2 in xmm_regs.keys():
         xmm_mul_xmm(op1, op2)
     elif mem_key in mem_state.keys():
+        xmm_mul_mem(op1, mem_addr, size)
+    else:
         xmm_mul_mem(op1, mem_addr, size)
 
 
