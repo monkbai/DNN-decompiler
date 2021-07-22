@@ -15,6 +15,9 @@ if __name__ == '__main__':
     mem_read_log_path = './mem_read.log'
     mem_write_log_path = './mem_write.log'
 
+    utils.generate_symbolic_expression('0010.txt', '/home/lifter/Documents/tvm_output/vgg16_glow/tmp_trace_slice.log', exp_log_path, max_inst=5000000)
+    exit(0)
+
     # compile_all_tools()
     # ==============================================================
     # Step 1 --- Get the Sequence of Layers ---
