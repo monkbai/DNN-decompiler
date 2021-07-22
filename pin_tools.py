@@ -1,13 +1,16 @@
 #!/usr/bin/python3
 from subprocess import Popen, PIPE, STDOUT
+import config
+
 import os
 import re
 import time
 import struct
 import subprocess
 import logging
-print('get logger: {}'.format('decompiler.'+__name__))
-logger = logging.getLogger('decompiler.'+__name__)
+
+print('get logger: {}'.format('decompiler.' + __name__))
+logger = logging.getLogger('decompiler.' + __name__)
 
 
 class cd:
@@ -40,9 +43,9 @@ def run(prog_path):
 
 project_dir = './'
 
-pin_home = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/'
+pin_home = config.pin_home
 
-mypintool_dir = '/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/'
+mypintool_dir = config.pintool_dir
 
 fun_call_rdi_rsi_cmd = pin_home + "pin -t " + \
                        mypintool_dir + "obj-intel64/FunCallRdiRsi.so -o {} -addrs_file {} -- {} {}"
@@ -67,21 +70,21 @@ mem_dump_3_log_cmd = pin_home + "pin -t " + \
 
 nnfusion_conv_cmd = pin_home + "pin -t " + \
                     mypintool_dir + "obj-intel64/NNFusion_Conv.so" \
-                    " -o {} -addrs_file {} -- {} {}"
+                                    " -o {} -addrs_file {} -- {} {}"
 nnfusion_gemm_cmd = pin_home + "pin -t " + \
                     mypintool_dir + "obj-intel64/NNFusion_Gemm.so" \
-                    " -o {} -addrs_file {} -- {} {}"
+                                    " -o {} -addrs_file {} -- {} {}"
 nnfusion_pool_cmd = pin_home + "pin -t " + \
                     mypintool_dir + "obj-intel64/NNFusion_Pool.so" \
-                    " -o {} -addrs_file {} -- {} {}"
+                                    " -o {} -addrs_file {} -- {} {}"
 nnfusion_trace_cmd = pin_home + "pin -t " + \
                      mypintool_dir + "obj-intel64/NNFusion_Trace.so" \
-                     " -o {} -addrs_file {} -- {} {}"
+                                     " -o {} -addrs_file {} -- {} {}"
 
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
 tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemoryWrite",
               "MemoryDump", "MemoryDump_2", "MemoryDump_3", "FusedRdi", "FunCallRdiRsi",
-              "NNFusion_Conv", "NNFusion_Gemm"]
+              "NNFusion_Conv", "NNFusion_Gemm", "NNFusion_Pool", "NNFusion_Trace", "LocateData"]
 
 
 def compile_all_tools():
@@ -243,7 +246,8 @@ def dump_dwords_2(prog_path: str, input_data_path: str, inst_addr: str, dwords_l
     project_dir_backup = project_dir
     project_dir = os.path.dirname(prog_path)  # project_dir = mypintool_dir
 
-    status, output = cmd(mem_dump_2_log_cmd.format(log_path, dwords_len, inst_addr, data_index, prog_path, input_data_path))
+    status, output = cmd(
+        mem_dump_2_log_cmd.format(log_path, dwords_len, inst_addr, data_index, prog_path, input_data_path))
     # print(output)
     if status != 0:
         print(output)
@@ -256,7 +260,8 @@ def dump_dwords_3(prog_path: str, input_data_path: str, inst_addr: str, dwords_l
     project_dir_backup = project_dir
     project_dir = mypintool_dir
 
-    status, output = cmd(mem_dump_3_log_cmd.format(log_path, dwords_len, inst_addr, dump_addr, prog_path, input_data_path))
+    status, output = cmd(
+        mem_dump_3_log_cmd.format(log_path, dwords_len, inst_addr, dump_addr, prog_path, input_data_path))
     # print(output)
     if status != 0:
         print(output)
