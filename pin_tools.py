@@ -28,6 +28,7 @@ class cd:
 def cmd(commandline):
     with cd(project_dir):
         print(commandline)
+        logger.debug(commandline)
         status, output = subprocess.getstatusoutput(commandline)
         # print(output)
         return status, output
@@ -336,7 +337,7 @@ def tac_cmd(log_path: str, new_path: str):
 
     log_path = os.path.abspath(log_path)
     new_path = os.path.abspath(new_path)
-    status, output = cmd("tac {} > {}".format(log_path, new_path))
+    status, output = cmd("time tac {} > {}".format(log_path, new_path))
     if status:
         pass  # TODO: error log
     logger.info('Reverse Trace - Time')
