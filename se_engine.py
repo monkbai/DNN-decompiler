@@ -1,8 +1,11 @@
-import re
-import collections
-import time
 import os
+import re
 import math
+import time
+import logging
+print('get logger: {}'.format('decompiler.'+__name__))
+logger = logging.getLogger('decompiler.'+__name__)
+
 from scripts.e9patch_tools import all_inst_trace_2, all_inst_trace_1
 import scripts.explain
 

@@ -1,19 +1,19 @@
 #! /usr/bin/python3
 import sys
-sys.path.append("..")
+#sys.path.append("..")
 from scripts import utils
 
 if __name__ == '__main__':
-    utils.funcs_dir = './vgg16_glow_O0/vgg16_glow_funcs/'
-    prog_path = './vgg16_glow_O0/vgg16.out'
-    in_data = './vgg16_glow_O0/cat.bin'
-    log_path = './vgg16_glow_O0/vgg16_glow_func_call.log'
-    label_file = './vgg16_glow_O0/step1.txt'
+    utils.funcs_dir = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_glow_ida/'
+    prog_path = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_strip.out'
+    in_data = '/home/lifter/Documents/tvm_output/cat.bin'
+    log_path = '/home/lifter/Documents/tvm_output/vgg16_glow/func_call.log'
+    label_file = '/home/lifter/Documents/tvm_output/vgg16_glow//step1.txt'
 
-    tmp_log_path = './vgg16_glow_O0/inst_trace.log'
-    exp_log_path = './vgg16_glow_O0/mem_exp.log'
-    mem_read_log_path = './vgg16_glow_O0/mem_read.log'
-    mem_write_log_path = './vgg16_glow_O0/mem_write.log'
+    tmp_log_path = './inst_trace.log'
+    exp_log_path = './mem_exp.log'
+    mem_read_log_path = './mem_read.log'
+    mem_write_log_path = './mem_write.log'
 
     # compile_all_tools()
     # ==============================================================

@@ -131,6 +131,7 @@ def print_layer_label_tvm(trace_log_path: str, only_fused=False):
     param_list.sort()
     return param_list
 
+
 def print_input_id(trace_log_path: str):
     global addr2label, addr2funcs, addr2param
     addr2label = json_to_dict('./addr2label.json')  # type: dict
@@ -346,12 +347,6 @@ def recover_shape(func_name: str, mem_exp_log: str,
     read_mem_regions = memory_slices(mem_read_log_path)
     write_mem_regions = memory_slices(mem_write_log_path)
     if func_type == 'conv2d':
-        '''
-        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        read_mem_regions = memory_slices(mem_read_log_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
-        '''
         # try with different stride
         filter_shape = (0, 0, 0, 0)
         input_shape = (0, 0, 0, 0)
@@ -376,40 +371,18 @@ def recover_shape(func_name: str, mem_exp_log: str,
                         return filter_shape  # no need to guess padding/stride
         return filter_shape
     elif func_type == 'matmul':  # dense in tvm
-        '''
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
-        '''
         input_size, output_size = explain_glow_dense_result(mem_exp_log, write_mem_regions)
         return output_size, input_size
     elif func_type == 'add':
-        '''
-        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        read_mem_regions = memory_slices(mem_read_log_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
-        '''
         if read_mem_regions[0][1] - read_mem_regions[0][0] == read_mem_regions[1][1] - read_mem_regions[1][0]:
             # the case of add layer after dense/fully-connected layer
             return (read_mem_regions[0][1] - read_mem_regions[0][0]) / 4
         bias_length = explain_tvm_add_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return bias_length
     elif func_type.startswith('max'):  # max_pool
-        '''
-        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        read_mem_regions = memory_slices(mem_read_log_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
-        '''
         kernel_size, stride = explain_glow_maxpool_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return kernel_size, stride
     elif func_type.startswith('avg'):  # avg_pool
-        '''
-        mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        read_mem_regions = memory_slices(mem_read_log_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
-        '''
         kernel_size, stride = explain_glow_avgpool_result(mem_exp_log, write_mem_regions, read_mem_regions)
         return kernel_size, stride
 
@@ -469,7 +442,8 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
 # Handle all conv2d functions
 # ==============================================================
 
-
+"""
+# move to trace_filter
 def get_early_stop_point(func_asm_path: str):
     start_addr = ''
     end_addr = ''
@@ -500,8 +474,9 @@ def get_early_stop_point(func_asm_path: str):
                     break
     loop_size = max(loop_size, 64)
     return early_stop_addr, loop_size * 4  # 4 <- length of float
-
-
+"""
+"""
+# move to trace_filter
 def find_rand_addr(prog_path: str, in_data: str, log_path: str, label_file_path: str):
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
@@ -545,6 +520,7 @@ def find_rand_addr(prog_path: str, in_data: str, log_path: str, label_file_path:
         rnd_addr = hex(rnd_addr)
         func_addrs[func_name] = (start_addr, end_addr, early_stop_addr, loop_size, rnd_addr, (hex(out_mem[0]), hex(out_mem[1])))
     return func_addrs
+"""
 
 
 def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,

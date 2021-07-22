@@ -1,200 +1,95 @@
 import os
 import sys
 import copy
+import time
+import utils
+import random
+import explain
+import pin_tools
+import logging
+print('get logger: {}'.format('decompiler.'+__name__))
+logger = logging.getLogger('decompiler.'+__name__)
 
 
-def print_taget_lines(trace_log: str, addr: str):
-    final_bufs = []
-
-    def print_buf(r_buf: list):
-        if len(r_buf) < 1:
-            return False
-        if r_buf[0][0].startswith('0x') and addr in r_buf[1][0]:
-            for line, id in r_buf:
-                print('{:<10}: {}'.format(id, line))
-
-            return True
-        return False
-
-    trace_log_path = os.path.abspath(trace_log)
-    with open(trace_log_path, 'r') as f:
-        read_buf = []
-        idx = 0
-        while True:
-            line = f.readline()
-            idx += 1
-
-            if not line:
-                break
-
-            if idx % 1000000 == 0:  # million
-                print(idx)
-
-            if line.startswith('0x'):
-                if print_buf(read_buf):
-                    final_bufs.append(copy.deepcopy(read_buf))
-                read_buf.clear()
-                read_buf.append((line, idx))
-            else:
-                read_buf.append((line, idx))
-        for rbuf in final_bufs:
-            for line, id in rbuf:
-                print('{:<10}: {}'.format(id, line))
-
-
-def count_lines(trace_log: str):
-    trace_log_path = os.path.abspath(trace_log)
-    with open(trace_log_path, 'r') as f:
-        read_buf = []
-        idx = 0
-        while True:
-            line = f.readline()
-            idx += 1
-
-            if not line:
-                break
-
-            if idx % 1000000 == 0:  # million
-                print(idx)
-        print(idx)
-
-
-def count_addrs(trace_log: str):
-    trace_log_path = os.path.abspath(trace_log)
-    with open(trace_log_path, 'r') as f:
-        read_buf = []
-        idx = 0
-        while True:
-            line = f.readline()
-            idx += 1
-
-            if not line:
-                break
-
-            # if idx % 1000000 == 0:  # million
-            #    print(idx)
-            if line.startswith('0x401e4a'):
-                print(line)
-            elif line.startswith('0x401e67'):
-                print(line)
-            elif line.startswith('0x401e7a'):
-                print(line)
-        print(idx)
-
-
-def reverse_trace(trace_log: str, new_trace: str):
-    trace_log_path = os.path.abspath(trace_log)
-    new_trace_path = os.path.abspath(new_trace)
-    old_f = open(trace_log_path, 'rb')
-    new_f = open(new_trace_path, 'w')
-
-    idx = 0
-    end_flag = False
-    final_bufs = []
-    read_buf = []
-
-    old_f.seek(-2, os.SEEK_END)
-    while True:
-        while old_f.read(1) != b'\n':
-            old_f.seek(-2, os.SEEK_CUR)  # find the last \n
-            if old_f.tell() == 0:
-                end_flag = True
-                break
-        last_read = old_f.tell()
-        # print('last read', last_read)
-        last_line = old_f.readline().decode()
-        if not end_flag:
-            old_f.seek(last_read - 2)
-        line = last_line
-        idx += 1
-
-        if idx % 1000 == 0:  # debug
-            print(idx)
-
-        # print(line)
-        if line.startswith('0x'):
-            read_buf.append(line)
-            read_buf.reverse()
-            for line in read_buf:
-                new_f.write(line)
-            read_buf.clear()
-        else:
-            read_buf.append(line)
-
-        if end_flag:
-            break
-
-    old_f.close()
-    new_f.close()
-
-
-def reverse_trace_mem(trace_log: str, new_trace: str):
+def get_early_stop(asm_path: str):
     """
-        This function will consume lots of memory.
+        early_stop: if the outermost loop has more than 16 cycles, we can stop logging after first cycle
+        for conv layer only
     """
-    trace_log_path = os.path.abspath(trace_log)
-    new_trace_path = os.path.abspath(new_trace)
-    old_f = open(trace_log_path, 'r')
-    new_f = open(new_trace_path, 'w')
-
-    old_lines = old_f.readlines()
-    print('reading finished')
-    read_buf = []
-    idx = len(old_lines) - 1
-    line_count = 0
-    while idx >= 0:
-        line = old_lines[idx]
-        idx -= 1
-
-        line_count += 1
-        if line_count % 1000000 == 0:  # million
-            print(line_count)
-
-        # print(line)
-        if line.startswith('0x'):
-            read_buf.append(line)
-            read_buf.reverse()
-            for line in read_buf:
-                new_f.write(line)
-            read_buf.clear()
-        else:
-            read_buf.append(line)
-
-    old_f.close()
-    new_f.close()
+    loop_count = 0
+    with open(asm_path, 'r') as f:
+        asm_lines = f.readlines()
+        asm_lines.reverse()
+        for line in asm_lines:
+            asm = line[40:].strip()  # type: str
+            if asm.startswith('cmp'):
+                loop_count = asm.split(',')[1].strip()
+                if loop_count.endswith('h'):
+                    loop_count = loop_count.strip('h')
+                    loop_count = int(loop_count, 16)
+                else:
+                    loop_count = int(loop_count)
+                break
+    if loop_count >= 16:
+        early_stop = asm.split(':')[0]
+        return early_stop, loop_count
+    else:
+        return '', loop_count
 
 
-def cut_trace(trace_log: str, new_trace: str):
-    trace_log_path = os.path.abspath(trace_log)
-    new_trace_path = os.path.abspath(new_trace)
-    old_f = open(trace_log_path, 'r')
-    new_f = open(new_trace_path, 'w')
+def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str):
+    asm_path = os.path.abspath(asm_path)
+    early_stop, loop_count = get_early_stop(asm_path)
+    start_addr, end_addr = utils.get_func_range(asm_path)
+    if len(early_stop) > 0:
+        end_addr = early_stop
 
-    old_lines = old_f.readlines()
-    print('reading finished')
-    read_buf = []
-    idx = 0
-    line_count = 0
-    start_flag = False
-    while idx < len(old_lines):
-        line = old_lines[idx]
-        idx += 1
+    log_path = os.path.abspath(out_log_path)
+    prog_path = os.path.abspath(prog_path)
+    data_path = os.path.abspath(in_data)
 
-        line_count += 1
-        if line_count % 1000000 == 0:  # million
-            print(line_count)
-
-        if not start_flag and idx >= 230000000 * 3 and line.startswith('0x'):
-            start_flag = True
-            new_f.write(line)
-        elif start_flag:
-            new_f.write(line)
-
-    old_f.close()
-    new_f.close()
+    pin_tools.inst_trace_log(log_path, start_addr, end_addr, prog_path, data_path)
+    return start_addr, end_addr
 
 
-# ---------- upper functions are deprecated ----------
+def reverse_trace(original_trace: str, new_trace: str):
+    original_trace = os.path.abspath(original_trace)
+    new_trace = os.path.abspath(new_trace)
+    pin_tools.tac_cmd(original_trace, new_trace)
+
+
+def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str):
+    prog_path = os.path.abspath(prog_path)
+    in_data = os.path.abspath(in_data)
+    mem_write_log_path = os.path.abspath(mem_write_log_path)
+    func_asm_path = os.path.abspath(func_asm_path)
+
+    start_addr, end_addr = utils.get_func_range(func_asm_path)
+    early_stop, loop_size = get_early_stop(func_asm_path)
+    utils.mem_write_log(mem_write_log_path, start_addr, early_stop, prog_path, in_data)
+    write_mem_regions = utils.memory_slices(mem_write_log_path)
+    out_mem = explain.biggest_region(write_mem_regions)
+    rnd_addr = random.randrange(out_mem[0], out_mem[1], 4)
+    # mid_addr = out_mem[0] + (out_mem[1] - out_mem[0])/2
+    # mid_addr = int(mid_addr)
+    # mid_addr = hex(mid_addr)
+    rnd_addr = hex(rnd_addr)
+    return rnd_addr, loop_size
+
+
+def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str):
+    # Generate trace
+    rev_log_path = log_path.replace('.log', '_rev.log')
+    start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path)
+    # Random pick a target address
+    tmp_mem_write_log = './tmp_mem_write.log'
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log)
+    # Reverse trace
+    reverse_trace(log_path, rev_log_path)
+    return rev_log_path, rnd_addr, loop_size, start_addr, end_addr
+
+
+# ---------- above functions are used to generate and reverse trace ----------
 
 # ===============================================
 #
@@ -239,6 +134,9 @@ def set_tainted(addr_list: list):
 
 
 def reverse_taint(re_trace_log: str, new_trace: str):
+    global logger
+    start_time = time()
+
     reverse_log = os.path.abspath(re_trace_log)
     new_trace_log = os.path.abspath(new_trace)
     final_bufs = []
@@ -272,6 +170,11 @@ def reverse_taint(re_trace_log: str, new_trace: str):
             else:
                 read_buf.insert(0, line)
         f.close()
+
+    end_time = time()
+    elapsed_time = end_time - start_time
+    logger.info("Taint Analysis - Elapsed Time: {}s".format(elapsed_time))
+
     # write final_bufs to file
     with open(new_trace_log, 'w') as f:
         for r_buf in final_bufs:
@@ -408,7 +311,7 @@ def split_addr_list(mem_addr: str, op_str: str):
         elif 'ptr' in op_str:
             size = 8
         else:
-            assert False, 'error:{} undefined size'.format(op)
+            assert False, 'error:{} undefined size'.format(op_str)
         addr_int = int(mem_addr, 16)
         for step in range(0, size, 4):  # the smallest unit is 4 bytes
             m_addr = hex(addr_int + step)
@@ -535,17 +438,39 @@ def handle_not_implemented(opcode: str, operands: list):
     exit(0)
 
 
-if __name__ == '__main__':
-    # count_lines('./inst_trace.log')
-    # count_addrs('./inst_trace.log')
-    # print_taget_lines('./inst_trace.log', '0x214fd1a0')
-    # reverse_trace('./inst_trace.log', './reverse_trace.log')  # slow
-    # reverse_trace_mem('./inst_trace.log', './reverse_trace_mem.log')  # fast
-    # cut_trace('./reverse_trace_mem.log', './cut_reverse_trace.log')
-    # exit(0)
+# ===============================================
+#
+# Interface
+#
+# ===============================================
+def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str):
+    asm_path = os.path.abspath(asm_path)
+    prog_path = os.path.abspath(prog_path)
+    data_path = os.path.abspath(data_path)
+    log_path = os.path.abspath(log_path)
 
-    # Do not use this script to reverse traces, it's slow
-    # Using tac
+    rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path)
+    slice_log = log_path.replace('.log', '_slice.log')
+
+    target_addr = rnd_addr
+    mem_list = []
+    addr_int = int(target_addr, 16)
+    size = loop_size
+    for step in range(0, size, 4):  # the smallest unit is 4 bytes
+        m_addr = hex(addr_int + step)
+        mem_list.append(m_addr)
+    set_tainted(mem_list)
+    reverse_taint(rev_log, slice_log)
+    return slice_log, rnd_addr, loop_size, start_addr, end_addr
+
+
+if __name__ == '__main__':
+    # test
+    asm_path = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_glow_ida/0010.txt'
+    prog_path = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_strip.out'
+    data_path = '/home/lifter/Documents/tvm_output/cat.bin'
+    log_path = 'tmp_trace.log'
+    slice_log, rnd_addr, loop_size, start_addr, end_addr = get_trace(asm_path, prog_path, data_path, log_path)
 
     """
     #mem_list = ['0x214fcdc0', '0x214fcdc4']

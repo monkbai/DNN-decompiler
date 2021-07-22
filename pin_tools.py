@@ -1,10 +1,13 @@
 #!/usr/bin/python3
 from subprocess import Popen, PIPE, STDOUT
 import os
-import time
-import subprocess
-import struct
 import re
+import time
+import struct
+import subprocess
+import logging
+print('get logger: {}'.format('decompiler.'+__name__))
+logger = logging.getLogger('decompiler.'+__name__)
 
 
 class cd:
@@ -48,7 +51,7 @@ fused_rdi_cmd = pin_home + "pin -t " + \
 func_call_cmd = pin_home + "pin -t " + \
                 mypintool_dir + "obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
 # output_path, start_addr, end_addr, program, input_data
-inst_trace_cmd = "timeout 15s " + \
+inst_trace_cmd = "time timeout 15s " + \
                  pin_home + "pin -t " + \
                  mypintool_dir + "obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
 mem_read_log_cmd = pin_home + "pin -t " + \
@@ -205,7 +208,7 @@ def mem_write_log(log_path: str, start_addr: str, end_addr: str, prog_path: str,
 
 
 def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str):
-    global project_dir
+    global project_dir, logger
     project_dir_backup = project_dir
     project_dir = mypintool_dir
 
@@ -215,6 +218,9 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
     status, output = cmd(inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
+
+    logger.info('Trace Logging Time')
+    logger.info(output)
 
     project_dir = project_dir_backup
 
@@ -317,6 +323,19 @@ def nnfusion_pool(prog_path: str, input_data_path: str, addr_list: list, log_pat
 
 def nnfusion_trace(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
     nnfusion_cmd(prog_path, input_data_path, addr_list, log_path, nnfusion_trace_cmd)
+
+
+# ==================================================================
+def tac_cmd(log_path: str, new_path: str):
+    global logger
+
+    log_path = os.path.abspath(log_path)
+    new_path = os.path.abspath(new_path)
+    status, output = cmd("tac {} > {}".format(log_path, new_path))
+    if status:
+        pass  # TODO: error log
+    logger.info('Reverse Trace - Time')
+    logger.info(output)
 
 
 if __name__ == '__main__':
