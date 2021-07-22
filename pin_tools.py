@@ -55,7 +55,8 @@ fused_rdi_cmd = pin_home + "pin -t " + \
 func_call_cmd = pin_home + "pin -t " + \
                 mypintool_dir + "obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
 # output_path, start_addr, end_addr, program, input_data
-inst_trace_cmd = "time timeout 15s " + \
+# inst_trace_cmd = "time timeout 15s " + \
+inst_trace_cmd = "time " + \
                  pin_home + "pin -t " + \
                  mypintool_dir + "obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
 mem_read_log_cmd = pin_home + "pin -t " + \
