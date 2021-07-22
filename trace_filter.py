@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.append("..")  # I should rearrange project structure...
 import copy
 import time
 import utils
@@ -31,10 +32,11 @@ def get_early_stop(asm_path: str):
                     loop_count = int(loop_count)
                 break
     if loop_count >= 16:
-        early_stop = asm.split(':')[0]
-        return early_stop, loop_count
+        early_stop = line.split(':')[0]
     else:
-        return '', loop_count
+        early_stop = ''
+    logger.debug('early_stop: {}, loop_count: {}'.format(early_stop, loop_count))
+    return early_stop, loop_count
 
 
 def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str):
@@ -74,6 +76,7 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     # mid_addr = int(mid_addr)
     # mid_addr = hex(mid_addr)
     rnd_addr = hex(rnd_addr)
+    logger.debug('rand_addr: {}, loop_size: {}'.format(rnd_addr, loop_size))
     return rnd_addr, loop_size
 
 
@@ -86,6 +89,7 @@ def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str):
     rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log)
     # Reverse trace
     reverse_trace(log_path, rev_log_path)
+    logger.debug('log_path: {}, reverse_log_path: {}'.format(log_path, rev_log_path))
     return rev_log_path, rnd_addr, loop_size, start_addr, end_addr
 
 
@@ -135,7 +139,7 @@ def set_tainted(addr_list: list):
 
 def reverse_taint(re_trace_log: str, new_trace: str):
     global logger
-    start_time = time()
+    start_time = time.time()
 
     reverse_log = os.path.abspath(re_trace_log)
     new_trace_log = os.path.abspath(new_trace)
@@ -171,7 +175,7 @@ def reverse_taint(re_trace_log: str, new_trace: str):
                 read_buf.insert(0, line)
         f.close()
 
-    end_time = time()
+    end_time = time.time()
     elapsed_time = end_time - start_time
     logger.info("Taint Analysis - Elapsed Time: {}s".format(elapsed_time))
 
@@ -461,16 +465,19 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str):
         mem_list.append(m_addr)
     set_tainted(mem_list)
     reverse_taint(rev_log, slice_log)
+    logger.debug(' slice_log {}\n rnd_addr {}\n loop_size {}\n start_addr {}\n end_addr {}\n'.format(slice_log, rnd_addr, loop_size, start_addr, end_addr))
     return slice_log, rnd_addr, loop_size, start_addr, end_addr
 
 
 if __name__ == '__main__':
     # test
-    asm_path = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_glow_ida/0010.txt'
-    prog_path = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_strip.out'
-    data_path = '/home/lifter/Documents/tvm_output/cat.bin'
+    asm_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_glow_ida/0010.txt"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_strip.out"
+    data_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/cat.bin"
     log_path = 'tmp_trace.log'
     slice_log, rnd_addr, loop_size, start_addr, end_addr = get_trace(asm_path, prog_path, data_path, log_path)
+    print(' slice_log {}\n rnd_addr {}\n loop_size {}\n start_addr {}\n end_addr {}\n'.format(slice_log, rnd_addr, loop_size, start_addr, end_addr))
+    exit(0)
 
     """
     #mem_list = ['0x214fcdc0', '0x214fcdc4']
