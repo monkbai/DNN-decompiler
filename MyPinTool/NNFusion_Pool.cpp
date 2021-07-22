@@ -15,91 +15,71 @@
 
 #include <stdio.h>
 #include <unordered_map>
-#include <unordered_set>
-#include <string>
 #include <iostream>
 #include <fstream>
+#include <list>
 #include "pin.H"
-/*
-struct mem_obj{
-    uint64_t start;
-    uint64_t end;
-};
-*/
-
-static std::tr1::unordered_set<VOID *> visable_addrs;
 
 static std::unordered_map<ADDRINT, std::string> str_of_ins_at;
+
 FILE * trace;
 
-
-void * stack_border = (void *)0x7f0000000000;
-
-uint64_t dump_addr = 0;
-uint64_t length = 0;
-uint64_t dump_point = 0;
-
-uint32_t reg_num = 0;  // 1-> rdx -> weights, rcx -> biases
+// just want a hash table
+static std::unordered_map<uint64_t, uint64_t> addrs_list;
 /* ===================================================================== */
 // Command line switches
 /* ===================================================================== */
 KNOB<std::string> KnobOutputFile(KNOB_MODE_WRITEONCE,  "pintool",
-    "o", "tmp.log", "specify file name for MyPinTool output");
+    "o", "", "specify file name for MyPinTool output");
 
-KNOB<uint64_t>   KnobDumpAddr(KNOB_MODE_WRITEONCE,  "pintool",
-    "dump_addr", "", "no description");
+KNOB<std::string>   KnobAddrsFile(KNOB_MODE_WRITEONCE,  "pintool",
+    "addrs_file", "0x422860", "file path");
     
-KNOB<uint64_t>   KnobDumpLen(KNOB_MODE_WRITEONCE,  "pintool",
-    "length", "", "no description");
-
-KNOB<uint64_t>   KnobDumpPoint(KNOB_MODE_WRITEONCE,  "pintool",
-    "dump_point", "", "no description");
-    
-KNOB<int32_t>   KnobRegNum(KNOB_MODE_WRITEONCE,  "pintool",
-    "reg_num", "0", "no description");
-
 
 /* ===================================================================== */
 // Utilities
 /* ===================================================================== */
 
-VOID PrintDword(const int * addr, int length){
-    int i = 0;
-    fprintf(trace, "Start from 0x%.16lx\n", (uint64_t)addr);
-    for (; i < length; i++){
-        fprintf(trace, "0x%.8x\n", *(addr+i));
-    }
-    fprintf(trace, "end\n");
-}
-
-VOID Dump(VOID * ip, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value){
-    // get address from register rsi/rdx/rcx
-    if (reg_num == 0){  // rsi
-        printf("rsi: %p\n", (void *)rsi_value);
-        PrintDword((const int *)rsi_value, (int)length);
-    }
-    else if (reg_num == 1){  // rdx
-        printf("rdx: %p\n", (void *)rdx_value);
-        PrintDword((const int *)rdx_value, (int)length);
-    }
-    else if (reg_num == 2){  // rcx
-        printf("rcx: %p\n", (void *)rcx_value);
-        PrintDword((const int *)rcx_value, (int)length);
-    }
-}
-
-VOID RecordInst(VOID * ip)
+VOID RecordInst(VOID * ip, ADDRINT rsp_value, ADDRINT rdi_value, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value, ADDRINT r8_value, ADDRINT r9_value)
 {
+    fprintf(trace,"MlasPool: %p\n", ip);
+    // rdi
+    fprintf(trace, "PoolingKind: %ld\n", rdi_value);
+    // rsi
+    fprintf(trace, "Dimensions: %ld\n", rsi_value);
+    // rdx
+    fprintf(trace, "InputShape: %ld, %ld, %ld, %ld\n", *((uint64_t *)rdx_value), *((uint64_t *)rdx_value+1), *((uint64_t *)rdx_value+2), *((uint64_t *)rdx_value+3));
+    // rcx
+    fprintf(trace, "KernelShape: %ld, %ld\n", *((uint64_t *)rcx_value), *((uint64_t *)rcx_value+1));
+    // r8
+    fprintf(trace, "Padding: %ld, %ld\n", *((uint64_t *)r8_value), *((uint64_t *)r8_value + 1));
+    // r9
+    fprintf(trace, "StrideShape: %ld, %ld\n", *((uint64_t *)r9_value), *((uint64_t *)r9_value + 1));
+    // rsp+0x8 --> dialation shape
+    ADDRINT ptr = *((uint64_t *)(rsp_value + 8));
+    fprintf(trace, "OutputShape: %ld, %ld, %ld, %ld\n", *((uint64_t *)ptr), *((uint64_t *)ptr + 1), *((uint64_t *)ptr + 2), *((uint64_t *)ptr + 3));
+    
+    fprintf(trace, "\n");
 }
 
 // Print a memory read record
 VOID RecordMemRead(VOID * ip, VOID * mem_addr, USIZE mem_size)
 {
+    fprintf(trace,"%p\n", ip);
+    //std::string ins_str = str_of_ins_at[(ADDRINT)ip];
+    //fprintf(trace,"%p:\t%s\n", ip, ins_str.c_str());
+    //fprintf(trace,"R:\t%p:\t%lu\n", mem_addr, mem_size);
+    //fprintf(trace,"%p: R %p\n", ip, addr);
 }
 
 // Print a memory write record
 VOID RecordMemWrite(VOID * ip, VOID * mem_addr, USIZE mem_size)
 {
+    fprintf(trace,"%p\n", ip);
+    //std::string ins_str = str_of_ins_at[(ADDRINT)ip];
+    //fprintf(trace,"%p:\t%s\n", ip, ins_str.c_str());
+    //fprintf(trace,"W:\t%p:\t%lu\n", mem_addr, mem_size);
+    //fprintf(trace,"%p: W %p\n", ip, addr);
 }
 
 // Is called for every instruction and instruments reads and writes
@@ -107,24 +87,17 @@ VOID Instruction(INS ins, VOID *v)
 {
     ADDRINT ins_addr = INS_Address(ins);
     
-    //if (ins_addr < start_addr || ins_addr > end_addr){//if (ins_addr < 0x4213e0 || ins_addr > 0x42186f){//if (ins_addr < 0x422860 || ins_addr > 0x424b6a){
-    //    return;
-    //}
-    str_of_ins_at[INS_Address(ins)] = INS_Disassemble(ins);
-    std::string ins_asm = INS_Disassemble(ins);
-    
-    if (ins_addr == dump_point){
-        printf("instrument at %p\n", (VOID *)ins_addr);
-        INS_InsertPredicatedCall(
-            ins, IPOINT_BEFORE, (AFUNPTR)Dump,
-            IARG_INST_PTR,
-            IARG_REG_VALUE, LEVEL_BASE::REG_RSI,
-            IARG_REG_VALUE, LEVEL_BASE::REG_RDX,
-            IARG_REG_VALUE, LEVEL_BASE::REG_RCX,
-            IARG_END);
+    if (addrs_list.find(ins_addr) == addrs_list.end()){
         return;
     }
-    return;
+    
+    str_of_ins_at[INS_Address(ins)] = INS_Disassemble(ins);
+    std::string ins_asm = INS_Disassemble(ins);
+    /*
+    if (!(ins_asm.find("xmm")!=ins_asm.npos || ins_asm.find("ymm")!=ins_asm.npos)){
+        return;
+    }
+    */
     // Instruments memory accesses using a predicated call, i.e.
     // the instrumentation is called iff the instruction will actually be executed.
     //
@@ -132,12 +105,19 @@ VOID Instruction(INS ins, VOID *v)
     // prefixed instructions appear as predicated instructions in Pin.
     UINT32 memOperands = INS_MemoryOperandCount(ins);
     
-    if (memOperands == 0){
-        INS_InsertPredicatedCall(
-            ins, IPOINT_BEFORE, (AFUNPTR)RecordInst,
-            IARG_INST_PTR,
-            IARG_END);
-    }
+    
+    INS_InsertPredicatedCall(
+        ins, IPOINT_BEFORE, (AFUNPTR)RecordInst,
+        IARG_INST_PTR,
+        IARG_REG_VALUE, LEVEL_BASE::REG_RSP,
+        IARG_REG_VALUE, LEVEL_BASE::REG_RDI,
+        IARG_REG_VALUE, LEVEL_BASE::REG_RSI,
+        IARG_REG_VALUE, LEVEL_BASE::REG_RDX,
+        IARG_REG_VALUE, LEVEL_BASE::REG_RCX,
+        IARG_REG_VALUE, LEVEL_BASE::REG_R8,
+        IARG_REG_VALUE, LEVEL_BASE::REG_R9,
+        IARG_END);
+    return;
 
     // Iterate over each memory operand of the instruction.
     for (UINT32 memOp = 0; memOp < memOperands; memOp++)
@@ -185,6 +165,22 @@ INT32 Usage()
     return -1;
 }
 
+int ReadAddrList(){
+    std::string addrs_file = KnobAddrsFile.Value();
+    FILE *fp = fopen(addrs_file.c_str(),"r");
+    //int count = 0;
+    while(!feof(fp)){
+        uint64_t current_addr;
+        fscanf(fp, "%lx\n", &current_addr);
+        addrs_list[current_addr] = current_addr;
+        //printf("insert 0x%lx\n", current_addr); // debug
+        //count += 1;
+        //printf("%d\n", count);
+    }
+    return 0;
+}
+
+
 /* ===================================================================== */
 /* Main                                                                  */
 /* ===================================================================== */
@@ -194,17 +190,27 @@ int main(int argc, char *argv[])
     if (PIN_Init(argc, argv)) return Usage();
 
     std::string fileName = KnobOutputFile.Value();
-    trace = fopen(fileName.c_str(), "a");
+    trace = fopen(fileName.c_str(), "w");
+    //trace = fopen("pinatrace.out", "w");
     
-    dump_addr = KnobDumpAddr.Value();
-    length = KnobDumpLen.Value();
-    dump_point = KnobDumpPoint.Value();
-    reg_num = KnobRegNum.Value();
-
+    ReadAddrList();    
+    
     // debug
-    printf("output: %s, dump_addr: %p, dump_length: %lu, dump_point: %p, reg_num: %d\n", fileName.c_str(), (void *)dump_addr, length, (void *)dump_point, reg_num);
-    //return 0;
-
+    //printf("output: %s, start: %p, end: %p\n", fileName.c_str(), (void *)start_addr, (void *)end_addr);
+    
+    /*
+    std::unordered_map<uint64_t, uint64_t>::iterator iter;
+    iter = addrs_list.begin();
+    int count = 0;
+    while(iter != addrs_list.end()) {
+        printf("0x%lx\n", iter->second);
+        iter++;
+        count += 1;
+        printf("%d\n", count);
+    }
+    return 0;
+    */
+    
     INS_AddInstrumentFunction(Instruction, 0);
     PIN_AddFiniFunction(Fini, 0);
 
