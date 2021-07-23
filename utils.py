@@ -219,6 +219,7 @@ def print_layer_label(trace_log_path: str, config_path=''):
                     addr_list[i] = addr_list[i].replace('rsi ', '').strip()
                 elif 'rdx' in addr_list[i]:
                     addr_list[i] = addr_list[i].replace('rdx ', '').strip()
+            config_flag = False
             for key, param_list in func2param.items():
                 if key in addr2label[addr]:
                     print('{}: {:<16}: {} {}, {} {}, {} {}'.format(addr, addr2label[addr],
@@ -231,8 +232,9 @@ def print_layer_label(trace_log_path: str, config_path=''):
                         addr2param[addr] = (addr_list[0], addr_list[1])
                     elif 'out' in param_list[0] and 'in' in param_list[1]:
                         addr2param[addr] = (addr_list[1], addr_list[0])
+                    config_flag = True  # found definition in the config.json
                     break
-            if key not in addr2label[addr]:
+            if not config_flag:  # not defined in config.json
                 #print('{}: {:<16}: param1 {}, param2 {}, param3 {}'.format(addr, addr2label[addr],
                 #                                                           addr_list[0], addr_list[1], addr_list[2]))
                 print('{}: {:<16}:'.format(addr, addr2label[addr]), end=' ')

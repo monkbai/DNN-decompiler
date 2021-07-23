@@ -1,7 +1,9 @@
 #! /usr/bin/python3
+import os
 import sys
 #sys.path.append("..")
 from scripts import utils
+from scripts import trace_filter
 
 if __name__ == '__main__':
     utils.funcs_dir = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_glow_ida/'
@@ -15,33 +17,37 @@ if __name__ == '__main__':
     mem_read_log_path = './mem_read.log'
     mem_write_log_path = './mem_write.log'
 
-    utils.generate_symbolic_expression('0010.txt', '/home/lifter/Documents/tvm_output/vgg16_glow/tmp_trace_slice.log', exp_log_path, max_inst=5000000)
-    exit(0)
+    #utils.generate_symbolic_expression('0010.txt', '/home/lifter/Documents/tvm_output/vgg16_glow/tmp_trace_slice.log', exp_log_path, max_inst=5000000)
+    #exit(0)
 
     # compile_all_tools()
     # ==============================================================
     # Step 1 --- Get the Sequence of Layers ---
     # ==============================================================
 
-    # utils.get_funcs_trace(prog_path, in_data, log_path, label_file)
-    # utils.print_layer_label(log_path)
-    # exit(0)
+    utils.get_funcs_trace(prog_path, in_data, log_path, label_file)
+    utils.print_layer_label(log_path, 'config.json')
 
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
-    func_trace_map = {'0017.libjit_conv2d_f.txt': './0x4017b0-0x401e91_slice.log',
-                      '0018.libjit_conv2d_f.txt': './0x401ea0-0x40265c_slice.log',
-                      '0020.libjit_conv2d_f.txt': './0x402990-0x403019_slice.log',
-                      '0021.libjit_conv2d_f.txt': './0x403020-0x4036a9_slice.log',
-                      '0023.libjit_conv2d_f.txt': './0x403900-0x404089_slice.log',
-                      '0024.libjit_conv2d_f.txt': './0x404090-0x404819_slice.log',
-                      '0026.libjit_conv2d_f.txt': './0x404a70-0x405409_slice.log',
-                      '0027.libjit_conv2d_f.txt': './0x405410-0x405da9_slice.log',
-                      '0029.libjit_conv2d_f.txt': './0x406000-0x4069a0_slice.log',
-                      '0031.libjit_matmul_f.txt': './0x406c00-0x4071f6_slice.log',
-                      '0034.libjit_matmul_f.txt': './0x407490-0x407a83_slice.log',
-                      '0036.libjit_matmul_f.txt': './0x407b50-0x40817d_slice.log', }
+    func_trace_map = {}
+    func_rndaddr_map = {}
+    asm_files = os.listdir(utils.funcs_dir)
+    for asm_file in asm_files:
+        if 'labels' not in asm_file and asm_file.endswith('.txt'):
+            asm_path = os.path.join(utils.funcs_dir, asm_file)
+            start_addr, _ = utils.get_func_range(asm_path)
+            if start_addr in utils.addr2label.keys():
+                if 'conv' in utils.addr2label[start_addr]:
+                    trace_path = os.path.join(os.path.dirname(log_path), asm_file.replace('.txt', '.log'))
+                    slice_log, rnd_addr, loop_size, start_addr, end_addr = \
+                        trace_filter.get_trace(asm_path, prog_path, in_data, trace_path)
+                    func_trace_map[asm_path] = slice_log
+                    func_rndaddr_map[asm_path] = (rnd_addr, loop_size, start_addr, end_addr)
+    print(func_trace_map)
+    print(func_rndaddr_map)
+    exit(0)
     """
     func_addrs = utils.find_rand_addr(label_file)
     print('start_addr, end_addr, early_stop, loop_size, rand_addr')
