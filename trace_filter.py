@@ -166,10 +166,11 @@ def reverse_taint(re_trace_log: str, new_trace: str):
                 read_buf.insert(0, line)
                 idx += 1
                 if idx % 1000000 == 0:  # debug, million
-                    print(idx)
-                    print('len final_bufs {}'.format(len(final_bufs)))
-                    print('len tainted_mems {}'.format(len(tainted_mems)))
-                    print('len tainted_regs {}'.format(len(tainted_regs)))
+                    pass
+                    # print(idx)
+                    # print('len final_bufs {}'.format(len(final_bufs)))
+                    # print('len tainted_mems {}'.format(len(tainted_mems)))
+                    # print('len tainted_regs {}'.format(len(tainted_regs)))
                 # TODO: handle the current instruction
                 # the core function of reverse taint
                 if handle_inst(read_buf):  # handle instructions
