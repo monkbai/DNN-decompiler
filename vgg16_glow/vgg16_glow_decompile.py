@@ -24,12 +24,11 @@ if __name__ == '__main__':
 
     utils.get_funcs_trace(prog_path, in_data, log_path, label_file)
     utils.print_layer_label(log_path, 'config.json')
-    # exit(0)
 
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
-    
+
     # Generate and Filter Trace
     func_trace_map = {}
     func_rndaddr_map = {}
@@ -48,7 +47,7 @@ if __name__ == '__main__':
     print(func_trace_map)
     print(func_rndaddr_map)
     exit(0)
-    
+
     """
     func_addrs = utils.find_rand_addr(label_file)
     print('start_addr, end_addr, early_stop, loop_size, rand_addr')
