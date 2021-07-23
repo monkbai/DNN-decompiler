@@ -60,7 +60,7 @@ def reverse_trace(original_trace: str, new_trace: str):
     pin_tools.tac_cmd(original_trace, new_trace)
 
 
-def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str):
+def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str, compiler='glow'):
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
@@ -71,6 +71,10 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     utils.mem_write_log(mem_write_log_path, start_addr, early_stop, prog_path, in_data)
     write_mem_regions = utils.memory_slices(mem_write_log_path)
     out_mem = explain.biggest_region(write_mem_regions)
+    if compiler == 'glow':
+        print('before', out_mem[1]-out_mem[0])  # debug
+        out_mem = (out_mem[0], out_mem[0] + (out_mem[1]-out_mem[0])/loop_size)
+        print('after', out_mem[1]-out_mem[0])  # debug
     rnd_addr = random.randrange(out_mem[0], out_mem[1], 4)
     # mid_addr = out_mem[0] + (out_mem[1] - out_mem[0])/2
     # mid_addr = int(mid_addr)
@@ -459,7 +463,7 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str):
     target_addr = rnd_addr
     mem_list = []
     addr_int = int(target_addr, 16)
-    size = loop_size
+    size = loop_size * 4
     for step in range(0, size, 4):  # the smallest unit is 4 bytes
         m_addr = hex(addr_int + step)
         mem_list.append(m_addr)
@@ -469,14 +473,44 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str):
     return slice_log, rnd_addr, loop_size, start_addr, end_addr
 
 
+def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str):
+    asm_path = os.path.abspath(asm_path)
+    prog_path = os.path.abspath(prog_path)
+    data_path = os.path.abspath(data_path)
+    rev_log_path = os.path.abspath(rev_log_path)
+
+    tmp_mem_write_log = './tmp_mem_write.log'
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log)  # random choose an target address again
+    # rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path)
+    slice_log = rev_log_path.replace('_rev.log', '_slice.log')
+
+    target_addr = rnd_addr
+    mem_list = []
+    addr_int = int(target_addr, 16)
+    size = loop_size * 4
+    for step in range(0, size, 4):  # the smallest unit is 4 bytes
+        m_addr = hex(addr_int + step)
+        mem_list.append(m_addr)
+    set_tainted(mem_list)
+    reverse_taint(rev_log_path, slice_log)
+    logger.debug('random choose an target address, and filter again')
+    logger.debug(' slice_log {}\n rnd_addr {}\n loop_size {}\n'.format(slice_log, rnd_addr, loop_size))
+    return slice_log, rnd_addr, loop_size
+
+
 if __name__ == '__main__':
     # test
     asm_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_glow_ida/0010.txt"
     prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_strip.out"
     data_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/cat.bin"
     log_path = 'tmp_trace.log'
-    slice_log, rnd_addr, loop_size, start_addr, end_addr = get_trace(asm_path, prog_path, data_path, log_path)
-    print(' slice_log {}\n rnd_addr {}\n loop_size {}\n start_addr {}\n end_addr {}\n'.format(slice_log, rnd_addr, loop_size, start_addr, end_addr))
+
+    if False:
+        slice_log, rnd_addr, loop_size, start_addr, end_addr = get_trace(asm_path, prog_path, data_path, log_path)
+        print(' slice_log {}\n rnd_addr {}\n loop_size {}\n start_addr {}\n end_addr {}\n'.format(slice_log, rnd_addr, loop_size, start_addr, end_addr))
+    else:
+        slice_log, rnd_addr, loop_size = filt_trace(asm_path, prog_path, data_path, 'tmp_trace_rev.log')
+        print(' slice_log {}\n rnd_addr {}\n loop_size {}\n'.format(slice_log, rnd_addr, loop_size))
     exit(0)
 
     """

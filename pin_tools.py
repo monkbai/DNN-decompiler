@@ -55,7 +55,6 @@ fused_rdi_cmd = pin_home + "pin -t " + \
 func_call_cmd = pin_home + "pin -t " + \
                 mypintool_dir + "obj-intel64/FunCallTrace.so -o {} -addrs_file {} -- {} {}"
 # output_path, start_addr, end_addr, program, input_data
-# inst_trace_cmd = "time timeout 15s " + \
 inst_trace_cmd = "time " + \
                  pin_home + "pin -t " + \
                  mypintool_dir + "obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
@@ -224,7 +223,7 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
     if status != 0:
         print(output)
 
-    logger.info('Trace Logging Time')
+    logger.info('Trace Logging Time - {}'.format(log_path))
     logger.info(output)
 
     project_dir = project_dir_backup
@@ -341,7 +340,7 @@ def tac_cmd(log_path: str, new_path: str):
     status, output = cmd("time tac {} > {}".format(log_path, new_path))
     if status:
         pass  # TODO: error log
-    logger.info('Reverse Trace - Time')
+    logger.info('Reverse Trace Time - {}'.format(new_path))
     logger.info(output)
 
 

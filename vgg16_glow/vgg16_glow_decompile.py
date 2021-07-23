@@ -1,24 +1,21 @@
 #! /usr/bin/python3
 import os
 import sys
-#sys.path.append("..")
+sys.path.append("../..")
 from scripts import utils
 from scripts import trace_filter
 
 if __name__ == '__main__':
-    utils.funcs_dir = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_glow_ida/'
-    prog_path = '/home/lifter/Documents/tvm_output/vgg16_glow/vgg16_strip.out'
-    in_data = '/home/lifter/Documents/tvm_output/cat.bin'
-    log_path = '/home/lifter/Documents/tvm_output/vgg16_glow/func_call.log'
-    label_file = '/home/lifter/Documents/tvm_output/vgg16_glow//step1.txt'
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_glow_ida/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/step1.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
     mem_read_log_path = './mem_read.log'
     mem_write_log_path = './mem_write.log'
-
-    #utils.generate_symbolic_expression('0010.txt', '/home/lifter/Documents/tvm_output/vgg16_glow/tmp_trace_slice.log', exp_log_path, max_inst=5000000)
-    #exit(0)
 
     # compile_all_tools()
     # ==============================================================
@@ -31,6 +28,8 @@ if __name__ == '__main__':
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
+
+    # Generate and Filter Trace
     func_trace_map = {}
     func_rndaddr_map = {}
     asm_files = os.listdir(utils.funcs_dir)
@@ -48,6 +47,7 @@ if __name__ == '__main__':
     print(func_trace_map)
     print(func_rndaddr_map)
     exit(0)
+
     """
     func_addrs = utils.find_rand_addr(label_file)
     print('start_addr, end_addr, early_stop, loop_size, rand_addr')
