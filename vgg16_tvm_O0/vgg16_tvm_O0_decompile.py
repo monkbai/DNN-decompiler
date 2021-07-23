@@ -1,15 +1,11 @@
 #! /usr/bin/python3
 import os
 import sys
-import json
-import numpy as np
-from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log, dump_dwords_2, \
-    convert_dwords2float, rm_log
-from scripts.se_engine import lightweight_SymEx
-from scripts.mem_slices import memory_slices
-from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
+sys.path.append("../..")
+from scripts import utils
+from scripts import trace_filter
 
-
+"""
 def dict_to_json(dict_obj: dict, output_path: str):
     j = json.dumps(dict_obj)
     with open(output_path, 'w') as f:
@@ -206,9 +202,9 @@ def handle_all_conv(label_file_path: str):
 
 
 def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, func_type='conv2d'):
-    """
+    '''
     :param dump_point: the start address of layer function (before reshaping the parameters)
-    """
+    '''
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)
@@ -244,19 +240,31 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
                 wf.write(json_str)
                 wf.close()
     rm_log(log_path)
-
+"""
 
 if __name__ == '__main__':
-    prog_path = './vgg16_strip'
-    in_data = './cat.bin'
-    log_path = './vgg16_strip_func_call.log'
-    label_file = './step1.txt'
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_glow_ida/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/step1.txt"
+
+    tmp_log_path = './inst_trace.log'
+    exp_log_path = './mem_exp.log'
+    mem_read_log_path = './mem_read.log'
+    mem_write_log_path = './mem_write.log'
 
     # ==============================================================
     # Step 1 --- Get the Sequence of Layers ---
     # ==============================================================
+    utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm')
+    utils.print_layer_label_tvm(log_path)
+    utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm', only_fused=True)
+    utils.print_layer_label_tvm(log_path, only_fused=True)
+    exit(0)
     # get_funcs_trace(prog_path, in_data, log_path, label_file)
     # print_layer_label(log_path)
+
     """
     func_shape = handle_all_conv(label_file)
     for name, result in func_shape.items():
