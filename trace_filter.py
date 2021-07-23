@@ -3,6 +3,7 @@ import sys
 sys.path.append("..")  # I should rearrange project structure...
 import copy
 import time
+import math
 import utils
 import random
 import explain
@@ -49,15 +50,20 @@ def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str):
     log_path = os.path.abspath(out_log_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(in_data)
-
-    pin_tools.inst_trace_log(log_path, start_addr, end_addr, prog_path, data_path)
+    if not os.path.exists(log_path):
+        pin_tools.inst_trace_log(log_path, start_addr, end_addr, prog_path, data_path)
+    else:
+        print('{} already exists.'.format(log_path))
     return start_addr, end_addr
 
 
 def reverse_trace(original_trace: str, new_trace: str):
     original_trace = os.path.abspath(original_trace)
     new_trace = os.path.abspath(new_trace)
-    pin_tools.tac_cmd(original_trace, new_trace)
+    if not os.path.exists(new_trace):
+        pin_tools.tac_cmd(original_trace, new_trace)
+    else:
+        print('{} already exists.'.format(new_trace))
 
 
 def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str, compiler='glow'):
@@ -68,12 +74,16 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
 
     start_addr, end_addr = utils.get_func_range(func_asm_path)
     early_stop, loop_size = get_early_stop(func_asm_path)
-    utils.mem_write_log(mem_write_log_path, start_addr, early_stop, prog_path, in_data)
+    if len(early_stop) != 0:
+        end_addr = early_stop
+    utils.mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, in_data)
     write_mem_regions = utils.memory_slices(mem_write_log_path)
     out_mem = explain.biggest_region(write_mem_regions)
-    if compiler == 'glow':
+    if len(early_stop)!=0 and compiler == 'glow':
         print('before', out_mem[1]-out_mem[0])  # debug
-        out_mem = (out_mem[0], out_mem[0] + (out_mem[1]-out_mem[0])/loop_size)
+        early_part = out_mem[0] + (out_mem[1]-out_mem[0])/loop_size
+        if math.floor(early_part) == early_part:
+            out_mem = (out_mem[0], early_part)
         print('after', out_mem[1]-out_mem[0])  # debug
     rnd_addr = random.randrange(out_mem[0], out_mem[1], 4)
     # mid_addr = out_mem[0] + (out_mem[1] - out_mem[0])/2
@@ -144,6 +154,9 @@ def set_tainted(addr_list: list):
 def reverse_taint(re_trace_log: str, new_trace: str):
     global logger
     start_time = time.time()
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Taint Analysis Start", localtime)
+    logger.info("Taint Analysis Start - {}".format(new_trace))
 
     reverse_log = os.path.abspath(re_trace_log)
     new_trace_log = os.path.abspath(new_trace)
@@ -166,11 +179,19 @@ def reverse_taint(re_trace_log: str, new_trace: str):
                 read_buf.insert(0, line)
                 idx += 1
                 if idx % 1000000 == 0:  # debug, million
-                    pass
-                    # print(idx)
-                    # print('len final_bufs {}'.format(len(final_bufs)))
-                    # print('len tainted_mems {}'.format(len(tainted_mems)))
-                    # print('len tainted_regs {}'.format(len(tainted_regs)))
+                    print(idx)
+                    print('len final_bufs {}'.format(len(final_bufs)))
+                    print('len tainted_mems {}'.format(len(tainted_mems)))
+                    print('len tainted_regs {}'.format(len(tainted_regs)))
+                    """ # debug
+                    if len(final_bufs) > 27000:
+                        with open(new_trace_log, 'w') as f:
+                            for r_buf in final_bufs:
+                                for line in r_buf:
+                                    f.write(line)
+                            f.close()
+                        exit(0)
+                    """
                 # TODO: handle the current instruction
                 # the core function of reverse taint
                 if handle_inst(read_buf):  # handle instructions
@@ -245,6 +266,7 @@ def handle_inst(read_buf: list):
         elif opcode.startswith('vfmadd231ss') or opcode.startswith('vfmadd213ps') or opcode.startswith('vfmadd231ps'):
             kept = handle_three(opcode, operands, mem_addr, read_op1=True)
         elif opcode.startswith('vxorps'):
+            # print(read_buf[0])  # debug
             kept = handle_vxor(opcode, operands, mem_addr)
         else:
             handle_not_implemented(opcode, operands)
@@ -297,6 +319,14 @@ def check_operands(operands: list, mem_line: str):
             if op in tainted_regs:
                 return True
         elif op in xmm_regs:  # xmm registers
+            if op.startswith('xmm'):
+                same_reg = op.replace('xmm', 'ymm')
+                if same_reg in tainted_regs:
+                    return True
+            elif op.startswith('ymm'):
+                same_reg = op.replace('ymm', 'xmm')
+                if same_reg in tainted_regs:
+                    return True
             if op in tainted_regs:
                 return True
         else:
@@ -435,7 +465,16 @@ def handle_vxor(opcode: str, operands: list, mem_addr: str):
     op2 = operands[1].strip()
     op3 = operands[2].strip()
     if op2 == op3:  # op1 == op2 == op3:
-        tainted_regs.remove(op1)
+        if op1 in tainted_regs:
+            tainted_regs.remove(op1)
+        if op2.startswith('xmm'):
+            same_reg = op2.replace('xmm', 'ymm')
+            if same_reg in tainted_regs:
+                tainted_regs.remove(same_reg)
+        elif op2.startswith('ymm'):
+            same_reg = op2.replace('ymm', 'xmm')
+            if same_reg in tainted_regs:
+                tainted_regs.remove(same_reg)
         return True
     else:
         return handle_three(opcode, operands, mem_addr)
@@ -459,17 +498,22 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str):
     log_path = os.path.abspath(log_path)
 
     rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path)
+    print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
     slice_log = log_path.replace('.log', '_slice.log')
 
     target_addr = rnd_addr
     mem_list = []
     addr_int = int(target_addr, 16)
+    loop_size = max(loop_size, 64)
     size = loop_size * 4
     for step in range(0, size, 4):  # the smallest unit is 4 bytes
         m_addr = hex(addr_int + step)
         mem_list.append(m_addr)
     set_tainted(mem_list)
-    reverse_taint(rev_log, slice_log)
+    if not os.path.exists(slice_log):
+        reverse_taint(rev_log, slice_log)
+    else:
+        print('{} already exists.'.format(slice_log))
     logger.debug(' slice_log {}\n rnd_addr {}\n loop_size {}\n start_addr {}\n end_addr {}\n'.format(slice_log, rnd_addr, loop_size, start_addr, end_addr))
     return slice_log, rnd_addr, loop_size, start_addr, end_addr
 

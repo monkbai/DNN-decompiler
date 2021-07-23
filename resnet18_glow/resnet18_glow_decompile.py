@@ -7,12 +7,12 @@ from scripts import trace_filter
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/home/lifter/Documents/tvm_output/resnet18_glow/resnet18_glow_ida"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/resnet18_glow_ida/"
 
-    prog_path = '/home/lifter/Documents/tvm_output/resnet18_glow/resnet18_strip.out'
-    in_data = '/home/lifter/Documents/tvm_output/cat.bin'
-    log_path = '/home/lifter/Documents/tvm_output/resnet18_glow/func_call.log'
-    label_file = '/home/lifter/Documents/tvm_output/resnet18_glow/step1.txt'
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/resnet18_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/step1.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     utils.get_funcs_trace(prog_path, in_data, log_path, label_file)
     utils.print_layer_label(log_path, 'config.json')
-
+    
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================

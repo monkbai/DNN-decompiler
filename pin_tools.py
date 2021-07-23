@@ -219,6 +219,9 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
     log_path = os.path.abspath(log_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Trace Logging Start", localtime)
+    logger.info('Trace Logging Start - {}'.format(log_path))
     status, output = cmd(inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
@@ -337,6 +340,9 @@ def tac_cmd(log_path: str, new_path: str):
 
     log_path = os.path.abspath(log_path)
     new_path = os.path.abspath(new_path)
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Reverse Logging Start", localtime)
+    logger.info('Reverse Logging Start - {}'.format(new_path))
     status, output = cmd("time tac {} > {}".format(log_path, new_path))
     if status:
         pass  # TODO: error log
