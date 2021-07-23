@@ -1,50 +1,53 @@
 #! /usr/bin/python3
 import os
 import sys
+sys.path.append("../..")
 from scripts import utils
+from scripts import trace_filter
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = '../../resnet_glow_funcs'
+    utils.funcs_dir = "/home/lifter/Documents/tvm_output/resnet18_glow/resnet18_glow_ida"
 
-    prog_path = '../../resnet18_v1_7.out'
-    in_data = '../../cat.bin'
-    log_path = '../../resnet18_glow_func_call.log'
-    label_file = '../../step1.txt'
+    prog_path = '/home/lifter/Documents/tvm_output/resnet18_glow/resnet18_strip.out'
+    in_data = '/home/lifter/Documents/tvm_output/cat.bin'
+    log_path = '/home/lifter/Documents/tvm_output/resnet18_glow/func_call.log'
+    label_file = '/home/lifter/Documents/tvm_output/resnet18_glow/step1.txt'
 
-    tmp_log_path = '../../inst_trace.log'
-    exp_log_path = '../../mem_exp.log'
-    mem_read_log_path = '../../mem_read.log'
-    mem_write_log_path = '../../mem_write.log'
+    tmp_log_path = './inst_trace.log'
+    exp_log_path = './mem_exp.log'
+    mem_read_log_path = './mem_read.log'
+    mem_write_log_path = './mem_write.log'
 
     # ==============================================================
     # Step 1 --- Get the Sequence of Layers ---
     # ==============================================================
-    """
+
     utils.get_funcs_trace(prog_path, in_data, log_path, label_file)
-    utils.print_layer_label(log_path)
-    exit(0)
-    """
+    utils.print_layer_label(log_path, 'config.json')
+
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
-    func_trace_map = {'0017.libjit_conv2d_f.txt': '../../0x401850-0x401f61_slice.log',
-                      '0019.libjit_conv2d_f.txt': '../../0x402200-0x4029b6_slice.log',
-                      '0020.libjit_convDKKC8_f.txt': '../../0x4029c0-0x4030f9_slice.log',
-                      '0023.libjit_convDKKC8_f.txt': '../../0x403320-0x403846_slice.log',
-                      '0024.libjit_conv2d_f.txt': '../../0x403850-0x403eaa_slice.log',
-                      '0025.libjit_convDKKC8_f.txt': '../../0x403eb0-0x4044dc_slice.log',
-                      '0027.libjit_conv2d_f.txt': '../../0x4045f0-0x404c89_slice.log',
-                      '0029.libjit_convDKKC8_f.txt': '../../0x404da0-0x405442_slice.log',
-                      '0030.libjit_conv2d_f.txt': '../../0x405450-0x405bca_slice.log',
-                      '0031.libjit_convDKKC8_f.txt': '../../0x405bd0-0x40639a_slice.log',
-                      '0033.libjit_conv2d_f.txt': '../../0x4064b0-0x406c50_slice.log',
-                      '0035.libjit_convDKKC8_f.txt': '../../0x406d70-0x4092f2_slice.log',
-                      '0036.libjit_conv2d_f.txt': '../../0x409300-0x40b8cc_slice.log',
-                      '0037.libjit_convDKKC8_f.txt': '../../0x40b8d0-0x40deee_slice.log',
-                      '0039.libjit_conv2d_f.txt': '../../0x40e000-0x41064f_slice.log',
-                      '0042.libjit_matmul_f.txt': '../../0x410b60-0x41118d_slice.log',
-                      }
+
+    # Generate and Filter Trace
+    func_trace_map = {}
+    func_rndaddr_map = {}
+    asm_files = os.listdir(utils.funcs_dir)
+    for asm_file in asm_files:
+        if 'labels' not in asm_file and asm_file.endswith('.txt'):
+            asm_path = os.path.join(utils.funcs_dir, asm_file)
+            start_addr, _ = utils.get_func_range(asm_path)
+            if start_addr in utils.addr2label.keys():
+                if 'conv' in utils.addr2label[start_addr]:
+                    trace_path = os.path.join(os.path.dirname(log_path), asm_file.replace('.txt', '.log'))
+                    slice_log, rnd_addr, loop_size, start_addr, end_addr = \
+                        trace_filter.get_trace(asm_path, prog_path, in_data, trace_path)
+                    func_trace_map[asm_path] = slice_log
+                    func_rndaddr_map[asm_path] = (rnd_addr, loop_size, start_addr, end_addr)
+    print(func_trace_map)
+    print(func_rndaddr_map)
+    exit(0)
     """
     tmp_write_log = '../../tmp_mem_write.log'
     func_addrs = utils.find_rand_addr(prog_path, in_data, tmp_write_log, label_file)
