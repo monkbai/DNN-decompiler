@@ -4,6 +4,10 @@ import sys
 sys.path.append("../..")
 from scripts import utils
 from scripts import trace_filter
+import logging
+print('get logger: {}'.format('decompiler.'+__name__))
+logger = logging.getLogger('decompiler.'+__name__)
+
 
 """
 def dict_to_json(dict_obj: dict, output_path: str):
@@ -243,11 +247,11 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
 """
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_glow_ida/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_strip.out"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/step1.txt"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O0/vgg16_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O0/vgg16_tvm_O0_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O0/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O0/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O0/step1.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -261,9 +265,37 @@ if __name__ == '__main__':
     utils.print_layer_label_tvm(log_path)
     utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm', only_fused=True)
     utils.print_layer_label_tvm(log_path, only_fused=True)
-    exit(0)
+    # TODO: add config.json
+
     # get_funcs_trace(prog_path, in_data, log_path, label_file)
     # print_layer_label(log_path)
+
+
+    # ==============================================================
+    # Step 2 --- Recover the Shape of each Layer
+    # ==============================================================
+    
+    # Generate and Filter Trace
+    logger.info('START')
+    func_trace_map = {}
+    func_rndaddr_map = {}
+    asm_files = os.listdir(utils.funcs_dir)
+    for asm_file in asm_files:
+        if 'labels' not in asm_file and asm_file.endswith('.txt'):
+            asm_path = os.path.join(utils.funcs_dir, asm_file)
+            start_addr, _ = utils.get_func_range(asm_path)
+            if start_addr in utils.addr2label.keys():
+                if 'conv' in utils.addr2label[start_addr]:
+                    trace_path = os.path.join(os.path.dirname(log_path), asm_file.replace('.txt', '.log'))
+                    slice_log, rnd_addr, loop_size, start_addr, end_addr = \
+                        trace_filter.get_trace(asm_path, prog_path, in_data, trace_path, compiler='tvm')
+                    func_trace_map[asm_path] = slice_log
+                    func_rndaddr_map[asm_path] = (rnd_addr, loop_size, start_addr, end_addr)
+                    
+    print(func_trace_map)
+    print(func_rndaddr_map)
+    logger.info('END')
+    exit(0)
 
     """
     func_shape = handle_all_conv(label_file)
@@ -272,9 +304,6 @@ if __name__ == '__main__':
         print(result)
     """
 
-    # ==============================================================
-    # Step 2 --- Recover the Shape of each Layer
-    # ==============================================================
     #func_name = '0139.function_429530.txt'  # 4096 * 25088
     #func_name = '0091.function_417b30.txt'  # 4096 * 4096
     func_name = '0067.function_40dd90.txt'  # 1000 * 4096

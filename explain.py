@@ -7,6 +7,20 @@ import collections
 # ==============================================================
 # Utils
 # ==============================================================
+def smallest_region(mem_regions: list, target_addr=0):
+    small_mem = (0, 0xdeadbeaf)
+    target_mem = (0, 0)
+    for mem_blk in mem_regions:
+        if (mem_blk[1] - mem_blk[0]) < (small_mem[1] - small_mem[0]):
+            small_mem = mem_blk
+        if mem_blk[0] <= target_addr <= mem_blk[1]:
+            target_mem = mem_blk
+    if target_addr == 0:
+        return small_mem
+    else:
+        return target_mem
+
+
 def biggest_region(mem_regions: list, target_addr=0):
     big_mem = (0, 0)
     target_mem = (0, 0)

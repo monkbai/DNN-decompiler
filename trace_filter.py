@@ -13,7 +13,7 @@ print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
 
 
-def get_early_stop(asm_path: str):
+def get_early_stop(asm_path: str, compiler='glow'):
     """
         early_stop: if the outermost loop has more than 16 cycles, we can stop logging after first cycle
         for conv layer only
@@ -25,13 +25,19 @@ def get_early_stop(asm_path: str):
         for line in asm_lines:
             asm = line[40:].strip()  # type: str
             if asm.startswith('cmp'):
-                loop_count = asm.split(',')[1].strip()
-                if loop_count.endswith('h'):
-                    loop_count = loop_count.strip('h')
-                    loop_count = int(loop_count, 16)
-                else:
-                    loop_count = int(loop_count)
-                break
+                if compiler == 'tvm':
+                    loop_count = 16
+                    break
+                elif compiler == 'glow':
+                    loop_count = asm.split(',')[1].strip()
+                    if loop_count.endswith('h'):
+                        loop_count = loop_count.strip('h')
+                        loop_count = int(loop_count, 16)
+                    elif loop_count.isdigit():
+                        loop_count = int(loop_count)
+                    else:
+                        loop_count = 1
+                    break
     if loop_count >= 16:
         early_stop = line.split(':')[0]
     else:
@@ -40,9 +46,9 @@ def get_early_stop(asm_path: str):
     return early_stop, loop_count
 
 
-def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str):
+def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str, compiler='glow'):
     asm_path = os.path.abspath(asm_path)
-    early_stop, loop_count = get_early_stop(asm_path)
+    early_stop, loop_count = get_early_stop(asm_path, compiler)
     start_addr, end_addr = utils.get_func_range(asm_path)
     if len(early_stop) > 0:
         end_addr = early_stop
@@ -73,19 +79,25 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     func_asm_path = os.path.abspath(func_asm_path)
 
     start_addr, end_addr = utils.get_func_range(func_asm_path)
-    early_stop, loop_size = get_early_stop(func_asm_path)
+    early_stop, loop_size = get_early_stop(func_asm_path, compiler)
     if len(early_stop) != 0:
         end_addr = early_stop
+    
     utils.mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, in_data)
     write_mem_regions = utils.memory_slices(mem_write_log_path)
-    out_mem = explain.biggest_region(write_mem_regions)
+    if compiler == 'glow':
+        out_mem = explain.biggest_region(write_mem_regions)
+    elif compiler == 'tvm':
+        out_mem = explain.smallest_region(write_mem_regions)
     if len(early_stop)!=0 and compiler == 'glow':
         print('before', out_mem[1]-out_mem[0])  # debug
         early_part = out_mem[0] + (out_mem[1]-out_mem[0])/loop_size
         if math.floor(early_part) == early_part:
             out_mem = (out_mem[0], early_part)
         print('after', out_mem[1]-out_mem[0])  # debug
+    print(out_mem)
     rnd_addr = random.randrange(out_mem[0], out_mem[1], 4)
+    
     # mid_addr = out_mem[0] + (out_mem[1] - out_mem[0])/2
     # mid_addr = int(mid_addr)
     # mid_addr = hex(mid_addr)
@@ -94,13 +106,13 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     return rnd_addr, loop_size
 
 
-def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str):
+def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow'):
     # Generate trace
     rev_log_path = log_path.replace('.log', '_rev.log')
-    start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path)
+    start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path,compiler)
     # Random pick a target address
     tmp_mem_write_log = './tmp_mem_write.log'
-    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log)
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler)
     # Reverse trace
     reverse_trace(log_path, rev_log_path)
     logger.debug('log_path: {}, reverse_log_path: {}'.format(log_path, rev_log_path))
@@ -254,20 +266,30 @@ def handle_inst(read_buf: list):
 
         mem_line = read_buf[1]
         mem_addr = mem_line.split(':')[1].strip()
-        if opcode.startswith('mov') or opcode.startswith('lea'):
+        if opcode.startswith('mov') and (opcode.endswith('ps') or opcode.endswith('ss')):
+            kept = handle_two(opcode, operands, mem_addr)  # mov related to xmm regs 
+        elif opcode.startswith('mov') or opcode.startswith('lea'):
             kept = handle_mov(opcode, operands, mem_addr)
         elif opcode.startswith('vmovss') or opcode.startswith('vmovups') or opcode.startswith('vmovaps'):
-            kept = handle_two(opcode, operands, mem_addr)
+            kept = handle_two(opcode, operands, mem_addr)  # mov realted to xmm regs
         elif opcode.startswith('vbroadcastss'):
             kept = handle_two(opcode, operands, mem_addr)
         elif opcode.startswith('vmaxss') or opcode.startswith('vaddss') or opcode.startswith(
                 'vmulss') or opcode.startswith('vaddps'):
             kept = handle_three(opcode, operands, mem_addr)
+        elif opcode.startswith('maxss') or opcode.startswith('addss') or opcode.startswith(
+                'mulss') or opcode.startswith('addps') or opcode.startswith('mulps'):
+            kept = handle_two_arith(opcode, operands, mem_addr)
+        elif opcode.startswith('unpcklps'):
+            kept = handle_two_arith(opcode, operands, mem_addr)  # although it is not arithmetic instruction
         elif opcode.startswith('vfmadd231ss') or opcode.startswith('vfmadd213ps') or opcode.startswith('vfmadd231ps'):
             kept = handle_three(opcode, operands, mem_addr, read_op1=True)
         elif opcode.startswith('vxorps'):
             # print(read_buf[0])  # debug
             kept = handle_vxor(opcode, operands, mem_addr)
+        elif opcode.startswith('shufps'):
+            kept = False  # shufps is not modeled 
+            pass
         else:
             handle_not_implemented(opcode, operands)
         if kept:  # debug
@@ -428,6 +450,31 @@ def handle_two(opcode: str, operands: list, mem_addr: str):
     return kept_flag
 
 
+def handle_two_arith(opcode: str, operands: list, mem_addr: str):
+    global tainted_mems, tainted_regs
+    assert len(operands) == 2, 'should has only two operands'
+    kept_flag = False
+    op1 = operands[0].strip()
+    op2 = operands[1].strip()
+    if op1 in xmm_regs and '[' in op2:
+        # calculate from memory and register
+        m_addr_list = split_addr_list(mem_addr, op2)
+        if op1 in tainted_regs:
+            kept_flag = True
+            # tainted_regs.remove(op1)  # op1 alos attend the calculation
+            for m_addr in m_addr_list:
+                tainted_mems.add(m_addr)
+    elif op1 in xmm_regs and op2 in xmm_regs:
+        # calculate from register and register
+        if op1 in tainted_regs:
+            kept_flag = True
+            # tainted_regs.remove(op1)
+            tainted_regs.add(op2)
+    else:
+        assert False, 'undefined {} {}'.format(opcode, operands)
+    return kept_flag
+
+
 def handle_three(opcode: str, operands: list, mem_addr: str, read_op1=False):
     global tainted_mems, tainted_regs
     assert len(operands) == 3, 'should has 3 operands'
@@ -491,13 +538,13 @@ def handle_not_implemented(opcode: str, operands: list):
 # Interface
 #
 # ===============================================
-def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str):
+def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow'):
     asm_path = os.path.abspath(asm_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
     log_path = os.path.abspath(log_path)
 
-    rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path)
+    rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler)
     print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
     slice_log = log_path.replace('.log', '_slice.log')
 
@@ -518,14 +565,14 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str):
     return slice_log, rnd_addr, loop_size, start_addr, end_addr
 
 
-def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str):
+def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str, compiler='glow'):
     asm_path = os.path.abspath(asm_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
     rev_log_path = os.path.abspath(rev_log_path)
 
     tmp_mem_write_log = './tmp_mem_write.log'
-    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log)  # random choose an target address again
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler)  # random choose an target address again
     # rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path)
     slice_log = rev_log_path.replace('_rev.log', '_slice.log')
 
