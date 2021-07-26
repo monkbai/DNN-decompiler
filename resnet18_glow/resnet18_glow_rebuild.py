@@ -57,120 +57,120 @@ class MyResNet(nn.Module):
         super(MyResNet, self).__init__()
         net = []
         net.append(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3))
-        set_weights(net[-1], './0017.libjit_conv2d_f.weights_0.json')
-        set_biases(net[-1], '0017.libjit_conv2d_f.biases_0.json')
+        set_weights(net[-1], './0010.weights_0.json')
+        set_biases(net[-1], '0010.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
 
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0019.libjit_conv2d_f.weights_0.json')
-        set_biases(net[-1], '0019.libjit_conv2d_f.biases_0.json')
+        set_weights(net[-1], './0012.weights_0.json')
+        set_biases(net[-1], '0012.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0020.libjit_convDKKC8_f.weights_0.json')
-        set_biases(net[-1], '0020.libjit_convDKKC8_f.biases_0.json')
+        set_weights(net[-1], './0013.weights_0.json')
+        set_biases(net[-1], '0013.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))
         # set_weights(net[-1], '../resnet18_tvm_O0/0080.function_409280.weights_2.json')
-        set_weights(net[-1], './0019.libjit_conv2d_f.weights_1.json')
-        set_biases(net[-1], './0019.libjit_conv2d_f.biases_1.json')
+        set_weights(net[-1], './0012.weights_1.json')
+        set_biases(net[-1], './0012.biases_1.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0020.libjit_convDKKC8_f.weights_1.json')
-        set_biases(net[-1], '0020.libjit_convDKKC8_f.biases_1.json')
+        set_weights(net[-1], './0013.weights_1.json')
+        set_biases(net[-1], '0013.biases_1.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, stride=2, padding=0))
-        set_weights(net[-1], './0023.libjit_convDKKC8_f.weights_0.json')
-        set_biases(net[-1], '0023.libjit_convDKKC8_f.biases_0.json')
+        set_weights(net[-1], './0016.weights_0.json')
+        set_biases(net[-1], '0016.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1))  # correct the shape
-        set_weights(net[-1], './0024.libjit_conv2d_f.weights_0.json')
-        set_biases(net[-1], '0024.libjit_conv2d_f.biases_0.json')
+        set_weights(net[-1], './0017.weights_0.json')
+        set_biases(net[-1], '0017.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0025.libjit_convDKKC8_f.weights_0.json')
-        set_biases(net[-1], '0025.libjit_convDKKC8_f.biases_0.json')
+        set_weights(net[-1], './0018.weights_0.json')
+        set_biases(net[-1], '0018.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0027.libjit_conv2d_f.weights_0.json')
-        set_biases(net[-1], '0027.libjit_conv2d_f.biases_0.json')
+        set_weights(net[-1], './0020.weights_0.json')
+        set_biases(net[-1], '0020.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0025.libjit_convDKKC8_f.weights_1.json')
-        set_biases(net[-1], '0025.libjit_convDKKC8_f.biases_1.json')
+        set_weights(net[-1], './0018.weights_1.json')
+        set_biases(net[-1], '0018.biases_1.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1, stride=2, padding=0))
-        set_weights(net[-1], './0029.libjit_convDKKC8_f.weights_0.json')
-        set_biases(net[-1], '0029.libjit_convDKKC8_f.biases_0.json')
+        set_weights(net[-1], './0022.weights_0.json')
+        set_biases(net[-1], '0022.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1))
-        set_weights(net[-1], './0030.libjit_conv2d_f.weights_0.json')
-        set_biases(net[-1], '0030.libjit_conv2d_f.biases_0.json')
+        set_weights(net[-1], './0023.weights_0.json')
+        set_biases(net[-1], '0023.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0031.libjit_convDKKC8_f.weights_0.json')
-        set_biases(net[-1], '0031.libjit_convDKKC8_f.biases_0.json')
+        set_weights(net[-1], './0024.weights_0.json')
+        set_biases(net[-1], '0024.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0033.libjit_conv2d_f.weights_0.json')
-        set_biases(net[-1], '0033.libjit_conv2d_f.biases_0.json')
+        set_weights(net[-1], './0026.weights_0.json')
+        set_biases(net[-1], '0026.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0031.libjit_convDKKC8_f.weights_1.json')
-        set_biases(net[-1], '0031.libjit_convDKKC8_f.biases_1.json')
+        set_weights(net[-1], './0024.weights_1.json')
+        set_biases(net[-1], '0024.biases_1.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=2, padding=0))
-        set_weights(net[-1], './0035.libjit_convDKKC8_f.weights_0.json')
-        set_biases(net[-1], '0035.libjit_convDKKC8_f.biases_0.json')
+        set_weights(net[-1], './0028.weights_0.json')
+        set_biases(net[-1], '0028.biases_0.json')
         net.append(nn.Identity())  #  net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1))
-        set_weights(net[-1], './0036.libjit_conv2d_f.weights_0.json')
-        set_biases(net[-1], '0036.libjit_conv2d_f.biases_0.json')
+        set_weights(net[-1], './0029.weights_0.json')
+        set_biases(net[-1], '0029.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0037.libjit_convDKKC8_f.weights_0.json')
-        set_biases(net[-1], '0037.libjit_convDKKC8_f.biases_0.json')
+        set_weights(net[-1], './0030.weights_0.json')
+        set_biases(net[-1], '0030.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0039.libjit_conv2d_f.weights_0.json')
-        set_biases(net[-1], '0039.libjit_conv2d_f.biases_0.json')
+        set_weights(net[-1], './0032.weights_0.json')
+        set_biases(net[-1], '0032.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0037.libjit_convDKKC8_f.weights_1.json')
-        set_biases(net[-1], '0037.libjit_convDKKC8_f.biases_1.json')
+        set_weights(net[-1], './0030.weights_1.json')
+        set_biases(net[-1], '0030.biases_1.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
@@ -179,8 +179,8 @@ class MyResNet(nn.Module):
         net.append(nn.Flatten())
 
         net.append(nn.Linear(in_features=512, out_features=1000))
-        set_weights(net[-1], './0042.libjit_matmul_f.params_0.json')
-        set_biases(net[-1], './0043.libjit_batchedadd_f.params_0.json')
+        set_weights(net[-1], './0035.params_0.json')
+        set_biases(net[-1], './0036.params_0.json')
         self.net = net
 
     def forward(self, x):
@@ -210,7 +210,7 @@ class MyResNet(nn.Module):
 
 if __name__ == "__main__":
     # x = torch.rand(size=(1, 3, 224, 224))
-    with open('/home/lifter/Documents/tvm_output/cat.bin', 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)

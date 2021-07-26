@@ -46,11 +46,11 @@ def get_early_stop(asm_path: str, compiler='glow'):
     return early_stop, loop_count
 
 
-def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str, compiler='glow'):
+def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str, compiler='glow', func_type='conv'):
     asm_path = os.path.abspath(asm_path)
     early_stop, loop_count = get_early_stop(asm_path, compiler)
     start_addr, end_addr = utils.get_func_range(asm_path)
-    if len(early_stop) > 0:
+    if len(early_stop) > 0 and 'conv' in func_type:  # for matmul/dense layer, no need to early stop
         end_addr = early_stop
 
     log_path = os.path.abspath(out_log_path)
@@ -81,7 +81,7 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     start_addr, end_addr = utils.get_func_range(func_asm_path)
     early_stop, loop_size = get_early_stop(func_asm_path, compiler)
     if len(early_stop) != 0:
-        end_addr = early_stop
+        end_addr = early_stop  # this only work on TVM
     
     utils.mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, in_data)
     write_mem_regions = utils.memory_slices(mem_write_log_path)
@@ -89,12 +89,15 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
         out_mem = explain.biggest_region(write_mem_regions)
     elif compiler == 'tvm':
         out_mem = explain.smallest_region(write_mem_regions)
+    '''
+    # this optimization does not work
     if len(early_stop)!=0 and compiler == 'glow':
         print('before', out_mem[1]-out_mem[0])  # debug
         early_part = out_mem[0] + (out_mem[1]-out_mem[0])/loop_size
         if math.floor(early_part) == early_part:
             out_mem = (out_mem[0], early_part)
         print('after', out_mem[1]-out_mem[0])  # debug
+    '''
     print(out_mem)
     rnd_addr = random.randrange(out_mem[0], out_mem[1], 4)
     
@@ -106,10 +109,10 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     return rnd_addr, loop_size
 
 
-def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow'):
+def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv'):
     # Generate trace
     rev_log_path = log_path.replace('.log', '_rev.log')
-    start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path,compiler)
+    start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path, compiler, func_type)
     # Random pick a target address
     tmp_mem_write_log = './tmp_mem_write.log'
     rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler)
@@ -156,6 +159,14 @@ xmm_regs = {
 tainted_regs = set()
 tainted_mems = set()
 
+call_flag = 0  # call instruction and 4 instructions before it should be kept
+
+
+def clear_state():
+    global tainted_regs, tainted_mems
+    tainted_regs.clear()
+    tainted_mems.clear()
+
 
 def set_tainted(addr_list: list):
     global tainted_mems
@@ -195,15 +206,15 @@ def reverse_taint(re_trace_log: str, new_trace: str):
                     print('len final_bufs {}'.format(len(final_bufs)))
                     print('len tainted_mems {}'.format(len(tainted_mems)))
                     print('len tainted_regs {}'.format(len(tainted_regs)))
-                    """ # debug
-                    if len(final_bufs) > 27000:
+                    '''# debug
+                    if len(final_bufs) > 1000000:
                         with open(new_trace_log, 'w') as f:
                             for r_buf in final_bufs:
                                 for line in r_buf:
                                     f.write(line)
                             f.close()
                         exit(0)
-                    """
+                    '''
                 # TODO: handle the current instruction
                 # the core function of reverse taint
                 if handle_inst(read_buf):  # handle instructions
@@ -226,6 +237,7 @@ def reverse_taint(re_trace_log: str, new_trace: str):
 
 
 def handle_inst(read_buf: list):
+    global call_flag
     if len(read_buf) < 1:
         return False
     # Return Ture if current should be kept, False otherwise
@@ -256,8 +268,12 @@ def handle_inst(read_buf: list):
             operands = []
 
         # does this instruction shoule be checked?
-        if opcode.startswith('data') or opcode.startswith('nop'):  # it's not an instruction
+        if  call_flag > 0:
+            call_flag -= 1
+        elif opcode.startswith('data') or opcode.startswith('nop'):  # it's not an instruction
             return False
+        elif opcode.startswith('call'):
+            call_flag = 4  # for function call
         elif not check_operands(operands, read_buf[1]):  # read_buf[1] -> mem read/write addr
             return False
 
@@ -266,22 +282,29 @@ def handle_inst(read_buf: list):
 
         mem_line = read_buf[1]
         mem_addr = mem_line.split(':')[1].strip()
-        if opcode.startswith('mov') and (opcode.endswith('ps') or opcode.endswith('ss')):
+        if opcode.startswith('j'):
+            kept = False
+        elif opcode.startswith('unpck') or opcode.startswith('movlh') or opcode.startswith('movhl'):
+            kept = handle_two_arith(opcode, operands, mem_addr)  # although it is not arithmetic instruction
+        elif opcode.startswith('mov') and (opcode.endswith('ps') or opcode.endswith('ss') or opcode.endswith('sd')):
             kept = handle_two(opcode, operands, mem_addr)  # mov related to xmm regs 
         elif opcode.startswith('mov') or opcode.startswith('lea'):
-            kept = handle_mov(opcode, operands, mem_addr)
+            if check_operands(operands, read_buf[1]):
+                kept = handle_mov(opcode, operands, mem_addr)
+            else:
+                kept = False
+            # kept = True  # try to keep all mov instructions  # NO, DEFINITELY NO!
+        elif opcode.startswith('call') or opcode.startswith('xor'):
+            kept = True  # keep function calls  to memset and expf for TVM
         elif opcode.startswith('vmovss') or opcode.startswith('vmovups') or opcode.startswith('vmovaps'):
             kept = handle_two(opcode, operands, mem_addr)  # mov realted to xmm regs
         elif opcode.startswith('vbroadcastss'):
             kept = handle_two(opcode, operands, mem_addr)
-        elif opcode.startswith('vmaxss') or opcode.startswith('vaddss') or opcode.startswith(
-                'vmulss') or opcode.startswith('vaddps'):
+        elif opcode.startswith('vmaxss') or opcode.startswith('vaddss') or opcode.startswith('vmulss') or opcode.startswith('vaddps'):
             kept = handle_three(opcode, operands, mem_addr)
-        elif opcode.startswith('maxss') or opcode.startswith('addss') or opcode.startswith(
-                'mulss') or opcode.startswith('addps') or opcode.startswith('mulps'):
+        elif opcode.startswith('maxss') or opcode.startswith('addss') or opcode.startswith('mulss') or \
+             opcode.startswith('maxps') or opcode.startswith('addps') or opcode.startswith('mulps'):
             kept = handle_two_arith(opcode, operands, mem_addr)
-        elif opcode.startswith('unpcklps'):
-            kept = handle_two_arith(opcode, operands, mem_addr)  # although it is not arithmetic instruction
         elif opcode.startswith('vfmadd231ss') or opcode.startswith('vfmadd213ps') or opcode.startswith('vfmadd231ps'):
             kept = handle_three(opcode, operands, mem_addr, read_op1=True)
         elif opcode.startswith('vxorps'):
@@ -289,6 +312,9 @@ def handle_inst(read_buf: list):
             kept = handle_vxor(opcode, operands, mem_addr)
         elif opcode.startswith('shufps'):
             kept = False  # shufps is not modeled 
+            pass
+        elif opcode.startswith('nop'):
+            kept = False
             pass
         else:
             handle_not_implemented(opcode, operands)
@@ -538,13 +564,16 @@ def handle_not_implemented(opcode: str, operands: list):
 # Interface
 #
 # ===============================================
-def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow'):
+def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv'):
+    clear_state()
+
     asm_path = os.path.abspath(asm_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
     log_path = os.path.abspath(log_path)
 
-    rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler)
+    rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type)
+    # rnd_addr = '0x2146dfd0'  # debug
     print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
     slice_log = log_path.replace('.log', '_slice.log')
 
@@ -552,6 +581,8 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
     mem_list = []
     addr_int = int(target_addr, 16)
     loop_size = max(loop_size, 64)
+    if 'matmul' in func_type:
+        loop_size = 16  # for simplicity
     size = loop_size * 4
     for step in range(0, size, 4):  # the smallest unit is 4 bytes
         m_addr = hex(addr_int + step)
@@ -566,6 +597,8 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
 
 
 def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str, compiler='glow'):
+    clear_state()
+
     asm_path = os.path.abspath(asm_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
@@ -573,6 +606,7 @@ def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str,
 
     tmp_mem_write_log = './tmp_mem_write.log'
     rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler)  # random choose an target address again
+    #rnd_addr = '0x31703b4'  
     # rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path)
     slice_log = rev_log_path.replace('_rev.log', '_slice.log')
 

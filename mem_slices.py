@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 import time
+import logging
 
+print('get logger: {}'.format('decompiler.' + __name__))
+logger = logging.getLogger('decompiler.' + __name__)
 
 def memory_slices(mem_read_trace: str):
     mem_obj = dict()  # id --> mem_obj(start, end)
@@ -91,6 +94,7 @@ def memory_slices(mem_read_trace: str):
             print('[{}, {}] {}'.format(hex(start_addr), hex(end_addr), hex(end_addr - start_addr)))
     end_time = time.time()
     print('time:', end_time - start_time)
+    logger.info('Memory Clustering time - {}s'.format(end_time - start_time))
     return new_mem_objs
 
 

@@ -193,7 +193,7 @@ def print_input_id(trace_log_path: str):
         print(input_id_list[param[0]])
 
 
-def print_layer_label(trace_log_path: str, config_path=''):
+def print_layer_label(trace_log_path: str, config_path=''):  # for glow
     global addr2label, addr2funcs, addr2param, func2param
     addr2label = json_to_dict('./addr2label.json')
     addr2funcs = json_to_dict('./addr2funcs.json')
@@ -222,10 +222,10 @@ def print_layer_label(trace_log_path: str, config_path=''):
             config_flag = False
             for key, param_list in func2param.items():
                 if key in addr2label[addr]:
-                    print('{}: {:<16}: {} {}, {} {}, {} {}'.format(addr, addr2label[addr],
-                                                            param_list[0], addr_list[0],
-                                                            param_list[1], addr_list[1],
-                                                            param_list[2], addr_list[2]))
+                    print('{}: {:>10} - {:<16}: {} {}, {} {}, {} {}'.format(addr, addr2funcs[addr], addr2label[addr],
+                                                                            param_list[0], addr_list[0],
+                                                                            param_list[1], addr_list[1],
+                                                                            param_list[2], addr_list[2]))
                     if 'in/out' in param_list[0]:
                         addr2param[addr] = (addr_list[0], addr_list[0])
                     elif 'in' in param_list[0] and 'out' in param_list[1]:
@@ -237,7 +237,7 @@ def print_layer_label(trace_log_path: str, config_path=''):
             if not config_flag:  # not defined in config.json
                 #print('{}: {:<16}: param1 {}, param2 {}, param3 {}'.format(addr, addr2label[addr],
                 #                                                           addr_list[0], addr_list[1], addr_list[2]))
-                print('{}: {:<16}:'.format(addr, addr2label[addr]), end=' ')
+                print('{}: {:>10} - {:<16}:'.format(addr, addr2funcs[addr], addr2label[addr]), end=' ')
                 for i in range(len(addr_list)):
                     if i == len(addr_list)-1:
                         end_str = '\n'
@@ -298,7 +298,7 @@ def get_func_range(func_asm_path: str):
     return start_addr.lower(), end_addr.lower()
 
 
-def generate_inst_trace(func_name: str, log_path: str, prog_path, data_path: str):
+def generate_inst_trace(func_name: str, log_path: str, prog_path, data_path: str, timeout=False):
     func_asm_path = os.path.join(funcs_dir, func_name)
     func_asm_path = os.path.abspath(func_asm_path)
     start_addr, end_addr = get_func_range(func_asm_path)
@@ -307,7 +307,7 @@ def generate_inst_trace(func_name: str, log_path: str, prog_path, data_path: str
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
 
-    inst_trace_log(log_path, start_addr, end_addr, prog_path, data_path)
+    inst_trace_log(log_path, start_addr, end_addr, prog_path, data_path, timeout)
 
 
 def generate_symbolic_expression(func_name: str, inst_log_path: str, exp_log_path: str, max_inst=5000000):
@@ -348,7 +348,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
     mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
     read_mem_regions = memory_slices(mem_read_log_path)
     write_mem_regions = memory_slices(mem_write_log_path)
-    if func_type == 'conv2d':
+    if 'conv' in func_type:
         # try with different stride
         filter_shape = (0, 0, 0, 0)
         input_shape = (0, 0, 0, 0)
@@ -356,7 +356,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
         with_relu = False
         for stride in range(1, 4):
             for padding in range(0, 4):
-                print('try with stride: {}, padding: {}'.format(stride, padding))
+                #print('try with stride: {}, padding: {}'.format(stride, padding))
                 tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_with_relu = explain_glow_conv2d_result(mem_exp_log,
                                                                                                  read_mem_regions,
                                                                                                  write_mem_regions,
@@ -371,20 +371,23 @@ def recover_shape(func_name: str, mem_exp_log: str,
                     if filter_shape[2] == filter_shape[3] == 1:
                         print('stride: 2')
                         return filter_shape  # no need to guess padding/stride
+        print(filter_shape)
+        if filter_shape[0] == 0:
+            exit(0)
         return filter_shape
-    elif func_type == 'matmul':  # dense in tvm
+    elif 'matmul' in func_type:  # dense in tvm
         input_size, output_size = explain_glow_dense_result(mem_exp_log, write_mem_regions)
         return output_size, input_size
-    elif func_type == 'add':
+    elif 'add' in func_type:
         if read_mem_regions[0][1] - read_mem_regions[0][0] == read_mem_regions[1][1] - read_mem_regions[1][0]:
             # the case of add layer after dense/fully-connected layer
             return (read_mem_regions[0][1] - read_mem_regions[0][0]) / 4
         bias_length = explain_tvm_add_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return bias_length
-    elif func_type.startswith('max'):  # max_pool
+    elif 'max_pool' in func_type:  # max_pool
         kernel_size, stride = explain_glow_maxpool_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return kernel_size, stride
-    elif func_type.startswith('avg'):  # avg_pool
+    elif 'avg_pool' in func_type:  # avg_pool
         kernel_size, stride = explain_glow_avgpool_result(mem_exp_log, write_mem_regions, read_mem_regions)
         return kernel_size, stride
 
@@ -538,7 +541,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv2d' in label or 'dense' in label):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()
@@ -630,7 +633,8 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
     dwords_len = 1
     for w in w_shape:
         dwords_len *= w
-    rm_log(log_path)
+    if os.path.exists(log_path):
+        rm_log(log_path)
     dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
 
     # then convert dwords to floats
@@ -646,15 +650,15 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
 
             w = np.asarray(float_array)
             w = w.reshape(w_shape)
-            if 'DKKC8' in func_name:
+            if 'DKKC8' in func_type:  # Glow applies special layout alteration named DKKC8
                 # w = np.swapaxes(w, 0, 3)
                 w = np.transpose(w, (3, 1, 2, 0, 4))
                 new_shape = (w_shape[3], w_shape[1], w_shape[2], w_shape[0]*w_shape[4])
                 w = np.reshape(w, new_shape, order='C')
                 w = np.transpose(w, (3, 0, 1, 2))
-            if reg_num == 1 and len(w_shape) == 4 and func_type != 'dense':
+            if reg_num == 1 and len(w_shape) == 4 and func_type != 'matmul':
                 w = np.transpose(w, (0, 3, 1, 2))  # store weights in (N,H,W,C) format
-            elif reg_num == 1 and len(w_shape) == 4 and func_type == 'dense':
+            elif reg_num == 1 and len(w_shape) == 4 and func_type == 'matmul':
                 w = np.transpose(w, (3, 2, 0, 1))
                 print('new shape', (w_shape[3], w_shape[0] * w_shape[1] * w_shape[2]))
                 w = w.reshape(w_shape[3], w_shape[0] * w_shape[1] * w_shape[2])
@@ -665,7 +669,7 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
             json_str = json.dumps(lists)
             # print(json_str)
             json_str = json_str.replace('],', '],\n')
-            if len(w_shape) == 5 and 'DKKC8' in func_name:
+            if len(w_shape) == 5 and 'DKKC8' in func_type:
                 json_name = func_name[:func_name.rfind('.')] + '.weights_{}.json'.format(i)
             elif reg_num == 1 and len(w_shape) == 4:
                 json_name = func_name[:func_name.rfind('.')] + '.weights_{}.json'.format(i)
@@ -673,7 +677,7 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
                 json_name = func_name[:func_name.rfind('.')] + '.params_{}.json'.format(i)
             elif reg_num == 2:
                 json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
-
+            
             with open(json_name, 'w') as wf:
                 wf.write(json_str)
                 wf.close()

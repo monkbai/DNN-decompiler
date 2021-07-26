@@ -29,6 +29,8 @@ def biggest_region(mem_regions: list, target_addr=0):
             big_mem = mem_blk
         if mem_blk[0] <= target_addr <= mem_blk[1]:
             target_mem = mem_blk
+        elif (target_mem[1] - target_mem[0]) != 0 and (target_mem[1] - target_mem[0]) == mem_blk[1] - mem_blk[0]:
+            target_mem = mem_blk
     if target_addr == 0:
         return big_mem
     else:
@@ -51,18 +53,18 @@ def choose_one_4bytes(exp_log_path: str, mem_write_regions=[], num=0):
         name = ''
         exp = ''
         while index < length-2:
-            name = lines[index]
+            tmp_name = lines[index]
             index += 1
-            exp = lines[index].strip('<>')
+            tmp_exp = lines[index].strip('<>')
             index += 1
-            if (not name.endswith(',4')) or name.startswith('0x7ff'):
+            if (not tmp_name.endswith(',4')) or tmp_name.startswith('0x7ff'):
                 continue
-            else:  # choose the first expression of one 4 bytes memory block
-                if out_mem[0] <= int(name.split(',')[0], 16) <= out_mem[1]:
-                    num -= 1
-                if num < 0:
-                    return name, exp
-        return '', ''
+            else:  # choose the longest expression of one 4 bytes memory block
+                if out_mem[0] <= int(tmp_name.split(',')[0], 16) <= out_mem[1]:
+                    if len(tmp_exp) > len(exp):
+                        name = tmp_name
+                        exp = tmp_exp
+        return name, exp
 
 
 def choose_one_16bytes(exp_log_path: str, mem_write_regions: list, num=0):
@@ -204,8 +206,8 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     if len(name) == 0:
         name, exp = choose_one_16bytes(exp_log_path, tmp_mem_write_regions)  # TODO
         return explain_tvm_conv2d_result_16(name, exp, mem_read_regions, mem_write_regions, guess_stride, optimized)
-    mem_list = [(name, exp)]
-    mem_list.append(tuple(choose_one_4bytes(exp_log_path, tmp_mem_write_regions, 1)))
+    # mem_list = [(name, exp)]
+    # mem_list.append(tuple(choose_one_4bytes(exp_log_path, tmp_mem_write_regions, 1)))
 
     # TODO: here assume width==height
     input_shape = [1, 1, 1, 1]
@@ -680,9 +682,10 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
         print('filter shape', filter_shape)
         print('output shape', output_shape)
         print('with_relu', with_relu)
+        print('stride {}, padding {}'.format(guess_stride, guess_padding))
         return filter_shape, input_shape, output_shape, with_relu
     else:
-        print('not a reasonable guess, ignored')
+        # print('not a reasonable guess, ignored')
         return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), False
 
 
@@ -692,7 +695,7 @@ def get_weights_addrs(exp: str, size=4):
     for match in it:
         addr = match.group(1)
         addr_list.append(int(addr, 16))
-    print('one weights addr', hex(addr_list[0]))
+    # print('one weights addr', hex(addr_list[0]))
     return addr_list
 
 
@@ -891,6 +894,17 @@ def explain_glow_maxpool_result(exp_log_path: str, mem_read_regions: list, mem_w
         size_diff = (in_mem[1]-in_mem[0]) / (out_mem[1]-out_mem[0])
         stride = math.sqrt(size_diff)
         return kernel_size, stride
+    name, exp = choose_one_max(exp_log_path, out_mem, size=32)
+    if name.endswith(',32'):
+        kernel_size = math.sqrt(exp.count('max'))
+        match = re.search(r', 0x([0-9a-f]+),32\)', exp[exp.find(')'):])
+        if not match:
+            match = re.search(r'\(0x([0-9a-f]+),32, ', exp)
+        addr1 = int(match.group(1), 16)
+        assert in_mem[0] <= addr1 <= in_mem[1]
+        size_diff = (in_mem[1]-in_mem[0]) / (out_mem[1]-out_mem[0])
+        stride = math.sqrt(size_diff)
+        return kernel_size, stride
 
 
 def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_read_regions: list, vector_size=0):
@@ -913,7 +927,7 @@ def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_
         addr = (addr - min_addr) / 4
         offset_list.append(addr)
     # TODO: is it possible that stride != kernel ?
-    return len(offset_list), 1
+    return math.sqrt(len(offset_list)), 1
 
 
 if __name__ == '__main__':

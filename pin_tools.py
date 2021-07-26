@@ -58,11 +58,14 @@ func_call_cmd = pin_home + "pin -t " + \
 inst_trace_cmd = "time " + \
                  pin_home + "pin -t " + \
                  mypintool_dir + "obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
-mem_read_log_cmd = pin_home + "pin -t " + \
+timeout_inst_trace_cmd = "time timeout 15s " + \
+                         pin_home + "pin -t " + \
+                         mypintool_dir + "obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
+mem_read_log_cmd = "time " + pin_home + "pin -t " + \
                    mypintool_dir + "obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
-mem_write_log_cmd = pin_home + "pin -t " + \
+mem_write_log_cmd = "time " + pin_home + "pin -t " + \
                     mypintool_dir + "obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
-mem_dump_log_cmd = pin_home + "pin -t " + \
+mem_dump_log_cmd = "time " + pin_home + "pin -t " + \
                    mypintool_dir + "obj-intel64/MemoryDump.so -o {} -length {} -dump_point {} -reg_num {} -- {} {}"
 mem_dump_2_log_cmd = pin_home + "pin -t " + \
                      mypintool_dir + "obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -data_index {} -- {} {}"
@@ -189,10 +192,14 @@ def mem_read_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, 
     log_path = os.path.abspath(log_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Mem Read Logging Start", localtime)
     status, output = cmd(mem_read_log_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
 
+    logger.info('Mem Read Logging Time - {}'.format(output[output.find('real'):]))
+    print(output[output.find('real'):])
     project_dir = project_dir_backup
 
 
@@ -204,14 +211,18 @@ def mem_write_log(log_path: str, start_addr: str, end_addr: str, prog_path: str,
     log_path = os.path.abspath(log_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Mem Write Logging Start", localtime)
     status, output = cmd(mem_write_log_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
 
+    logger.info('Mem Write Logging Time - {}'.format(output[output.find('real'):]))
+    print(output[output.find('real'):])
     project_dir = project_dir_backup
 
 
-def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str):
+def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str, timeout=False):
     global project_dir, logger
     project_dir_backup = project_dir
     project_dir = mypintool_dir
@@ -222,7 +233,10 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
     localtime = time.asctime( time.localtime(time.time()) )
     print ("Trace Logging Start", localtime)
     logger.info('Trace Logging Start - {}'.format(log_path))
-    status, output = cmd(inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
+    if not timeout:
+        status, output = cmd(inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
+    else:
+        status, output = cmd(timeout_inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
 
@@ -237,11 +251,14 @@ def dump_dwords(prog_path: str, input_data_path: str, inst_addr: str, dwords_len
     project_dir_backup = project_dir
     project_dir = os.path.dirname(prog_path)  # project_dir = mypintool_dir
 
+    localtime = time.asctime( time.localtime(time.time()) )
+    print ("Dump Dwords Start", localtime)
     status, output = cmd(mem_dump_log_cmd.format(log_path, dwords_len, inst_addr, reg_num, prog_path, input_data_path))
     # print(output)
     if status != 0:
         print(output)
-
+    logger.info('Dump Dwords Time - {}'.format(output[output.find('real'):]))
+    print(output[output.find('real'):])
     project_dir = project_dir_backup
 
 
