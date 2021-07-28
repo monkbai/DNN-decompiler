@@ -67,7 +67,7 @@ mem_write_log_cmd = "time " + pin_home + "pin -t " + \
                     mypintool_dir + "obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
 mem_dump_log_cmd = "time " + pin_home + "pin -t " + \
                    mypintool_dir + "obj-intel64/MemoryDump.so -o {} -length {} -dump_point {} -reg_num {} -- {} {}"
-mem_dump_2_log_cmd = pin_home + "pin -t " + \
+mem_dump_2_log_cmd = "time " + pin_home + "pin -t " + \
                      mypintool_dir + "obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -data_index {} -- {} {}"
 mem_dump_3_log_cmd = pin_home + "pin -t " + \
                      mypintool_dir + "obj-intel64/MemoryDump_3.so -o {} -length {} -dump_point {} -dump_addr {} -- {} {}"
@@ -267,11 +267,17 @@ def dump_dwords_2(prog_path: str, input_data_path: str, inst_addr: str, dwords_l
     project_dir_backup = project_dir
     project_dir = os.path.dirname(prog_path)  # project_dir = mypintool_dir
 
+    localtime = time.asctime( time.localtime(time.time()) )
+    print("Dump Dwords 2 Start", localtime)
+    
     status, output = cmd(
         mem_dump_2_log_cmd.format(log_path, dwords_len, inst_addr, data_index, prog_path, input_data_path))
     # print(output)
     if status != 0:
         print(output)
+    
+    logger.info('Dump Dwords 2 Time - {}'.format(output[output.find('real'):]))
+    print(output[output.find('real'):])
 
     project_dir = project_dir_backup
 

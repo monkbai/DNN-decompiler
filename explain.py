@@ -185,7 +185,7 @@ def get_input_shape(name, exp, mem_regions, input_channel, size):
     print('input start addr', hex(input_start_addr))
     for mem_start, mem_end in mem_regions:
         if mem_start <= input_start_addr < mem_end:
-            return math.sqrt(((mem_end-input_start_addr)/input_channel)/4)
+            return math.floor(math.sqrt(((mem_end-mem_start)/input_channel)/4))
 
 
 # ==============================================================
@@ -197,6 +197,8 @@ def get_input_shape(name, exp, mem_regions, input_channel, size):
 # how to interpret the taint analysis result
 # can we assume that we know the start addresses of inputs and output?
 def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list, guess_stride=1, optimized=False):
+    input_region = biggest_region(mem_read_regions)
+
     # assume the mem_log comes from a convolution layer
     tmp_mem_write_regions = []
     if not optimized:
@@ -206,7 +208,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     if len(name) == 0:
         name, exp = choose_one_16bytes(exp_log_path, tmp_mem_write_regions)  # TODO
         return explain_tvm_conv2d_result_16(name, exp, mem_read_regions, mem_write_regions, guess_stride, optimized)
-    # mem_list = [(name, exp)]
+    mem_list = [(name, exp)]
     # mem_list.append(tuple(choose_one_4bytes(exp_log_path, tmp_mem_write_regions, 1)))
 
     # TODO: here assume width==height
@@ -224,7 +226,10 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         print('special case: stride 2')
     else:
         # get the filter shape and input shape from first output
-        offset_list = get_offset_list(mem_list[0][1], compiler='tvm')  # analyze the first expression (with the smallest address)
+        if exp.startswith('sub'):
+            offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=input_region)
+        else:
+            offset_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=input_region)  # analyze the first expression (with the smallest address)
         stride = offset_list[1] - offset_list[0]  # not the real stride
         index = 0
         while index < len(offset_list) - 1:
@@ -302,10 +307,14 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         else:
             layout_shape = [filter_shape[0]/ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1]/ind_a, ind_b]
         print('layout shape', layout_shape)
+        print('stride {}'.format(guess_stride))
         return filter_shape, input_shape, output_shape, layout_shape
     else:
+        #print('input shape', input_shape)
+        #print('filter shape', filter_shape)
+        #print('output shape', output_shape)
         print('not a reasonable guess, ignored')
-        return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0, 0, 0)
+        return filter_shape, input_shape, output_shape, (0, 0, 0, 0, 0, 0)
 
 
 def kernel_1_1(name, exp, mem_read_regions: list, mem_write_regions: list, compiler='tvm'):
@@ -429,20 +438,27 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
             layout_shape = [filter_shape[0] / ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1] / ind_a,
                             ind_b]
         print('layout shape', layout_shape)
+        print('stride {}'.format(guess_stride))
         return filter_shape, input_shape, output_shape, layout_shape
     else:
+        #print('input shape', input_shape)
+        #print('filter shape', filter_shape)
+        #print('output shape', output_shape)
         print('not a reasonable guess, ignored')
-        return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0, 0, 0)
+        return filter_shape, input_shape, output_shape, (0, 0, 0, 0, 0, 0)
 
 
 def is_ignore(mem_list: list, mem_read_regions: list, filter_shape: list):
     # since the stride and padding are guessed, we need to check if the shapes are reasonable
+    # Check if the size of weights region is as expected
     weights_addrs = get_weights_addrs(mem_list[0][1], size=16)
+    if len(weights_addrs) == 0:
+        weights_addrs = get_weights_addrs(mem_list[0][1], size=16, on_the_right=False)
     weights_mem = (0, 0)
     for mem_blk in mem_read_regions:
         if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
             weights_mem = mem_blk
-
+    
     ignore_flag = True
     if int(filter_shape[0]) == filter_shape[0]:
         weights_size = filter_shape[0] * filter_shape[1] * filter_shape[2] * filter_shape[3] * 4  # float --> 4 bytes
@@ -529,6 +545,8 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
 
 def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', size=4):
     weights_addrs = get_weights_addrs(value, size=16)
+    if len(weights_addrs) == 0:
+        weights_addrs = get_weights_addrs(value, size=16, on_the_right=False)
     weights_mem = (0, 0)
     for mem_blk in mem_read_regions:
         if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
@@ -541,13 +559,15 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
     for i in range(1, len(offset_list)):
         offset_list[i] = (offset_list[i]-offset_list[0])/4
     offset_list[0] = 0
+    '''
+    # debug
     for i in range(len(offset_list)):
         print(offset_list[i], end=', ')
         if (i + 1) % 3==0:
             print('')
             if i > 3 and i < len(offset_list)-1 and offset_list[i+1] - offset_list[i-2] != 32:
                 print('not')
-
+    '''
     a = 0
     b = 0
     ab = (offset_list[1] - offset_list[0]) / 4
@@ -689,9 +709,12 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
         return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), False
 
 
-def get_weights_addrs(exp: str, size=4):
+def get_weights_addrs(exp: str, size=4, on_the_right=True):
     addr_list = []
-    it = re.finditer(r'\* (0x[0-9a-f]+),'+str(size), exp)
+    if on_the_right:
+        it = re.finditer(r'\* (0x[0-9a-f]+),'+str(size), exp)
+    else:
+        it = re.finditer(r'(0x[0-9a-f]+),'+str(size)+' \*', exp)
     for match in it:
         addr = match.group(1)
         addr_list.append(int(addr, 16))
@@ -708,6 +731,10 @@ def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
         exit(-1)
 
     input_size = exp.count('*')
+    if input_size == exp.count('16 *'):
+        input_size *= 4
+    elif input_size == exp.count('32 *'):
+        input_size *= 8
     output_size = 0
     big_mem = (0, 0)
     for mem_blk in mem_write_regions:
@@ -824,10 +851,13 @@ def explain_tvm_avgpool_result(exp_log_path: str, mem_read_regions: list, mem_wr
 
     stride_size = offset_list[1] - offset_list[0]
     kernel_size = (len(offset_list), 1)
+    '''
     for h in range(1, len(offset_list)):
         if offset_list[h]-offset_list[h-1] != stride_size:
             kernel_size = (h, len(offset_list)/h)  # TODO: check resnet
             break
+    '''
+    kernel_size = (math.sqrt(kernel_size[0]), kernel_size[1])
     return kernel_size, 1
 
 

@@ -704,7 +704,7 @@ def xmm_add_mem(xmm_name: str, mem_addr: str, size: int):
         xmm_regs[xmm_name] = '({} + {})'.format(xmm_regs[xmm_name], mem_state[mem_key])
     else:
         # TODO: this is inaccurate
-        if mem_key.startswith('0x7f') or mem_key.startswith('0x4'):
+        if mem_key.startswith('0x7f'):  # or mem_key.startswith('0x4'):
             return
         xmm_regs[xmm_name] = '({} + {})'.format(xmm_regs[xmm_name], mem_key)
 
@@ -1308,6 +1308,7 @@ def handle_memset(code_list, rax_value):
     # TODO: currently can only set memory to zero --syntax=intel
     global mem_state
     addr = reg_state['rdi']
+    print('memset addr: {}'.format(addr))
     size = int(reg_state['edx'], 16)
     # TODO: what if the addr is not an address? e.g., it is maybe empty?
     if len(addr) > 0 and ',' not in addr:  # if addr is not an address

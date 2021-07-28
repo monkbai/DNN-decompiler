@@ -2,19 +2,16 @@
 import os
 import sys
 import json
-import numpy as np
-import networkx as nx
-import matplotlib.pyplot as plt
-from pyvis.network import Network
-from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log, dump_dwords_2
-from scripts.pin_tools import fused_rdi
-from scripts.pin_tools import convert_dwords2float, rm_log
-from scripts.se_engine import lightweight_SymEx
-from scripts.mem_slices import memory_slices
-from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
-from scripts.explain import explain_tvm_add_result, explain_tvm_maxpool_result
+sys.path.append("../..")
+from scripts import trace_filter
+from scripts import utils
+from scripts import se_engine
+import logging
+print('get logger: {}'.format('decompiler.'+__name__))
+logger = logging.getLogger('decompiler.'+__name__)
 
 
+"""
 def dict_to_json(dict_obj: dict, output_path: str):
     j = json.dumps(dict_obj)
     with open(output_path, 'w') as f:
@@ -309,9 +306,6 @@ def handle_all_conv(label_file_path: str):
 
 
 def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str, log_path: str, func_name: str, func_type='conv2d', data_index=1):
-    """
-    :param dump_point: the start address of layer function (before reshaping the parameters)
-    """
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     log_path = os.path.abspath(log_path)
@@ -366,19 +360,35 @@ def extract_params(prog_path: str, in_data: str, w_shape: tuple, dump_point: str
                 wf.write(json_str)
                 wf.close()
     rm_log(log_path)
+"""
 
 
 if __name__ == '__main__':
-    prog_path = './resnet18_strip'
-    in_data = './cat.bin'
-    # log_path = './resnet18_strip_func_call.log'
-    label_file = './step1.txt'
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/resnet18_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/resnet18_tvm_O0_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/step1.txt"
+
+    tmp_log_path = './inst_trace.log'
+    exp_log_path = './mem_exp.log'
+    mem_read_log_path = './mem_read.log'
+    mem_write_log_path = './mem_write.log'
+    mem_dump_log_path = 'mem_dump.log'
 
     # ==============================================================
     # Step 1 --- Get the Sequence of Layers ---
     # ==============================================================
+
     # get_funcs_trace(prog_path, in_data, log_path, label_file, only_fused=False)
-    """
+    utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm')
+    utils.print_layer_label_tvm(log_path)
+    utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm', only_fused=True)
+    utils.print_layer_label_tvm(log_path, config_path='config.json', only_fused=True)
+    #utils.print_input_id(log_path)  # to reconstruct the conputational graph
+    #exit(0)
+    
+    """ # to be removed
     log_path = './resnet18_strip_func_call_fused.log'
     get_funcs_trace(prog_path, in_data, log_path, label_file, only_fused=True)
     new_log_path = './resnet18_strip_func_call_fused_2.log'
@@ -391,12 +401,117 @@ if __name__ == '__main__':
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
-    """
-    func_shape = handle_all_conv(label_file)
+    
+    # Step 2.1 Generate and Filter Trace
+    '''
+    logger.info('START')
+    func_trace_map = {}
+    func_rndaddr_map = {}
+    asm_files = os.listdir(utils.funcs_dir)
+    for asm_file in asm_files:
+        if 'labels' not in asm_file and asm_file.endswith('.txt'):
+            asm_path = os.path.join(utils.funcs_dir, asm_file)
+            start_addr, _ = utils.get_func_range(asm_path)
+            if start_addr in utils.addr2label.keys():
+                if 'dense' in utils.addr2label[start_addr] or 'conv' in utils.addr2label[start_addr]:
+                    trace_path = os.path.join(os.path.dirname(log_path), asm_file.replace('.txt', '.log'))
+                    slice_log, rnd_addr, loop_size, start_addr, end_addr = \
+                        trace_filter.get_trace(asm_path, prog_path, in_data, trace_path, compiler='tvm', func_type=utils.addr2label[start_addr])
+                    func_trace_map[asm_path] = slice_log
+                    func_rndaddr_map[asm_path] = (rnd_addr, loop_size, start_addr, end_addr)
+                    
+    print(func_trace_map)
+    print(func_rndaddr_map)
+    logger.info('END')
+    exit(0)
+    '''
+
+    # ==============================================================
+
+    # Step 2.2 Recover Shape with Symbolic Execution
+    # Step 2.2.1 Conv and Matmul layers
+    func_trace_map = {'0170.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0170_slice.log', 
+                      '0160.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0160_slice.log', 
+                      '0153.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0153_slice.log', 
+                      '0142.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0142_slice.log', 
+                      '0122.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0122_slice.log', 
+                      '0115.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0115_slice.log', 
+                      '0090.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0090_slice.log', 
+                      '0063.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0063_slice.log', 
+                      '0059.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0059_slice.log', 
+                      '0051.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0051_slice.log', 
+                      '0028.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0028_slice.log',  # conv
+
+                      '0092.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/0092_slice.log',  # dense
+                      }
+
+    func_rndaddr_map = {'0170.txt': ('0x46917c8', 64, '0x432d50', '0x434875'), 
+                        '0160.txt': ('0x377d7c8', 64, '0x42ec00', '0x430F8F'), 
+                        '0153.txt': ('0x377d82c', 64, '0x42aec0', '0x42D6D0'), 
+                        '0142.txt': ('0x46acbd4', 64, '0x4262e0', '0x428869'), 
+                        '0122.txt': ('0x377d7d4', 64, '0x420600', '0x422F30'), 
+                        '0115.txt': ('0x377d7d4', 64, '0x41c230', '0x41EB80'), 
+                        '0090.txt': ('0x46acbd8', 64, '0x415810', '0x417E09'), 
+                        '0063.txt': ('0x3469024', 64, '0x40ff40', '0x411274'), 
+                        '0059.txt': ('0x3468fc8', 64, '0x40d190', '0x40EB4B'), 
+                        '0051.txt': ('0x377d850', 64, '0x409280', '0x40BBC0'), 
+                        '0028.txt': ('0x346913c', 64, '0x402ea0', '0x404FB7'),  # conv
+                        
+                        '0092.txt': ('0x377bbc0', 64, '0x4181a0', '0x4185f1'),  # dense
+                        }
+    #shape = utils.recover_shape_tvm('0153.txt', exp_log_path, mem_read_log_path, mem_write_log_path, prog_path, in_data, func_type='conv2d')
+    #print(shape)
+    #exit(0)
+    # We have to pass the external function address to SE engine
+    # This can be done automatically, but we do it manually for simplicity
+    '''
+    se_engine.extern_functions = {'0x400c10': 'memset'}  # address in .plt, name
+    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm')  # also all dense
+    print('all conv and dense done.')
     for name, result in func_shape.items():
         print(name)
+        if len(result) == 4:
+            print('filter_shape', result[0])
+            print('input_shape', result[1])
+            print('output_shape', result[2])
+            # for O0 binary we do not need layout shape
+        else:
+            print(result)
+    #exit(0)
+    '''
+    # ==============================================================
+    
+    # Step 2.2.2 Other layers
+    # the BatchNorm2d is implemented with a special sequence (add, sqrt, divide, multiply, expand_dims, multiply, negative, multiply, add, expand_dims, add)
+    '''
+    asm_files = os.listdir(utils.funcs_dir)
+    se_engine.extern_functions = {'0x400c10': 'memset'}  # address in .plt, name
+    results_dict = dict()
+    for asm_file in asm_files:
+        if 'labels' not in asm_file and asm_file.endswith('.txt'):
+            asm_path = os.path.join(utils.funcs_dir, asm_file)
+            start_addr, _ = utils.get_func_range(asm_path)
+            if start_addr in utils.addr2label.keys():
+                func_type = utils.addr2label[start_addr]
+                if 'pool' in func_type or 'bias_add' in func_type:
+                    # transpose, expand_dims and relu could be ignored, batchnormalization always follow after a conv layer
+                    print('SE for {}, {}'.format(asm_file, func_type))
+                    
+                    # gnereate tmp trace file, it should be fast
+                    utils.generate_inst_trace(asm_file, tmp_log_path, prog_path, in_data, timeout=True)
+                    # symbolic execution, also should be fast
+                    utils.generate_symbolic_expression(asm_file, tmp_log_path, exp_log_path, max_inst=5000000)
+                    # --- try to interpret the filter shape from symbolic expression log
+                    shape = utils.recover_shape_tvm(asm_file, exp_log_path,
+                                                mem_read_log_path, mem_write_log_path,
+                                                prog_path, in_data, func_type=func_type)
+                    print('shape:', shape)
+                    results_dict[asm_file] = shape
+    for name, result in results_dict.items():
+        print(name)
         print(result)
-    """
+    exit(0)
+    '''
     """
     # conv2d layers
     func_type = 'conv2d'
@@ -442,61 +557,52 @@ if __name__ == '__main__':
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================
 
-    mem_dump_log_path = 'mem_dump.log'
+    
     # (name, shape, fused_func, type, padding, stride, param_index)
-    func_meta_data = [('0057.function_402ea0.txt', (64, 3, 7, 7), '0x4022b0', 'conv2d', 3, 2, 1),
-                      ('0080.function_409280.txt', (64, 64, 3, 3), '0x408330', 'conv2d', 1, 1, 1),
-                      ('0088.function_40d190.txt', (256, 128, 1, 1), '0x40c450', 'conv2d', 0, 2, 1),
-                      ('0092.function_40ff40.txt', (128, 64, 1, 1), '0x40eb70', 'conv2d', 0, 2, 1),
-                      ('0119.function_415810.txt', (512, 512, 3, 3), '0x414820', 'conv2d', 1, 1, 1),
-                      ('0144.function_41c230.txt', (128, 128, 3, 3), '0x41b190', 'conv2d', 1, 1, 1),
-                      ('0151.function_420600.txt', (256, 128, 3, 3), '0x41ef20', 'conv2d', 1, 2, 1),
-                      ('0171.function_4262e0.txt', (512, 256, 3, 3), '0x425450', 'conv2d', 1, 2, 1),
-                      # ('0182.function_42aec0.txt', (128, 16, 6, 6), '0x429b40', 'conv2d', 1, 2, 1),  # <-- wrong shape
-                      ('0182.function_42aec0.txt', (128, 64, 3, 3), '0x429b40', 'conv2d', 1, 2, 1),
-                      ('0189.function_42ec00.txt', (256, 256, 3, 3), '0x42db40', 'conv2d', 1, 1, 1),
-                      ('0199.function_432d50.txt', (512, 256, 1, 1), '0x431950', 'conv2d', 0, 2, 1),
+    func_meta_data = [('0028.txt', (64, 3, 7, 7), '0x4022b0', 'conv2d', 3, 2, 1),
+                      ('0051.txt', (64, 64, 3, 3), '0x408330', 'conv2d', 1, 1, 1),
+                      ('0059.txt', (256, 128, 1, 1), '0x40c450', 'conv2d', 0, 2, 1),
+                      ('0063.txt', (128, 64, 1, 1), '0x40eb70', 'conv2d', 0, 2, 1),
+                      ('0090.txt', (512, 512, 3, 3), '0x414820', 'conv2d', 1, 1, 1),
+                      ('0115.txt', (128, 128, 3, 3), '0x41b190', 'conv2d', 1, 1, 1),
+                      ('0122.txt', (256, 128, 3, 3), '0x41ef20', 'conv2d', 1, 2, 1),
+                      ('0142.txt', (512, 256, 3, 3), '0x425450', 'conv2d', 1, 2, 1),
+                      # ('0153.txt', (*, 16, 6, 6), '0x429b40', 'conv2d', 1, 2, 1),  # <-- wrong shape
+                      ('0153.txt', (128, 64, 3, 3), '0x429b40', 'conv2d', 1, 2, 1),
+                      ('0160.txt', (256, 256, 3, 3), '0x42db40', 'conv2d', 1, 1, 1),
+                      ('0170.txt', (512, 256, 1, 1), '0x431950', 'conv2d', 0, 2, 1),
 
-                      ('0121.function_4181a0.txt', (1000, 512), '0x417e30', 'dense', 0, 0, 1),
-                      ('0184.function_42da10.txt', (1, 1000), '0x42d700', 'add', 0, 0, 1),  # bias add
+                      ('0092.txt', (1000, 512), '0x417e30', 'dense', 0, 0, 1),
+                      ('0155.txt', (1, 1000), '0x42d700', 'add', 0, 0, 1),  # bias add
 
-                      ('0112.function_414370.txt', (1, 512), '0x4140c0', 'var', 0, 0, 0),  # norm var
-                      ('0114.function_414740.txt', (1, 512), '0x414440', 'gamma', 0, 0, 1),  # norm gamma
-                      ('0158.function_424000.txt', (1, 512), '0x423e00', 'mean', 0, 0, 0),  # norm mean
-                      ('0125.function_418d00.txt', (1, 512), '0x418a00', 'beta', 0, 0, 1),  # norm beta
+                      ('0083.txt', (1, 512), '0x4140c0', 'var', 0, 0, 0),  # norm var - used in add
+                      ('0085.txt', (1, 512), '0x414440', 'gamma', 0, 0, 1),  # norm gamma - used in multiply
+                      ('0129.txt', (1, 512), '0x423e00', 'mean', 0, 0, 0),  # norm mean - used in negative
+                      ('0096.txt', (1, 512), '0x418a00', 'beta', 0, 0, 1),  # norm beta - used in add
 
-                      ('0129.function_419630.txt', (1, 256), '0x419380', 'var', 0, 0, 0),  # norm var
-                      ('0110.function_413fe0.txt', (1, 256), '0x413ce0', 'gamma', 0, 0, 1),  # norm gamma
-                      ('0096.function_411880.txt', (1, 256), '0x411680', 'mean', 0, 0, 0),  # norm mean
-                      ('0094.function_4115a0.txt', (1, 256), '0x4112a0', 'beta', 0, 0, 1),  # norm beta
+                      ('0100.txt', (1, 256), '0x419380', 'var', 0, 0, 0),  # norm var - used in add
+                      ('0081.txt', (1, 256), '0x413ce0', 'gamma', 0, 0, 1),  # norm gamma - used in multiply
+                      ('0067.txt', (1, 256), '0x411680', 'mean', 0, 0, 0),  # norm mean - used in negative
+                      ('0065.txt', (1, 256), '0x4112a0', 'beta', 0, 0, 1),  # norm beta - used in add
 
-                      ('0201.function_434b50.txt', (1, 128), '0x4348a0', 'var', 0, 0, 0),  # norm var
-                      ('0160.function_4243d0.txt', (1, 128), '0x4240d0', 'gamma', 0, 0, 1),  # norm gamma
-                      ('0052.function_4021e0.txt', (1, 128), '0x401fe0', 'mean', 0, 0, 0),  # norm mean
-                      ('0195.function_431870.txt', (1, 128), '0x431570', 'beta', 0, 0, 1),  # norm beta
+                      ('0172.txt', (1, 128), '0x4348a0', 'var', 0, 0, 0),  # norm var - used in add
+                      ('0131.txt', (1, 128), '0x4240d0', 'gamma', 0, 0, 1),  # norm gamma - used in multiply
+                      ('0023.txt', (1, 128), '0x401fe0', 'mean', 0, 0, 0),  # norm mean - used in negative
+                      ('0166.txt', (1, 128), '0x431570', 'beta', 0, 0, 1),  # norm beta - used in add
 
-                      ('0146.function_41ee50.txt', (1, 64), '0x41eba0', 'var', 0, 0, 0),  # norm var
-                      ('0205.function_435470.txt', (1, 64), '0x435180', 'gamma', 0, 0, 1),  # norm gamma
-                      ('0191.function_4311a0.txt', (1, 64), '0x430fb0', 'mean', 0, 0, 0),  # norm mean
-                      ('0106.function_413580.txt', (1, 64), '0x413290', 'beta', 0, 0, 1),  # norm beta
+                      ('0117.txt', (1, 64), '0x41eba0', 'var', 0, 0, 0),  # norm var - used in add
+                      ('0176.txt', (1, 64), '0x435180', 'gamma', 0, 0, 1),  # norm gamma - used in multiply
+                      ('0162.txt', (1, 64), '0x430fb0', 'mean', 0, 0, 0),  # norm mean - used in negative
+                      ('0077.txt', (1, 64), '0x413290', 'beta', 0, 0, 1),  # norm beta - used in add
 
                       ]
 
-    # func_name = '0113.function_420ee0.txt'  # dense add 1000
-    # func_name = '0115.function_4213e0.txt'  # conv2d add 64
-    # func_name = '0126.function_4250f0.txt'  # dense add 4096
-    # func_name = '0107.function_420290.txt'  # conv2d add 512
-    # func_name = '0048.function_401e40.txt'  # conv2d add 256
-    # func_name = '0076.function_4127e0.txt'  # conv2d add 512
-    # func_name = '0089.function_417530.txt'  # conv2d add 128
     for fun_data in func_meta_data:
         func_name = fun_data[0]
         w_shape = fun_data[1]
         dump_point = fun_data[2]
         func_type = fun_data[3]
         data_index = fun_data[6]
-        #if func_type != 'conv2d':
-        #    continue
-        if not func_name.startswith('0182'):
-            continue
-        extract_params(prog_path, in_data, w_shape, dump_point, mem_dump_log_path, func_name, func_type, data_index)
+        #if not func_name.startswith('0153'):
+        #    continue # failed to recover shape for function 0153
+        utils.extract_params_tvm(prog_path, in_data, w_shape, dump_point, mem_dump_log_path, func_name, func_type, data_index)

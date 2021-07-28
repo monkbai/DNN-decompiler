@@ -13,7 +13,7 @@ print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
 
 
-def get_early_stop(asm_path: str, compiler='glow'):
+def get_early_stop(asm_path: str, compiler='glow', func_type='conv'):
     """
         early_stop: if the outermost loop has more than 16 cycles, we can stop logging after first cycle
         for conv layer only
@@ -48,9 +48,9 @@ def get_early_stop(asm_path: str, compiler='glow'):
 
 def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str, compiler='glow', func_type='conv'):
     asm_path = os.path.abspath(asm_path)
-    early_stop, loop_count = get_early_stop(asm_path, compiler)
+    early_stop, loop_count = get_early_stop(asm_path, compiler, func_type)
     start_addr, end_addr = utils.get_func_range(asm_path)
-    if len(early_stop) > 0 and 'conv' in func_type:  # for matmul/dense layer, no need to early stop
+    if len(early_stop) > 0:  # for matmul/dense layer, no need to early stop
         end_addr = early_stop
 
     log_path = os.path.abspath(out_log_path)
@@ -72,14 +72,14 @@ def reverse_trace(original_trace: str, new_trace: str):
         print('{} already exists.'.format(new_trace))
 
 
-def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str, compiler='glow'):
+def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str, compiler='glow', func_type='conv'):
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
     func_asm_path = os.path.abspath(func_asm_path)
 
     start_addr, end_addr = utils.get_func_range(func_asm_path)
-    early_stop, loop_size = get_early_stop(func_asm_path, compiler)
+    early_stop, loop_size = get_early_stop(func_asm_path, compiler, func_type)
     if len(early_stop) != 0:
         end_addr = early_stop  # this only work on TVM
     
@@ -115,7 +115,7 @@ def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, c
     start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path, compiler, func_type)
     # Random pick a target address
     tmp_mem_write_log = './tmp_mem_write.log'
-    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler)
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler, func_type)
     # Reverse trace
     reverse_trace(log_path, rev_log_path)
     logger.debug('log_path: {}, reverse_log_path: {}'.format(log_path, rev_log_path))
@@ -159,13 +159,75 @@ xmm_regs = {
 tainted_regs = set()
 tainted_mems = set()
 
-call_flag = 0  # call instruction and 4 instructions before it should be kept
+
+def set_call_state():
+    global tainted_regs, tainted_mems
+    # rdi, rsi, rdx, rcx, r8, r9
+    tainted_regs.add('rdi')
+    tainted_regs.add('edi')
+    tainted_regs.add('rsi')
+    tainted_regs.add('esi')
+    tainted_regs.add('rdx')
+    tainted_regs.add('edx')
 
 
 def clear_state():
     global tainted_regs, tainted_mems
     tainted_regs.clear()
     tainted_mems.clear()
+
+
+def set_common_regs(reg_name: str):
+    global tainted_regs
+    if reg_name.endswith('di'):
+        tainted_regs.add('rdi')
+        tainted_regs.add('edi')
+    elif reg_name.endswith('si'):
+        tainted_regs.add('rsi')
+        tainted_regs.add('esi')
+    elif reg_name.endswith('ax'):
+        tainted_regs.add('rax')
+        tainted_regs.add('eax')
+    elif reg_name.endswith('bx'):
+        tainted_regs.add('rbx')
+        tainted_regs.add('ebx')
+    elif reg_name.endswith('cx'):
+        tainted_regs.add('rcx')
+        tainted_regs.add('ecx')
+    elif reg_name.endswith('dx'):
+        tainted_regs.add('rdx')
+        tainted_regs.add('edx')
+    else:
+        tainted_regs.add(reg_name)
+
+
+def unset_common_regs(reg_name: str):
+    global tainted_regs
+    if reg_name.endswith('di'):
+        reg1 = 'rdi'
+        reg2 = 'edi'
+    elif reg_name.endswith('si'):
+        reg1 = 'rsi'
+        reg2 = 'esi'
+    elif reg_name.endswith('ax'):
+        reg1 = 'rax'
+        reg2 = 'eax'
+    elif reg_name.endswith('bx'):
+        reg1 = 'rbx'
+        reg2 = 'ebx'
+    elif reg_name.endswith('cx'):
+        reg1 = 'rcx'
+        reg2 = 'ecx'
+    elif reg_name.endswith('dx'):
+        reg1 = 'rdx'
+        reg2 = 'edx'
+    else:
+        reg1 = reg_name
+        reg2 = ''
+    if reg1 in tainted_regs:
+            tainted_regs.remove(reg1)
+    if reg2 in tainted_regs:
+            tainted_regs.remove(reg2)
 
 
 def set_tainted(addr_list: list):
@@ -237,7 +299,6 @@ def reverse_taint(re_trace_log: str, new_trace: str):
 
 
 def handle_inst(read_buf: list):
-    global call_flag
     if len(read_buf) < 1:
         return False
     # Return Ture if current should be kept, False otherwise
@@ -268,12 +329,10 @@ def handle_inst(read_buf: list):
             operands = []
 
         # does this instruction shoule be checked?
-        if  call_flag > 0:
-            call_flag -= 1
-        elif opcode.startswith('data') or opcode.startswith('nop'):  # it's not an instruction
+        if opcode.startswith('data') or opcode.startswith('nop') or opcode.startswith('test'):  # cna be ignored
             return False
         elif opcode.startswith('call'):
-            call_flag = 4  # for function call
+            set_call_state()  # for function call
         elif not check_operands(operands, read_buf[1]):  # read_buf[1] -> mem read/write addr
             return False
 
@@ -294,8 +353,11 @@ def handle_inst(read_buf: list):
             else:
                 kept = False
             # kept = True  # try to keep all mov instructions  # NO, DEFINITELY NO!
-        elif opcode.startswith('call') or opcode.startswith('xor'):
+        elif opcode.startswith('call'):
             kept = True  # keep function calls  to memset and expf for TVM
+            unset_common_regs('rax')
+        elif opcode.startswith('xor'):
+            kept = handle_xor(opcode, operands, mem_addr)
         elif opcode.startswith('vmovss') or opcode.startswith('vmovups') or opcode.startswith('vmovaps'):
             kept = handle_two(opcode, operands, mem_addr)  # mov realted to xmm regs
         elif opcode.startswith('vbroadcastss'):
@@ -427,15 +489,26 @@ def handle_mov(opcode: str, operands: list, mem_addr: str):
             if m_addr in tainted_mems:
                 kept_flag = True
                 tainted_mems.remove(m_addr)
-                tainted_regs.add(op2)
+                set_common_regs(op2)  # tainted_regs.add(op2)
     elif op1 in common_regs and '[' in op2:
         # move from memory to register
         m_addr_list = split_addr_list(mem_addr, op2)
         if op1 in tainted_regs:
             kept_flag = True
-            tainted_regs.remove(op1)
+            unset_common_regs(op1)  # tainted_regs.remove(op1)
             for m_addr in m_addr_list:
                 tainted_mems.add(m_addr)
+    elif op1 in common_regs and op2 in common_regs:
+        # move from register to register
+        if op1 in tainted_regs:
+            kept_flag = True
+            unset_common_regs(op1)  # tainted_regs.remove(op1)
+            set_common_regs(op2)  # tainted_regs.add(op2)
+    elif op1 in common_regs and (op2.startswith('0x') or op2.endswith('h') or op2.isdigit()):
+        # move immediate value to register
+        if op1 in tainted_regs:
+            kept_flag = True
+            unset_common_regs(op1)  # tainted_regs.remove(op1)
     else:
         assert False, 'undefined {} {}'.format(opcode, operands)
     return kept_flag
@@ -534,6 +607,7 @@ def handle_three(opcode: str, operands: list, mem_addr: str, read_op1=False):
 
 def handle_vxor(opcode: str, operands: list, mem_addr: str):
     global tainted_regs
+    assert len(operands) == 3, 'vxor should has 3 operands'
     op1 = operands[0].strip()
     op2 = operands[1].strip()
     op3 = operands[2].strip()
@@ -553,7 +627,21 @@ def handle_vxor(opcode: str, operands: list, mem_addr: str):
         return handle_three(opcode, operands, mem_addr)
 
 
+def handle_xor(opcode: str, operands: list, mem_addr: str):
+    global tainted_regs
+    assert len(operands) == 2, 'xor should has 2 operands'
+    op1 = operands[0].strip()
+    op2 = operands[1].strip()
+    if op2 == op1 and op2 in common_regs:  
+        if op1 in tainted_regs:
+            unset_common_regs(op2)  # tainted_regs.remove(op1)
+        return True
+    else:
+        return handle_two_arith(opcode, operands, mem_addr)
+
+
 def handle_not_implemented(opcode: str, operands: list):
+    print(tainted_regs)
     print('inst not implemented')
     print('{} {}'.format(opcode, operands))
     exit(0)
@@ -596,7 +684,7 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
     return slice_log, rnd_addr, loop_size, start_addr, end_addr
 
 
-def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str, compiler='glow'):
+def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str, compiler='glow', func_type='conv'):
     clear_state()
 
     asm_path = os.path.abspath(asm_path)
@@ -605,7 +693,7 @@ def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str,
     rev_log_path = os.path.abspath(rev_log_path)
 
     tmp_mem_write_log = './tmp_mem_write.log'
-    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler)  # random choose an target address again
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler, func_type)  # random choose an target address again
     #rnd_addr = '0x31703b4'  
     # rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path)
     slice_log = rev_log_path.replace('_rev.log', '_slice.log')

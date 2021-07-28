@@ -91,10 +91,14 @@ def get_funcs_trace(prog_path: str, in_data: str, log_path: str, label_file: str
     dict_to_json(addr2funcs, './addr2funcs.json')
 
 
-def print_layer_label_tvm(trace_log_path: str, only_fused=False):
+def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False):
     global addr2label, addr2funcs, addr2param
     addr2label = json_to_dict('./addr2label.json')  # type: dict
     addr2funcs = json_to_dict('./addr2funcs.json')  # type: dict
+    func2param = dict()
+    if len(config_path) > 0:
+        config_path = os.path.abspath(config_path)
+        func2param = json_to_dict(config_path)  # type: dict
 
     trace_log_path = os.path.abspath(trace_log_path)
     param_list = []
@@ -122,9 +126,32 @@ def print_layer_label_tvm(trace_log_path: str, only_fused=False):
                 idx = addr_list.index(addr) + 1
                 label = addr2label[addr_list[idx]]
 
-                print('{}: {:<16}: {}'.format(addr, label, line.split(':')[1]))
+                # print the func type
+                print('{}: {:<16}:'.format(addr, label), end=' ')
                 params = line.split(':')[1].strip()
                 params = params.split(',')[:-1]
+                param_labels = []
+                for key, labels_list in func2param.items():
+                    if key in label:
+                        param_labels = labels_list
+                        break
+                # print the func parameters 
+                with_label = True
+                if len(params) != len(param_labels):
+                    with_label = False
+                
+                for i in range(len(params)):
+                    if i != len(params)-1:
+                        if with_label:
+                            print('{} {},'.format(param_labels[i], params[i]), end=' ')
+                        else:
+                            print('{},'.format(params[i]), end=' ')
+                    else:
+                        if with_label:
+                            print('{} {}'.format(param_labels[i], params[i]))
+                        else:
+                            print('{}'.format(params[i]))
+
                 for i in range(len(params)):
                     params[i] = int(params[i].strip(), 16)
                 param_list += params
@@ -409,21 +436,27 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
     read_mem_regions = memory_slices(mem_read_log_path)
     write_mem_regions = memory_slices(mem_write_log_path)
     if 'conv2d' in func_type:
+        filter_shape = (0, 0, 0, 0)
+        input_shape = (0, 0, 0, 0)
+        output_shape = (0, 0, 0, 0)
+        layout_shape = (0, 0, 0, 0)
         for stride in range(1, 4):
             print('try with stride: {}'.format(stride))
             tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_layout_shape = \
                 explain_tvm_conv2d_result(mem_exp_log, read_mem_regions,
                                           write_mem_regions, guess_stride=stride,
                                           optimized=optimized)
-            if tmp_filter_shape[0] != 0:
+            if filter_shape[0] == 0 or tmp_layout_shape[0] != 0:
                 filter_shape = tmp_filter_shape
                 input_shape = tmp_input_shape
                 output_shape = tmp_output_shape
                 layout_shape = tmp_layout_shape
-                break
-        return filter_shape, layout_shape
+                if layout_shape[0] != 0:
+                    break
+        return filter_shape, input_shape, output_shape, layout_shape
     elif 'dense' in func_type or 'matmul' in func_type:
         input_size, output_size = explain_tvm_dense_result(mem_exp_log, write_mem_regions)
+        print('({}, {})'.format(input_size, output_size))
         return output_size, input_size
     elif 'add' in func_type:
         if len(read_mem_regions) > 1 and \
@@ -587,7 +620,8 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
     dwords_len = 1
     for w_dim in w_shape:
         dwords_len *= w_dim
-    rm_log(log_path)
+    if os.path.exists(log_path):
+        rm_log(log_path)
     dump_dwords_2(prog_path, in_data, dump_point, dwords_len, log_path, data_index=data_idx)
 
     # then convert dwords to floats
@@ -619,6 +653,8 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
                 json_name = func_name[:func_name.rfind('.')] + '.dense_weights_{}.json'.format(i)
             elif func_type == 'add':
                 json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
+            else:
+                json_name = func_name[:func_name.rfind('.')] + '.{}_{}.json'.format(func_type, i)
             with open(json_name, 'w') as wf:
                 wf.write(json_str)
                 wf.close()
