@@ -37,6 +37,22 @@ def biggest_region(mem_regions: list, target_addr=0):
         return target_mem
 
 
+def biggest_last_region(mem_regions: list, target_addr=0):
+    big_mem = (0, 0)
+    target_mem = (0, 0)
+    for mem_blk in mem_regions:
+        if (mem_blk[1] - mem_blk[0]) >= (big_mem[1] - big_mem[0]):
+            big_mem = mem_blk
+        if mem_blk[0] <= target_addr <= mem_blk[1]:
+            target_mem = mem_blk
+        elif (target_mem[1] - target_mem[0]) != 0 and (target_mem[1] - target_mem[0]) == mem_blk[1] - mem_blk[0]:
+            target_mem = mem_blk
+    if target_addr == 0:
+        return big_mem
+    else:
+        return target_mem
+
+
 def choose_one_4bytes(exp_log_path: str, mem_write_regions=[], num=0):
     """ Choose one expression from the exp_log to recover the filter shape """
     if len(mem_write_regions) == 0:
@@ -61,7 +77,7 @@ def choose_one_4bytes(exp_log_path: str, mem_write_regions=[], num=0):
                 continue
             else:  # choose the longest expression of one 4 bytes memory block
                 if out_mem[0] <= int(tmp_name.split(',')[0], 16) <= out_mem[1]:
-                    if len(tmp_exp) > len(exp):
+                    if tmp_exp.count('*') > exp.count('*'):
                         name = tmp_name
                         exp = tmp_exp
         return name, exp
@@ -82,19 +98,19 @@ def choose_one_16bytes(exp_log_path: str, mem_write_regions: list, num=0):
         name = ''
         exp = ''
         while index < length-2:
-            name = lines[index]
+            tmp_name = lines[index]
             index += 1
-            exp = lines[index].strip('<>')
+            tmp_exp = lines[index].strip('<>')
             index += 1
-            if (not name.endswith('16')) or name.startswith('0x7ff'):
+            if (not tmp_name.endswith('16')) or tmp_name.startswith('0x7ff'):
                 continue
-            elif exp_txt.count(name) > 1:
+            elif exp_txt.count(tmp_name) > 1:
                 continue
             else:  # choose the first expression of one 4 bytes memory block
-                if out_mem[0] <= int(name.split(',')[0], 16) <= out_mem[1]:
-                    num -= 1
-                if num < 0:
-                    return name, exp
+                if out_mem[0] <= int(tmp_name.split(',')[0], 16) <= out_mem[1]:
+                    if tmp_exp.count('*') > exp.count('*'):
+                        name = tmp_name
+                        exp = tmp_exp
         return name, exp
 
 
@@ -236,7 +252,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             if offset_list[index+1] - offset_list[index] > stride:
                 tmp1 = offset_list[index + 1]  # input[1] * input[2]
                 tmp2 = offset_list[index] + stride  # filter[1] * filter[2]
-                filter_shape[3] = len(offset_list)/tmp2
+                filter_shape[3] = math.ceil(len(offset_list)/tmp2)
                 filter_shape[2] = filter_shape[3]  # TODO assume
                 filter_shape[1] = tmp2/filter_shape[2]
                 # input[1] = filter[1]
@@ -294,6 +310,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     if not ignore_flag:
         # try to get the weights layout indicators
         ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions)
+        print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
         # final shape
         print('input shape', input_shape)
         print('filter shape', filter_shape)
@@ -385,14 +402,19 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
                     tmp = offset_list[length]-offset_list[length - 1]
                     if tmp != stride and tmp != stride + stride_2:
                         break
-                filter_shape[3] = length / tmp2
+                filter_shape[3] = math.ceil(length / tmp2)
                 filter_shape[2] = filter_shape[3]  # TODO assume
+                print(tmp2, filter_shape[2])
                 filter_shape[1] = tmp2 / filter_shape[2]
                 filter_shape[1] *= (len(offset_list) / length)
+                filter_shape[1] = math.floor(filter_shape[1])
                 # input[1] = filter[1]
                 input_shape[1] = filter_shape[1]
+                print(tmp1)
                 input_shape[2] = tmp1 / input_shape[1]
+                print(len(offset_list), length)
                 input_shape[2] *= (len(offset_list) / length)
+                input_shape[2] = math.floor(input_shape[2])
                 input_shape[3] = input_shape[2]  # TODO assume
                 break
             elif offset_list[index + 1] - offset_list[index] < stride:
@@ -422,6 +444,7 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
     if not ignore_flag:
         # try to get the weights layout indicators
         ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions, size=16)
+        print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
         # final shape
         print('input shape', input_shape)
         print('filter shape', filter_shape)
@@ -454,7 +477,6 @@ def is_ignore(mem_list: list, mem_read_regions: list, filter_shape: list):
     weights_addrs = get_weights_addrs(mem_list[0][1], size=16)
     if len(weights_addrs) == 0:
         weights_addrs = get_weights_addrs(mem_list[0][1], size=16, on_the_right=False)
-    weights_mem = (0, 0)
     for mem_blk in mem_read_regions:
         if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
             weights_mem = mem_blk
@@ -570,22 +592,22 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
     '''
     a = 0
     b = 0
-    ab = (offset_list[1] - offset_list[0]) / 4
+    ab = (offset_list[1] - offset_list[0])  
     index = 2
     while index < len(offset_list):
-        tmp = (offset_list[index] - offset_list[index - 1])/4
+        tmp = (offset_list[index] - offset_list[index - 1])
         if tmp != ab:
             tmp_index = index - 1
             while tmp_index >= 0 and offset_list[index] < offset_list[tmp_index]:
                 tmp_index -= 1
-            tmp = (offset_list[index] - offset_list[tmp_index]) / 4
+            tmp = (offset_list[index] - offset_list[tmp_index]) 
             a = ab / tmp
             b = tmp
             break
         index += 1
     if a == 0:
         smooth = True
-        a = (weights_mem[1] - weights_mem[0]) / (max(offset_list) - min(offset_list) + ab * 4)
+        a = (weights_mem[1] - weights_mem[0]) / (max(offset_list) - min(offset_list) + ab)
         return a, ab, smooth
     smooth = False
     return a, b, smooth

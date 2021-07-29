@@ -87,8 +87,10 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     write_mem_regions = utils.memory_slices(mem_write_log_path)
     if compiler == 'glow':
         out_mem = explain.biggest_region(write_mem_regions)
-    elif compiler == 'tvm':
+    elif compiler == 'tvm' and len(write_mem_regions) > 5:
         out_mem = explain.smallest_region(write_mem_regions)
+    elif compiler == 'tvm' and len(write_mem_regions) <= 5:
+        out_mem = explain.biggest_last_region(write_mem_regions)
     '''
     # this optimization does not work
     if len(early_stop)!=0 and compiler == 'glow':
@@ -661,7 +663,7 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
     log_path = os.path.abspath(log_path)
 
     rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type)
-    # rnd_addr = '0x2146dfd0'  # debug
+    # rnd_addr = '0x230fd760'  # debug
     print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
     slice_log = log_path.replace('.log', '_slice.log')
 

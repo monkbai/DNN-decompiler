@@ -58,126 +58,126 @@ class MyResNet(nn.Module):
         net.append(nn.Identity())  # 0
         # 444e30
         net.append(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3))  # 1
-        set_weights(net[-1], './0081.txt.weights_0.json')
-        set_biases(net[-1], './0081.txt.biases_0.json')
+        set_weights(net[-1], './0099.weights_0.json')
+        set_biases(net[-1], './0099.biases_0.json')
         net.append(nn.ReLU())  # 2
         net.append(nn.MaxPool2d(kernel_size=3, stride=2, padding=1))  # 3
         # 43cb60, 0
         net.append(nn.Identity())  # 4
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))  # 5
-        set_weights(net[-1], './0072.txt.weights_0.json')
-        set_biases(net[-1], './0072.txt.biases_0.json')
+        set_weights(net[-1], './0090.weights_0.json')
+        set_biases(net[-1], './0090.biases_0.json')
         net.append(nn.ReLU())  # 6
         # 430940, 0
         net.append(nn.Identity())  # 7
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))  # 8
-        set_weights(net[-1], './0061.txt.weights_0.json')
-        set_biases(net[-1], './0061.txt.biases_0.json')
+        set_weights(net[-1], './0079.weights_0.json')
+        set_biases(net[-1], './0079.biases_0.json')
         net.append(nn.Identity())  # 9 add
         net.append(nn.ReLU())  # 10
         # 43cb60, 1
         net.append(nn.Identity())  # 11
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))  # 12
-        set_weights(net[-1], './0072.txt.weights_1.json')
-        set_biases(net[-1], './0072.txt.biases_1.json')
+        set_weights(net[-1], './0090.weights_1.json')
+        set_biases(net[-1], './0090.biases_1.json')
         net.append(nn.ReLU())  # 13
         # 430940, 1
         net.append(nn.Identity())  # 14
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))  # 15
-        set_weights(net[-1], './0061.txt.weights_1.json')
-        set_biases(net[-1], './0061.txt.biases_1.json')
+        set_weights(net[-1], './0079.weights_1.json')
+        set_biases(net[-1], './0079.biases_1.json')
         net.append(nn.Identity())  # 16 add
         net.append(nn.ReLU())  # 17
         # 413860
         net.append(nn.Identity())  # 18
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1))  # 19
-        set_weights(net[-1], './0020.txt.weights_0.json')
-        set_biases(net[-1], './0020.txt.biases_0.json')
+        set_weights(net[-1], './0038.weights_0.json')
+        set_biases(net[-1], './0038.biases_0.json')
         net.append(nn.ReLU())  # 20
         # 438930
         net.append(nn.Identity())  # 21
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))  # 22
-        set_weights(net[-1], './0069.txt.weights_0.json')
-        set_biases(net[-1], './0069.txt.biases_0.json')
+        set_weights(net[-1], './0087.weights_0.json')
+        set_biases(net[-1], './0087.biases_0.json')
         # 42a470
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, stride=2, padding=0))  # 23
-        set_weights(net[-1], './0055.txt.weights_0.json')
-        set_biases(net[-1], './0055.txt.biases_0.json')
+        set_weights(net[-1], './0073.weights_0.json')
+        set_biases(net[-1], './0073.biases_0.json')
         net.append(nn.Identity())  # 24 add
         net.append(nn.ReLU())  # 25
         # 42c660
         net.append(nn.Identity())  # 26
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))  # 27
-        set_weights(net[-1], './0058.txt.weights_0.json')
-        set_biases(net[-1], './0058.txt.biases_0.json')
+        set_weights(net[-1], './0076.weights_0.json')
+        set_biases(net[-1], './0076.biases_0.json')
         net.append(nn.ReLU())  # 28
         # 40f1e0
         net.append(nn.Identity())  # 29
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))  # 30
-        set_weights(net[-1], './0017.txt.weights_0.json')
-        set_biases(net[-1], './0017.txt.biases_0.json')
+        set_weights(net[-1], './0035.weights_0.json')
+        set_biases(net[-1], './0035.biases_0.json')
         net.append(nn.Identity())  # 31 add
         net.append(nn.ReLU())  # 32
         # 40b360
         net.append(nn.Identity())  # 33
         net.append(nn.Identity())  # 34
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1))  # 35
-        set_weights(net[-1], './0014.txt.weights_0.json')
-        set_biases(net[-1], './0014.txt.biases_0.json')
+        set_weights(net[-1], './0032.weights_0.json')
+        set_biases(net[-1], './0032.biases_0.json')
         net.append(nn.ReLU())  # 36
         # 41c830
         net.append(nn.Identity())  # 37
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))  # 38
-        set_weights(net[-1], './0032.txt.weights_0.json')
-        set_biases(net[-1], './0032.txt.biases_0.json')
+        set_weights(net[-1], './0050.weights_0.json')
+        set_biases(net[-1], './0050.biases_0.json')
         # 423330
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1, stride=2, padding=0))  # 39
-        set_weights(net[-1], './0037.txt.weights_0.json')
-        set_biases(net[-1], './0037.txt.biases_0.json')
+        set_weights(net[-1], './0055.weights_0.json')
+        set_biases(net[-1], './0055.biases_0.json')
         net.append(nn.Identity())  # 40 add
         net.append(nn.ReLU())  # 41
         # 434e70
         net.append(nn.Identity())  # 42
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))  # 43
-        set_weights(net[-1], './0064.txt.weights_0.json')
-        set_biases(net[-1], './0064.txt.biases_0.json')
+        set_weights(net[-1], './0082.weights_0.json')
+        set_biases(net[-1], './0082.biases_0.json')
         net.append(nn.ReLU())  # 44
         # 440cf0
         net.append(nn.Identity())  # 45
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))  # 46
-        set_weights(net[-1], './0075.txt.weights_0.json')
-        set_biases(net[-1], './0075.txt.biases_0.json')
+        set_weights(net[-1], './0093.weights_0.json')
+        set_biases(net[-1], './0093.biases_0.json')
         net.append(nn.Identity())  # 47 add
         net.append(nn.ReLU())  # 48
         # 418a00
         net.append(nn.Identity())  # 49
         net.append(nn.Identity())  # 50
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1))  # 51
-        set_weights(net[-1], './0027.txt.weights_0.json')
-        set_biases(net[-1], './0027.txt.biases_0.json')
+        set_weights(net[-1], './0045.weights_0.json')
+        set_biases(net[-1], './0045.biases_0.json')
         net.append(nn.ReLU())  # 52
         # 404810
         net.append(nn.Identity())  # 53
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))  # 54
-        set_weights(net[-1], './0008.txt.weights_0.json')
-        set_biases(net[-1], './0008.txt.biases_0.json')
+        set_weights(net[-1], './0026.weights_0.json')
+        set_biases(net[-1], './0026.biases_0.json')
         # 401550
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=2, padding=0))  # 55
-        set_weights(net[-1], './0001.txt.weights_0.json')
-        set_biases(net[-1], './0001.txt.biases_0.json')
+        set_weights(net[-1], './0019.weights_0.json')
+        set_biases(net[-1], './0019.biases_0.json')
         net.append(nn.Identity())  # 56 add
         net.append(nn.ReLU())  # 57
         # 407d60
         net.append(nn.Identity())  # 58
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))  # 59
-        set_weights(net[-1], './0011.txt.weights_0.json')
-        set_biases(net[-1], './0011.txt.biases_0.json')
+        set_weights(net[-1], './0029.weights_0.json')
+        set_biases(net[-1], './0029.biases_0.json')
         net.append(nn.ReLU())  # 60
         # 41f8e0
         net.append(nn.Identity())  # 61
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))  # 62
-        set_weights(net[-1], './0035.txt.weights_0.json')
-        set_biases(net[-1], './0035.txt.biases_0.json')
+        set_weights(net[-1], './0053.weights_0.json')
+        set_biases(net[-1], './0053.biases_0.json')
         net.append(nn.Identity())  # 63 add
         net.append(nn.ReLU())  # 64
         #
@@ -185,8 +185,8 @@ class MyResNet(nn.Module):
         net.append(nn.Flatten())  # 66
         # 41bea0
         net.append(nn.Linear(in_features=512, out_features=1000))  # 67
-        set_weights(net[-1], './0029.txt.dense_weights_0.json')
-        set_biases(net[-1], './0029.txt.biases_0.json')
+        set_weights(net[-1], './0047.dense_weights_0.json')
+        set_biases(net[-1], './0047.biases_0.json')
         self.net = net
 
     def forward(self, x):
@@ -209,14 +209,14 @@ class MyResNet(nn.Module):
                 out[i] = self.net[i](input_0 + input_1)
             else:
                 assert 'wrong input list' and False
-            if i == 24:
-                print(out[24])
+            #if i == 24:  # debug
+            #    print(out[24])
         return out[length-1]
 
 
 if __name__ == "__main__":
     # x = torch.rand(size=(1, 3, 224, 224))
-    with open('cat.bin', 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O3/cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)
@@ -236,8 +236,8 @@ if __name__ == "__main__":
     time3 = time.time()
     print('{}s'.format(time3 - time2))
 
-    print(out.size())
-    print(type(out))
+    #print(out.size())
+    #print(type(out))
     max_index = np.argmax(out.detach().numpy())
     print(max_index)
     # print(out)
