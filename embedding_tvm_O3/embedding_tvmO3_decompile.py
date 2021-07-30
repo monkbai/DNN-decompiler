@@ -1,22 +1,23 @@
 #! /usr/bin/python3
 import os
 import sys
+sys.path.append("../..")
 import math
 from scripts import utils
 from scripts import pin_tools
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = '/home/lifter/Documents/tvm_output/scripts/ida/embedding/embedding_tvm_O0_funcs'
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_tvm_O3_funcs/"
 
     # prepared in advance
-    prog_path = '/home/lifter/Documents/tvm_output/embedding_tvm_O0'
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_tvm_O3"
     in_data = ''  # no input needed
     label_file = './step1.txt'
     config_file = './config.json'
 
     # (tmp files) generated during analysis
-    log_path = './embedding_tvm_O0_func_call.log'
+    log_path = './embedding_tvm_O3_func_call.log'
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
     mem_read_log_path = './mem_read.log'
@@ -38,10 +39,10 @@ if __name__ == '__main__':
     # Recover other layers
     # ===============================
     func_data = {
-                 'embedding': '0037.sub_405A30.txt',  # take
-                 'avg_pool': '0025.sub_403330.txt',
-                 'matmul': '0031.sub_4046E0.txt',
-                 'add': '0019.sub_401D70.txt'
+                 'embedding': '0019.sub_401DA0.txt',  # take
+                 'avg_pool': '0023.sub_402760.txt',
+                 'matmul': '0021.sub_402490.txt',
+                 'add': '0027.sub_403030.txt'
                  }
 
     for func_type, func_name in func_data.items():
@@ -54,7 +55,7 @@ if __name__ == '__main__':
                                         prog_path, in_data, func_type=func_type)
         print(shape)
         if 'embedding' in func_type:
-            embedding_start = int('0x41ec40', 16)
+            embedding_start = int('0x4190c0', 16)  # the start addrees can get from previous output
             for param in param_list:
                 if param > embedding_start:
                     dict_size = (param - embedding_start)/4/shape
@@ -65,11 +66,11 @@ if __name__ == '__main__':
     # ===============================
     # Extract Parameters
     # ===============================
-    # func_meta_data is collected from previous output
+    # addresses in func_meta_data are collected from previous output
     func_meta_data = [
-                      ('0037.sub_405A30.txt', (25006, 100), '0x405a30', '0x41ec40', 'embedding'),
-                      ('0031.sub_4046E0.txt', (1, 100), '0x4046e0', '0xdacc40', 'matmul'),
-                      ('0019.sub_401D70.txt', (1, 1), '0x401d70', '0x415440', 'add'),
+                      ('0019.sub_401DA0.txt', (25006, 100), '0x401da0', '0x4190c0', 'embedding'),
+                      ('0021.sub_402490.txt', (1, 100), '0x402490', '0xda78c0', 'matmul'),
+                      ('0027.sub_403030.txt', (1, 1), '0x403030', '0xda64c0', 'add'),
                       ]
     for fun_data in func_meta_data:
         func_name = fun_data[0]

@@ -92,6 +92,7 @@ class SE_VGG(nn.Module):
         classifier = []
         classifier.append(nn.Linear(in_features=512 * 7 * 7, out_features=4096))
         set_weights(classifier[-1], './0050.sub_4045A0.params_0.json')
+        print(classifier[-1].weight.shape)
         set_biases(classifier[-1], './0049.sub_404470.params_0.json')
         classifier.append(nn.ReLU())
 

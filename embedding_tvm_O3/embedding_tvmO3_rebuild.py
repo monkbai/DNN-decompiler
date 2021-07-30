@@ -57,8 +57,8 @@ class NET(nn.Module):
 
 if __name__ == "__main__":
     # x = torch.randint(0, 25000, size=(7, 1))
-    x = torch.tensor([[70, 24, 9, 676, 285, 816, 6514]])  # This file is terrible
-    # x = torch.tensor([[70, 24, 9, 113, 285, 816, 2382]])  # This file is great
+    # x = torch.tensor([[70, 24, 9, 676, 285, 816, 6514]])  # This film is terrible
+    x = torch.tensor([[70, 24, 9, 113, 285, 816, 2382]])  # This film is great
 
 
     time1 = time.time()
