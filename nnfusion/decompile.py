@@ -11,23 +11,23 @@ import json
 # Automatically or manually
 addr_dict = {
     #
-    'base_addr': '0x555555554000',
-    'kernel_entry_addr': '0xcc90',
-    'MlasConvPrepare_addr': '0x165e0',
-    'MlasConv_addr': '0x15dd0',
-    'MlasGemm_addr': '0x13fc0',
-    'MlasPool_addr': '0x16b10',
-    'concurrency_addr': '0x4a360',
+    'base_addr': '0x0',  # recompiled with -no-pie
+    'kernel_entry_addr': '0x40BE10',
+    'MlasConvPrepare_addr': '0x415760',
+    'MlasConv_addr': '0x414F50',
+    'MlasGemm_addr': '0x413140',
+    'MlasPool_addr': '0x415C90',
+    'concurrency_addr': '0x4494E0',
     #
-    'Broadcast': '0x11e70',
-    'Reshape': '0x103c0',
+    'Broadcast': '0x410FF0',
+    'Reshape': '0x40F540',
 }
 
-prog_path = '/home/lifter/Documents/tvm_output/vgg_nnfusion'
-data_path = '/home/lifter/Documents/tvm_output/cat.bin'
+prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/vgg_nnfusion"
+data_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/cat.bin"
 
-#funcs_dir = '/home/lifter/Documents/tvm_output/vgg11_strip_nn_funcs'
-funcs_dir = '/home/lifter/Documents/tvm_output/vgg11_nnfusion_funcs'
+
+funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/vgg_nnfusion_strip_funcs/"
 
 
 def runtime_addr(addr: str):
@@ -189,29 +189,29 @@ def get_func_trace(op_list: list):
 
 def extract_param():
     func_meta_data = [
-                      ('0068.sub_78E0.txt', (64, 3, 3, 3), '0x78e0', 'conv2d'),
-                      ('0055.sub_5A90.txt', (1, 64), '0x5a90', 'add'),
-                      ('0070.sub_7D50.txt', (128, 64, 3, 3), '0x7d50', 'conv2d'),
-                      ('0054.sub_5920.txt', (1, 128), '0x5920', 'add'),
-                      ('0046.sub_4F80.txt', (256, 128, 3, 3), '0x4f80', 'conv2d'),
-                      ('0052.sub_5640.txt', (1, 256), '0x5640', 'add'),
-                      ('0057.sub_5D70.txt', (256, 256, 3, 3), '0x5d70', 'conv2d'),
-                      # ('0052.sub_5640.txt', (1, 256), '0x5640', 'add'),
-                      ('0081.sub_94E0.txt', (512, 256, 3, 3), '0x94e0', 'conv2d'),
-                      ('0066.sub_74C0.txt', (1, 512), '0x74c0', 'add'),
-                      ('0051.sub_5470.txt', (512, 512, 3, 3), '0x5470', 'conv2d'),
-                      # ('0066.sub_74C0.txt', (1, 512), '0x74c0', 'add'),
-                      ('0044.sub_4D60.txt', (512, 512, 3, 3), '0x4d60', 'conv2d'),
-                      ('0056.sub_5C00.txt', (1, 512), '0x5c00', 'add'),
-                      # ('0044.sub_4D60.txt', (512, 512, 3, 3), '0x4d60', 'conv2d'),
-                      # ('0056.sub_5C00.txt', (1, 512), '0x5c00', 'add'),
+                      ('0068.sub_406A60.txt', (64, 3, 3, 3), '0x406A60', 'conv2d'),
+                      ('0055.sub_404C10.txt', (1, 64), '0x404C10', 'add'),
+                      ('0070.sub_406ED0.txt', (128, 64, 3, 3), '0x406ED0', 'conv2d'),
+                      ('0054.sub_404AA0.txt', (1, 128), '0x404AA0', 'add'),
+                      ('0046.sub_404100.txt', (256, 128, 3, 3), '0x404100', 'conv2d'),
+                      ('0052.sub_4047C0.txt', (1, 256), '0x4047C0', 'add'),
+                      ('0057.sub_404EF0.txt', (256, 256, 3, 3), '0x404EF0', 'conv2d'),
+                      # ('0052.sub_4047C0.txt', (1, 256), '0x4047C0', 'add'),
+                      ('0081.sub_408660.txt', (512, 256, 3, 3), '0x408660', 'conv2d'),
+                      ('0066.sub_406640.txt', (1, 512), '0x406640', 'add'),
+                      ('0051.sub_4045F0.txt', (512, 512, 3, 3), '0x4045F0', 'conv2d'),
+                      # ('0066.sub_406640.txt', (1, 512), '0x406640', 'add'),
+                      ('0044.sub_403EE0.txt', (512, 512, 3, 3), '0x403EE0', 'conv2d'),
+                      ('0056.sub_404D80.txt', (1, 512), '0x404D80', 'add'),
+                      # ('0044.sub_403EE0.txt', (512, 512, 3, 3), '0x403EE0', 'conv2d'),
+                      # ('0056.sub_404D80.txt', (1, 512), '0x404D80', 'add'),
 
-                      ('0050.sub_5420.txt', (25088, 4096), '0x5420', 'dense'),
-                      ('0049.sub_52F0.txt', (1, 4096), '0x52f0', 'add'),
-                      ('0045.sub_4F30.txt', (4096, 4096), '0x4f30', 'dense'),
-                      # ('0049.sub_52F0.txt', (1, 4096), '0x52f0', 'add'),
-                      ('0043.sub_4D10.txt', (4096, 1001), '0x4d10', 'dense'),
-                      ('0074.sub_85F0.txt', (1, 1001), '0x85f0', 'add'),
+                      ('0050.sub_4045A0.txt', (25088, 4096), '0x4045A0', 'dense'),
+                      ('0049.sub_404470.txt', (1, 4096), '0x404470', 'add'),
+                      ('0045.sub_4040B0.txt', (4096, 4096), '0x4040B0', 'dense'),
+                      # ('0049.sub_404470.txt', (1, 4096), '0x404470', 'add'),
+                      ('0043.sub_403E90.txt', (4096, 1001), '0x403E90', 'dense'),
+                      ('0074.sub_407770.txt', (1, 1001), '0x407770', 'add'),
 
                       ]
     in_data = data_path
@@ -225,9 +225,6 @@ def extract_param():
         dump_point = runtime_addr(dump_point)
         func_type = fun_data[3]
 
-        if not func_name.startswith('0050.'):  # debug
-            continue
-
         if func_type == 'conv2d':
             # w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
             utils.extract_params_nnfusion(prog_path, in_data, w_shape, dump_point,
@@ -237,9 +234,10 @@ def extract_param():
                                           mem_dump_log_path, func_name, 1)
         elif func_type == 'dense':
             utils.extract_params_nnfusion(prog_path, in_data, w_shape, dump_point,
-                                          mem_dump_log_path, func_name, reg_num=1)  # 0->rsi, 1->rdx, 2->rcx
+                                          mem_dump_log_path, func_name, reg_num=1)  #rdi, 0->rsi, 1->rdx, 2->rcx
 
-
+'''
+# Deprecated 
 def read_param():
     mem_dump_log_path = './mem_dump.log'
     constatn_folder = "/export/d1/zliudc/TVM/nnfusion_vgg11/Constant/"
@@ -287,6 +285,7 @@ def read_param():
         with open(json_path, 'w') as wf:
             wf.write(json_str)
             wf.close()
+'''
 
 
 def convert_constant_to_txt(constant_path: str, txt_path: str, float_len: int):
@@ -316,18 +315,26 @@ if __name__ == '__main__':
     #read_param()
     #exit(0)
     # ------------------
-    extract_param()
-    exit(0)
+    
     # ------------------
-    #get_shape_info()
+    
+    # Step 1
+    #get_shape_info()  # get the shape information of conv, pool and gemm
+    # ------------------
 
-    operator_list = get_all_operator()
+    # Step 2
+    #operator_list = get_all_operator()  # the list of operaotrs
     # print(operator_list)
-    #get_func_trace(operator_list)
+    #get_func_trace(operator_list)  # log the tracec of operator
+    # ------------------
 
-    for op_func_path in operator_list:
-        print('\n{}'.format(op_func_path))
-        if op_func_path:
-            identify_operator(op_func_path)
+    # Step 3
+    #for op_func_path in operator_list:  # identify operators
+    #    print('\n{}'.format(op_func_path))
+    #    if op_func_path:
+    #        identify_operator(op_func_path)
+    # ------------------
 
-
+    # Step 4 Extract Parameters
+    extract_param()
+    

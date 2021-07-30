@@ -728,8 +728,9 @@ def extract_params_nnfusion(prog_path: str, in_data: str, w_shape: tuple, dump_p
     dwords_len = 1
     for w in w_shape:
         dwords_len *= w
-    #rm_log(log_path)
-    #dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
+    if os.path.exists(log_path):
+        rm_log(log_path)
+    dump_dwords(prog_path, in_data, dump_point, dwords_len, log_path, reg_num=reg_num)  # rdx
 
     # then convert dwords to floats
     with open(log_path, 'r') as f:
@@ -758,7 +759,7 @@ def extract_params_nnfusion(prog_path: str, in_data: str, w_shape: tuple, dump_p
             with open(json_name, 'w') as wf:
                 wf.write(json_str)
                 wf.close()
-    rm_log(log_path)
+    # m_log(log_path)
 
 
 def extract_params_general(prog_path: str, in_data: str, w_shape: tuple, dump_point: str,
