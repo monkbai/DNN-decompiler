@@ -118,7 +118,7 @@ if __name__ == '__main__':
     #exit(0)
     # We have to pass the external function address to SE engine
     # This can be done automatically, but we do it manually for simplicity
-    '''
+    
     se_engine.extern_functions = {'0x400c10': 'memset'}  # address in .plt, name
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True)  # also all dense
     print('all conv and dense done.')
@@ -132,13 +132,13 @@ if __name__ == '__main__':
         else:
             print(result)
     #exit(0)
-    '''
+    
     
     # ==============================================================
     
     # Step 2.2.2 Other layers
     # the BatchNorm2d is implemented with a special sequence (add, sqrt, divide, multiply, expand_dims, multiply, negative, multiply, add, expand_dims, add)
-    '''
+    
     asm_files = os.listdir(utils.funcs_dir)
     se_engine.extern_functions = {'0x400c10': 'memset'}  # address in .plt, name
     results_dict = dict()
@@ -167,7 +167,7 @@ if __name__ == '__main__':
         print(name)
         print(result)
     exit(0)
-    '''
+    
 
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)

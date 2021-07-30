@@ -371,8 +371,6 @@ if __name__ == '__main__':
     logger.info('# ' + '='*20)
 
     # Step 2.2.2 Other layers
-    # the BatchNorm2d is implemented with a special sequence (add, sqrt, divide, multiply, expand_dims, multiply, negative, multiply, add, expand_dims, add)
-    
     asm_files = os.listdir(utils.funcs_dir)
     se_engine.extern_functions = {'0x400c50': 'memset'}  # address in .plt, name
     results_dict = dict()

@@ -321,8 +321,10 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
         elif not smooth:
             layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
-        else:
+        elif filter_shape[1] > ind_a: 
             layout_shape = [filter_shape[0]/ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1]/ind_a, ind_b]
+        elif filter_shape[1] <= ind_a: 
+            layout_shape = [filter_shape[0]/ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
         print('layout shape', layout_shape)
         print('stride {}'.format(guess_stride))
         return filter_shape, input_shape, output_shape, layout_shape
@@ -457,9 +459,11 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
         elif not smooth:
             layout_shape = [filter_shape[0] / ind_b, filter_shape[1] / ind_a, filter_shape[2], filter_shape[3], ind_a,
                             ind_b]
-        else:
+        elif filter_shape[1] > ind_a: 
             layout_shape = [filter_shape[0] / ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1] / ind_a,
                             ind_b]
+        elif filter_shape[1] <= ind_a: 
+            layout_shape = [filter_shape[0] / ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
         print('layout shape', layout_shape)
         print('stride {}'.format(guess_stride))
         return filter_shape, input_shape, output_shape, layout_shape
@@ -573,7 +577,7 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
     for mem_blk in mem_read_regions:
         if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
             weights_mem = mem_blk
-
+    print(weights_addrs)
     offset_list = get_weights_list(value, compiler=compiler, size=size)
     if offset_list[1] < offset_list[0]:
         offset_list.reverse()
@@ -581,6 +585,7 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
     for i in range(1, len(offset_list)):
         offset_list[i] = (offset_list[i]-offset_list[0])/4
     offset_list[0] = 0
+    print(offset_list)
     '''
     # debug
     for i in range(len(offset_list)):
