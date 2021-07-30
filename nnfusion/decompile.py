@@ -23,7 +23,7 @@ addr_dict = {
     'Reshape': '0x103c0',
 }
 
-prog_path = '/home/lifter/Documents/tvm_output/vgg11_nnfusion'
+prog_path = '/home/lifter/Documents/tvm_output/vgg_nnfusion'
 data_path = '/home/lifter/Documents/tvm_output/cat.bin'
 
 #funcs_dir = '/home/lifter/Documents/tvm_output/vgg11_strip_nn_funcs'
