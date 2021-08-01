@@ -6,21 +6,25 @@ from scripts.pin_tools import nnfusion_conv, nnfusion_gemm, nnfusion_pool, nnfus
 from scripts import utils
 import numpy as np
 import json
+import logging
+print('get logger: {}'.format('decompiler.'+__name__))
+logger = logging.getLogger('decompiler.'+__name__)
+
 #
 # Find some special function addresses
 # Automatically or manually
 addr_dict = {
     #
     'base_addr': '0x0',  # recompiled with -no-pie
-    'kernel_entry_addr': '0x40BE10',
-    'MlasConvPrepare_addr': '0x415760',
-    'MlasConv_addr': '0x414F50',
-    'MlasGemm_addr': '0x413140',
-    'MlasPool_addr': '0x415C90',
-    'concurrency_addr': '0x4494E0',
+    'kernel_entry_addr': '0x40BE00',
+    'MlasConvPrepare_addr': '0x415750',
+    'MlasConv_addr': '0x414F40',
+    'MlasGemm_addr': '0x413130',
+    'MlasPool_addr': '0x415C80',
+    'concurrency_addr': '0x4494d0',
     #
-    'Broadcast': '0x410FF0',
-    'Reshape': '0x40F540',
+    'Broadcast': '0x410Fe0',
+    'Reshape': '0x40F530',
 }
 
 prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/vgg_nnfusion"
@@ -189,29 +193,29 @@ def get_func_trace(op_list: list):
 
 def extract_param():
     func_meta_data = [
-                      ('0068.sub_406A60.txt', (64, 3, 3, 3), '0x406A60', 'conv2d'),
-                      ('0055.sub_404C10.txt', (1, 64), '0x404C10', 'add'),
-                      ('0070.sub_406ED0.txt', (128, 64, 3, 3), '0x406ED0', 'conv2d'),
-                      ('0054.sub_404AA0.txt', (1, 128), '0x404AA0', 'add'),
-                      ('0046.sub_404100.txt', (256, 128, 3, 3), '0x404100', 'conv2d'),
-                      ('0052.sub_4047C0.txt', (1, 256), '0x4047C0', 'add'),
-                      ('0057.sub_404EF0.txt', (256, 256, 3, 3), '0x404EF0', 'conv2d'),
-                      # ('0052.sub_4047C0.txt', (1, 256), '0x4047C0', 'add'),
-                      ('0081.sub_408660.txt', (512, 256, 3, 3), '0x408660', 'conv2d'),
-                      ('0066.sub_406640.txt', (1, 512), '0x406640', 'add'),
-                      ('0051.sub_4045F0.txt', (512, 512, 3, 3), '0x4045F0', 'conv2d'),
-                      # ('0066.sub_406640.txt', (1, 512), '0x406640', 'add'),
-                      ('0044.sub_403EE0.txt', (512, 512, 3, 3), '0x403EE0', 'conv2d'),
-                      ('0056.sub_404D80.txt', (1, 512), '0x404D80', 'add'),
-                      # ('0044.sub_403EE0.txt', (512, 512, 3, 3), '0x403EE0', 'conv2d'),
-                      # ('0056.sub_404D80.txt', (1, 512), '0x404D80', 'add'),
+                      ('0068.sub_406A50.txt', (64, 3, 3, 3), '0x406A50', 'conv2d'),
+                      ('0055.sub_404C00.txt', (1, 64), '0x404C00', 'add'),
+                      ('0070.sub_406Ec0.txt', (128, 64, 3, 3), '0x406Ec0', 'conv2d'),
+                      ('0054.sub_404A90.txt', (1, 128), '0x404A90', 'add'),
+                      ('0046.sub_4040f0.txt', (256, 128, 3, 3), '0x4040f0', 'conv2d'),
+                      ('0052.sub_4047b0.txt', (1, 256), '0x4047b0', 'add'),
+                      ('0057.sub_404Ee0.txt', (256, 256, 3, 3), '0x404Ee0', 'conv2d'),
+                      # ('0052.sub_4047b0.txt', (1, 256), '0x4047b0', 'add'),
+                      ('0081.sub_408650.txt', (512, 256, 3, 3), '0x408650', 'conv2d'),
+                      ('0066.sub_406630.txt', (1, 512), '0x406630', 'add'),
+                      ('0051.sub_4045e0.txt', (512, 512, 3, 3), '0x4045e0', 'conv2d'),
+                      # ('0066.sub_406630.txt', (1, 512), '0x406630', 'add'),
+                      ('0044.sub_403Ed0.txt', (512, 512, 3, 3), '0x403Ed0', 'conv2d'),
+                      ('0056.sub_404D70.txt', (1, 512), '0x404D70', 'add'),
+                      # ('0044.sub_403Ed0.txt', (512, 512, 3, 3), '0x403Ed0', 'conv2d'),
+                      # ('0056.sub_404D70.txt', (1, 512), '0x404D70', 'add'),
 
-                      ('0050.sub_4045A0.txt', (25088, 4096), '0x4045A0', 'dense'),
-                      ('0049.sub_404470.txt', (1, 4096), '0x404470', 'add'),
-                      ('0045.sub_4040B0.txt', (4096, 4096), '0x4040B0', 'dense'),
-                      # ('0049.sub_404470.txt', (1, 4096), '0x404470', 'add'),
-                      ('0043.sub_403E90.txt', (4096, 1001), '0x403E90', 'dense'),
-                      ('0074.sub_407770.txt', (1, 1001), '0x407770', 'add'),
+                      ('0050.sub_404590.txt', (25088, 4096), '0x404590', 'dense'),
+                      ('0049.sub_404460.txt', (1, 4096), '0x404460', 'add'),
+                      ('0045.sub_4040A0.txt', (4096, 4096), '0x4040a0', 'dense'),
+                      # ('0049.sub_404460.txt', (1, 4096), '0x404460', 'add'),
+                      ('0043.sub_403E80.txt', (4096, 1001), '0x403E80', 'dense'),
+                      ('0074.sub_407760.txt', (1, 1001), '0x407760', 'add'),
 
                       ]
     in_data = data_path
@@ -224,7 +228,7 @@ def extract_param():
         dump_point = fun_data[2]
         dump_point = runtime_addr(dump_point)
         func_type = fun_data[3]
-
+        logger.info('Extract Params for {}'.format(func_name))
         if func_type == 'conv2d':
             # w_shape = (w_shape[0], w_shape[2], w_shape[3], w_shape[1])
             utils.extract_params_nnfusion(prog_path, in_data, w_shape, dump_point,
@@ -236,28 +240,27 @@ def extract_param():
             utils.extract_params_nnfusion(prog_path, in_data, w_shape, dump_point,
                                           mem_dump_log_path, func_name, reg_num=1)  #rdi, 0->rsi, 1->rdx, 2->rcx
 
-'''
-# Deprecated 
+
 def read_param():
     mem_dump_log_path = './mem_dump.log'
-    constatn_folder = "/export/d1/zliudc/TVM/nnfusion_vgg11/Constant/"
+    constatn_folder = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/Constant/"
     func_meta_data = [
-        ('Constant_17_0.bin', (64, 3, 3, 3), '0x', 'conv2d'),
-        ('Constant_16_0.bin', (1, 64), '0x5a90', 'add'),
-        ('Constant_19_0.bin', (128, 64, 3, 3), '0x7d50', 'conv2d'),
-        ('Constant_18_0.bin', (1, 128), '0x5920', 'add'),
-        ('Constant_21_0.bin', (256, 128, 3, 3), '0x4f80', 'conv2d'),
-        ('Constant_20_0.bin', (1, 256), '0x5640', 'add'),
-        ('Constant_23_0.bin', (256, 256, 3, 3), '0x5d70', 'conv2d'),
-        ('Constant_22_0.bin', (1, 256), '0x5640', 'add'),
-        ('Constant_25_0.bin', (512, 256, 3, 3), '0x94e0', 'conv2d'),
-        ('Constant_24_0.bin', (1, 512), '0x74c0', 'add'),
-        ('Constant_27_0.bin', (512, 512, 3, 3), '0x5470', 'conv2d'),
-        ('Constant_26_0.bin', (1, 512), '0x74c0', 'add'),
-        ('Constant_29_0.bin', (512, 512, 3, 3), '0x4d60', 'conv2d'),
-        ('Constant_28_0.bin', (1, 512), '0x5c00', 'add'),
-        ('Constant_31_0.bin', (512, 512, 3, 3), '0x4d60', 'conv2d'),
-        ('Constant_30_0.bin', (1, 512), '0x5c00', 'add'),
+        ('Constant_17_0.bin', (64, 3, 3, 3), (3, 3, 3, 64), 'conv2d'),
+        ('Constant_16_0.bin', (1, 64), 'add'),
+        ('Constant_19_0.bin', (128, 64, 3, 3), (3, 3, 64, 128), 'conv2d'),
+        ('Constant_18_0.bin', (1, 128), 'add'),
+        ('Constant_21_0.bin', (256, 128, 3, 3), (3, 3, 128, 256), 'conv2d'),
+        ('Constant_20_0.bin', (1, 256), 'add'),
+        ('Constant_23_0.bin', (256, 256, 3, 3), (3, 3, 256, 256), 'conv2d'),
+        ('Constant_22_0.bin', (1, 256), 'add'),
+        ('Constant_25_0.bin', (512, 256, 3, 3), (3, 3, 256, 512), 'conv2d'),
+        ('Constant_24_0.bin', (1, 512), 'add'),
+        ('Constant_27_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
+        ('Constant_26_0.bin', (1, 512), 'add'),
+        ('Constant_29_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
+        ('Constant_28_0.bin', (1, 512),  'add'),
+        ('Constant_31_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
+        ('Constant_30_0.bin', (1, 512), 'add'),
 
         ('Constant_10_0.bin', (25088, 4096), '0x5420', 'dense'),
         ('Constant_13_0.bin', (1, 4096), '0x52f0', 'add'),
@@ -271,6 +274,9 @@ def read_param():
         print(func[0])
         constant_path = os.path.join(constatn_folder, func[0])
         w_shape = func[1]
+        func_type = func[-1]
+        if func_type == 'conv2d':
+            org_shape = func[-2]
         float_len = 1
         for w_l in w_shape:
             float_len *= w_l
@@ -278,6 +284,9 @@ def read_param():
         convert_constant_to_txt(constant_path, mem_dump_log_path, float_len)
         float_array = convert_txt_to_float(mem_dump_log_path, float_len)
         w = np.asarray(float_array)
+        if func_type == 'conv2d':
+            w = w.reshape(org_shape)
+            w = w.transpose(3, 2, 0, 1)
         w = w.reshape(w_shape)
         lists = w.tolist()
         json_str = json.dumps(lists)
@@ -285,7 +294,7 @@ def read_param():
         with open(json_path, 'w') as wf:
             wf.write(json_str)
             wf.close()
-'''
+
 
 
 def convert_constant_to_txt(constant_path: str, txt_path: str, float_len: int):
@@ -312,8 +321,8 @@ def convert_txt_to_float(txt_path: str, float_len: int):
 
 
 if __name__ == '__main__':
-    #read_param()
-    #exit(0)
+    read_param()
+    exit(0)
     # ------------------
     
     # ------------------
@@ -336,5 +345,5 @@ if __name__ == '__main__':
     # ------------------
 
     # Step 4 Extract Parameters
-    extract_param()
+    #extract_param()
     

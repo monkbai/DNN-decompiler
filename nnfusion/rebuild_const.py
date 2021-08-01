@@ -39,48 +39,48 @@ class SE_VGG(nn.Module):
 
         # block 1
         net.append(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1, stride=1))  # 0
-        set_weights(net[-1], './0068.sub_406A50.weights_0.json')
-        set_biases(net[-1], './0055.sub_404C00.params_0.json')
+        set_weights(net[-1], 'Constant_17_0.json')
+        set_biases(net[-1], 'Constant_16_0.json')
         net.append(nn.ReLU())  # 1
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 2
 
         # block 2
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1))  # 3
-        set_weights(net[-1], './0070.sub_406Ec0.weights_0.json')
-        set_biases(net[-1], './0054.sub_404A90.params_0.json')
+        set_weights(net[-1], 'Constant_19_0.json')
+        set_biases(net[-1], 'Constant_18_0.json')
         net.append(nn.ReLU())  # 4
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 5
 
         # block 3
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1, stride=1))  # 10
-        set_weights(net[-1], './0046.sub_4040f0.weights_0.json')
-        set_biases(net[-1], './0052.sub_4047b0.params_0.json')
+        set_weights(net[-1], 'Constant_21_0.json')
+        set_biases(net[-1], 'Constant_20_0.json')
         net.append(nn.ReLU())  # 11
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, stride=1))  # 12
-        set_weights(net[-1], './0057.sub_404Ee0.weights_0.json')
-        set_biases(net[-1], './0052.sub_4047b0.params_1.json')
+        set_weights(net[-1], 'Constant_23_0.json')
+        set_biases(net[-1], 'Constant_22_0.json')
         net.append(nn.ReLU())  # 13
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 16
 
         # block 4
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1, stride=1))  # 17
-        set_weights(net[-1], './0081.sub_408650.weights_0.json')
-        set_biases(net[-1], './0066.sub_406630.params_0.json')
+        set_weights(net[-1], 'Constant_25_0.json')
+        set_biases(net[-1], 'Constant_24_0.json')
         net.append(nn.ReLU())  # 18
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 19
-        set_weights(net[-1], './0051.sub_4045e0.weights_0.json')
-        set_biases(net[-1], './0066.sub_406630.params_1.json')
+        set_weights(net[-1], 'Constant_27_0.json')
+        set_biases(net[-1], 'Constant_26_0.json')
         net.append(nn.ReLU())  # 20
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 23
 
         # block 5
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 24
-        set_weights(net[-1], './0044.sub_403Ed0.weights_0.json')
-        set_biases(net[-1], './0056.sub_404D70.params_0.json')
+        set_weights(net[-1], 'Constant_29_0.json')
+        set_biases(net[-1], 'Constant_28_0.json')
         net.append(nn.ReLU())  # 25
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 26
-        set_weights(net[-1], './0044.sub_403Ed0.weights_1.json')
-        set_biases(net[-1], './0056.sub_404D70.params_1.json')
+        set_weights(net[-1], 'Constant_31_0.json')
+        set_biases(net[-1], 'Constant_30_0.json')
         net.append(nn.ReLU())  # 27
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 30
 
@@ -91,30 +91,57 @@ class SE_VGG(nn.Module):
         # define an empty container for Linear operations
         classifier = []
         classifier.append(nn.Linear(in_features=512 * 7 * 7, out_features=4096))
-        set_weights(classifier[-1], './0050.sub_404590.params_0.json')
+        set_weights(classifier[-1], 'Constant_10_0.json')
         print(classifier[-1].weight.shape)
-        set_biases(classifier[-1], './0049.sub_404460.params_0.json')
+        set_biases(classifier[-1], 'Constant_13_0.json')
         classifier.append(nn.ReLU())
 
         classifier.append(nn.Linear(in_features=4096, out_features=4096))
-        set_weights(classifier[-1], './0045.sub_4040A0.params_0.json')
-        set_biases(classifier[-1], './0049.sub_404460.params_1.json')
+        set_weights(classifier[-1], 'Constant_11_0.json')
+        set_biases(classifier[-1], 'Constant_14_0.json')
         classifier.append(nn.ReLU())
 
         classifier.append(nn.Linear(in_features=4096, out_features=self.num_classes))
         print(classifier[-1].weight.shape)
-        set_weights(classifier[-1], './0043.sub_403E80.params_0.json')
+        set_weights(classifier[-1], 'Constant_12_0.json')
         print(classifier[-1].weight.shape)
-        set_biases(classifier[-1], './0074.sub_407760.params_0.json')
+        set_biases(classifier[-1], 'Constant_15_0.json')
 
         # add classifier into class property
         self.classifier = nn.Sequential(*classifier)
 
     def forward(self, x):
         # for debug
-        out0 = self.net[0](x)
-        #print(out0)
+        out0 = self.net[0](x) # conv 1st
+        print(out0[0][0][0][0])
+        out0 = self.net[1](out0) # relu
+        out0 = self.net[2](out0) # max
+        out0 = self.net[3](out0) # conv 2nd
+        print(out0[0][0][0][0])
+        out0 = self.net[4](out0) # relu
+        out0 = self.net[5](out0) # max
+        out0 = self.net[6](out0) # conv 3rd
+        print(out0[0][0][0][0])
+        out0 = self.net[7](out0) # relu
+        out0 = self.net[8](out0) # conv 4th
+        print(out0[0][0][0][0])
+        out0 = self.net[9](out0) 
+        out0 = self.net[10](out0) 
+        out0 = self.net[11](out0) # conv 5th
+        print(out0[0][0][0][0])
+        out0 = self.net[12](out0) # relu
+        out0 = self.net[13](out0) # conv 6th
+        print(out0[0][0][0])
+        out0 = self.net[14](out0) 
+        out0 = self.net[15](out0)
+        out0 = self.net[16](out0) # conv 7th
+        print(out0)
+        out0 = self.net[17](out0) # relu
+        out0 = self.net[18](out0) # conv 8th
+        print(out0[0][0][0][0])
+
         feature = self.extract_feature(x)
+        print(feature)
         feature = feature.view(x.size(0), -1)
         classify_result = self.classifier(feature)
         return classify_result
