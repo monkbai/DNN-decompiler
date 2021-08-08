@@ -35,7 +35,7 @@ if __name__ == '__main__':
     # ==============================================================
 
     # Step 2.1 Generate and Filter Trace
-    '''
+    
     func_trace_map = {}
     func_rndaddr_map = {}
     asm_files = os.listdir(utils.funcs_dir)
@@ -52,8 +52,8 @@ if __name__ == '__main__':
                     func_rndaddr_map[asm_path] = (rnd_addr, loop_size, start_addr, end_addr)
     print(func_trace_map)
     print(func_rndaddr_map)
-    exit(0)
-    '''
+    #exit(0)
+    
     # ==============================================================
 
     # Step 2.2 Recover Shape with Symbolic Execution
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     #exit(0)
 
     # Step 2.2.1 Conv and Matmul layers
-    '''
+    
     func_trace_map = {'0013.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/0013_slice.log', 
                       '0016.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/0016_slice.log', 
                       '0029.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_glow/0029_slice.log', 
@@ -127,18 +127,18 @@ if __name__ == '__main__':
                 if 'matmul' not in func_type and 'conv' not in func_type and \
                    'trans' not in func_type and 'add, relu' not in func_type:  # transpose could be ignored, (add, relu) layer is known
                     print('SE for {}, {}'.format(asm_file, func_type))
-                    
+                    tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
                     # gnereate tmp trace file, it should be fast
                     utils.generate_inst_trace(asm_file, tmp_log_path, prog_path, in_data, timeout=True)
                     # symbolic execution, also should be fast
-                    utils.generate_symbolic_expression(asm_file, tmp_log_path, exp_log_path, max_inst=5000000)
+                    #utils.generate_symbolic_expression(asm_file, tmp_log_path, exp_log_path, max_inst=5000000)
                     # --- try to interpret the filter shape from symbolic expression log
-                    shape = utils.recover_shape(asm_file, exp_log_path,
-                                                mem_read_log_path, mem_write_log_path,
-                                                prog_path, in_data, func_type=func_type)
-                    print('shape:', shape)
-    exit(0)
-    '''
+                    #shape = utils.recover_shape(asm_file, exp_log_path,
+                    #                            mem_read_log_path, mem_write_log_path,
+                    #                            prog_path, in_data, func_type=func_type)
+                    #print('shape:', shape)
+    #exit(0)
+    
     
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)

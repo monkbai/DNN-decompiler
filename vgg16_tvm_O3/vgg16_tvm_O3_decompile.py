@@ -46,7 +46,7 @@ if __name__ == '__main__':
     # ==============================================================
     
     # Step 2.1 Generate and Filter Trace
-    '''
+    
     logger.info('START')
     func_trace_map = {}
     func_rndaddr_map = {}
@@ -66,8 +66,8 @@ if __name__ == '__main__':
     print(func_trace_map)
     print(func_rndaddr_map)
     logger.info('END')
-    exit(0)
-    '''
+    #exit(0)
+    
 
     # ==============================================================
     # Step 2.2 Recover Shape with Symbolic Execution
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     #exit(0)
     # We have to pass the external function address to SE engine
     # This can be done automatically, but we do it manually for simplicity
-    '''
+    
     se_engine.extern_functions = {'0x400c50': 'memset'}  # address in .plt, name
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True)  # also all dense
     print('all conv and dense done.')
@@ -139,11 +139,11 @@ if __name__ == '__main__':
             print('layout_shape', result[3])
         else:
             print(result)
-    exit(0)
-    '''
+    #exit(0)
+    
 
     # ==============================================================
-    '''
+    
     # Step 2.2.2 Other layers
     asm_files = os.listdir(utils.funcs_dir)
     se_engine.extern_functions = {'0x400c50': 'memset'}  # address in .plt, name
@@ -157,64 +157,25 @@ if __name__ == '__main__':
                 if ('pool' in func_type or 'add' in func_type) and 'conv' not in func_type and 'dense' not in func_type:
                     # transpose, expand_dims and relu could be ignored, batchnormalization always follow after a conv layer
                     print('SE for {}, {}'.format(asm_file, func_type))
-                    
+                    tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
                     # gnereate tmp trace file, it should be fast
                     utils.generate_inst_trace(asm_file, tmp_log_path, prog_path, in_data, timeout=True)
                     # symbolic execution, also should be fast
-                    utils.generate_symbolic_expression(asm_file, tmp_log_path, exp_log_path, max_inst=5000000)
+                    #utils.generate_symbolic_expression(asm_file, tmp_log_path, exp_log_path, max_inst=5000000)
                     # --- try to interpret the filter shape from symbolic expression log
-                    shape = utils.recover_shape_tvm(asm_file, exp_log_path,
-                                                mem_read_log_path, mem_write_log_path,
-                                                prog_path, in_data, func_type=func_type)
-                    print('shape:', shape)
-                    results_dict[asm_file] = shape
+                    #shape = utils.recover_shape_tvm(asm_file, exp_log_path,
+                    #                            mem_read_log_path, mem_write_log_path,
+                    #                            prog_path, in_data, func_type=func_type)
+                    #print('shape:', shape)
+                    #results_dict[asm_file] = shape
     for name, result in results_dict.items():
         print(name)
         print(result)
-    exit(0)
-    '''
+    #exit(0)
+    
     # ==============================================================
 
-    """
-    # conv2d layers
-    func_type = 'conv2d'
-    # func_name = '0046.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_2_2'  # 512, 256, 3, 3
-    # func_name = '0049.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_4_2'  # 256, 128, 3, 3
-    # func_name = '0052.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_8_2'  # 64, 3, 3, 3  [2.0, 1, 3.0, 3.0, 3.0, 32.0]
-    # func_name = '0004.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_3_2'  # 256, 256, 3, 3
-    func_name = '0007.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_6_2'  # 128, 64, 3, 3
-    # func_name = '0012.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_1_2'  # 512, 512, 3, 3
-    # func_name = '0025.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_5_2'  # 128, 128, 3, 3
-    # func_name = '0028.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_2'  # 512, 512, 3, 3
-    # func_name = '0041.txt.fused_nn_contrib_conv2d_NCHWc_add_nn_relu_7_2'  # 64, 64, 3, 3  [2, 4, 3, 3, 16, 32]
-    # dense/fully-connected layers
-    # func_type = 'dense'
-    # func_name = '0058.txt.fused_nn_dense_add_nn_relu_1'  # 4096, 4096
-    # func_name = '0060.txt.fused_nn_dense_add_nn_relu_1_1'  # 4096, 25088
-    # func_name = '0030.txt.fused_nn_dense_add_1'  # 1000, 4096
-    # bias add layer
-    # func_type = 'add'
-    # add is merged into conv2d, no more independent add function
-    # max-poll layers
-    # func_type = 'max'
-    # func_name = '0056.txt.fused_nn_max_pool2d_3_1'  # max 2, 2, kernel, stride
-    # func_name = '0009.txt.fused_nn_max_pool2d_2_1'  # 2, 2
-    # func_name = '0016.txt.fused_nn_max_pool2d_1'  # 2, 2
-    # func_name = '0020.txt.fused_nn_max_pool2d_1_1'  # 2, 2
-    # func_name = '0043.txt.fused_nn_max_pool2d_4_1'  # 2, 2
-
-    #utils.generate_inst_trace(func_name, tmp_log_path, prog_path, in_data)
-
-    #utils.generate_symbolic_expression(func_name, tmp_log_path, exp_log_path, max_inst=5000000)
-
-    # --- try to interpret the filter shape from symbolic expression log
-    filter_shape, layout_shape = utils.recover_shape_tvm(func_name, exp_log_path,
-                                    mem_read_log_path, mem_write_log_path,
-                                    prog_path, in_data, func_type=func_type, optimized=True)
-    print(filter_shape)
-    print(layout_shape)
-    exit(0)
-    """
+    
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================

@@ -40,7 +40,7 @@ if __name__ == '__main__':
     # ==============================================================
     
     # Step 2.1 Generate and Filter Trace
-    '''
+    
     logger.info('START')
     func_trace_map = {}
     func_rndaddr_map = {}
@@ -60,8 +60,8 @@ if __name__ == '__main__':
     print(func_trace_map)
     print(func_rndaddr_map)
     logger.info('END')
-    exit(0)
-    '''
+    #exit(0)
+    
 
     # ==============================================================
 
@@ -112,8 +112,8 @@ if __name__ == '__main__':
                         }
 
     #se_engine.extern_functions = {'0x400c10': 'memset'}
-    #utils.generate_symbolic_expression('0099.txt', '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O3/0099_slice.log', exp_log_path, max_inst=5000000)
-    #shape = utils.recover_shape_tvm('0099.txt', exp_log_path, mem_read_log_path, mem_write_log_path, prog_path, in_data, func_type='conv2d', optimized=True)
+    #utils.generate_symbolic_expression('0038.txt', '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O3/0038_slice.log', exp_log_path, max_inst=5000000)
+    #shape = utils.recover_shape_tvm('0038.txt', exp_log_path, mem_read_log_path, mem_write_log_path, prog_path, in_data, func_type='conv2d', optimized=True)
     #print(shape)
     #exit(0)
     # We have to pass the external function address to SE engine
@@ -152,21 +152,21 @@ if __name__ == '__main__':
                 if 'pool' in func_type:  
                     # transpose, expand_dims and relu could be ignored, batchnormalization always follow after a conv layer
                     print('SE for {}, {}'.format(asm_file, func_type))
-                    
+                    tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
                     # gnereate tmp trace file, it should be fast
                     utils.generate_inst_trace(asm_file, tmp_log_path, prog_path, in_data, timeout=True)
                     # symbolic execution, also should be fast
-                    utils.generate_symbolic_expression(asm_file, tmp_log_path, exp_log_path, max_inst=5000000)
+                    #utils.generate_symbolic_expression(asm_file, tmp_log_path, exp_log_path, max_inst=5000000)
                     # --- try to interpret the filter shape from symbolic expression log
-                    shape = utils.recover_shape_tvm(asm_file, exp_log_path,
-                                                mem_read_log_path, mem_write_log_path,
-                                                prog_path, in_data, func_type=func_type, optimized=True)
-                    print('shape:', shape)
-                    results_dict[asm_file] = shape
+                    #shape = utils.recover_shape_tvm(asm_file, exp_log_path,
+                    #                            mem_read_log_path, mem_write_log_path,
+                    #                            prog_path, in_data, func_type=func_type, optimized=True)
+                    #print('shape:', shape)
+                    #results_dict[asm_file] = shape
     for name, result in results_dict.items():
         print(name)
         print(result)
-    exit(0)
+    #exit(0)
     
 
     # ==============================================================
@@ -192,8 +192,8 @@ if __name__ == '__main__':
                       ('0087.txt', (128, 128, 3, 3), '0x438930', 'conv2d', (4, 1, 3, 3, 128, 32), 1),
                       ('0090.txt', (64, 64, 3, 3), '0x43CB60', 'conv2d', (2, 1, 3, 3, 64, 32), 1),
                       ('0093.txt', (256, 256, 3, 3), '0x440CF0', 'conv2d', (16, 2, 3, 3, 128, 16), 2),  # 'extra_add'
-                      # wrong layout shape --> # ('0099.txt', (64, 3, 7, 7), '0x444E30', 'conv2d', (2, 8, 7, 7, 0.375, 32)),
-                      # manually correct
+                      # fixed ? # wrong layout shape --> # ('0099.txt', (64, 3, 7, 7), '0x444E30', 'conv2d', (2, 8, 7, 7, 0.375, 32)),
+                                # manually correct
                       ('0099.txt', (64, 3, 7, 7), '0x444E30', 'conv2d', (2, 1, 7, 7, 3, 32), 1),
                       ('0019.txt', (512, 256, 1, 1), '0x401550', 'conv2d', (16, 2, 1, 1, 128, 32), 1),  # 'extra_add'
 
