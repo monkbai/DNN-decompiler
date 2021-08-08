@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
+sys.path.append("../..")
 import math
 from scripts import utils
 from scripts import pin_tools
@@ -54,11 +55,11 @@ def get_embedding_region(entry_func: str, next_func: str, src_list: list):
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = '/home/lifter/Documents/tvm_output/scripts/ida/embedding/embedding_glow_funcs/'
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_glow_funcs/"
 
     # prepared in advance
-    prog_path = '/home/lifter/Documents/tvm_output/embedding_glow'
-    in_data = ''  # no input needed
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_glow"
+    in_data = ''  # no input needed, hard coded in source code
     label_file = './step1.txt'
     config_file = './config.json'
 
