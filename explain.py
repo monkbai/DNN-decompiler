@@ -246,6 +246,8 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=input_region)
         else:
             offset_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=input_region)  # analyze the first expression (with the smallest address)
+        print('debug input offset_list', offset_list)  # debug
+        
         stride = offset_list[1] - offset_list[0]  # not the real stride
         index = 0
         while index < len(offset_list) - 1:
@@ -498,6 +500,7 @@ def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
     times = value.count('*')
     if compiler == 'tvm':
         offset_list = get_addr_list(value, 'tvm', size)
+        # (offset_list)  #debug
     elif compiler == 'glow':
         offset_list = get_addr_list(value, 'glow', size, in_blk=in_blk)
     else:
@@ -577,7 +580,7 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
     for mem_blk in mem_read_regions:
         if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
             weights_mem = mem_blk
-    print(weights_addrs)
+    # print('weights_addrs', weights_addrs)  # debug
     offset_list = get_weights_list(value, compiler=compiler, size=size)
     if offset_list[1] < offset_list[0]:
         offset_list.reverse()
@@ -585,7 +588,7 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
     for i in range(1, len(offset_list)):
         offset_list[i] = (offset_list[i]-offset_list[0])/4
     offset_list[0] = 0
-    print(offset_list)
+    # print('offset_list', offset_list)  # debug
     '''
     # debug
     for i in range(len(offset_list)):
