@@ -59,7 +59,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, stride=2, padding=3))
         set_weights(net[-1], './0028.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=64, affine=False, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=64, affine=False, track_running_stats=False))
         set_bn_weights(net[-1], './0176.gamma_0.json')
         set_biases(net[-1], './0077.beta_0.json')
         set_var(net[-1], './0117.var_0.json')
@@ -70,7 +70,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0051.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=64, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=64, track_running_stats=False))
         set_bn_weights(net[-1], './0176.gamma_2.json')
         set_biases(net[-1], './0077.beta_1.json')
         set_var(net[-1], './0117.var_1.json')
@@ -80,7 +80,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0051.weights_1.json')
         
-        net.append(nn.BatchNorm2d(num_features=64, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=64, track_running_stats=False))
         set_bn_weights(net[-1], './0176.gamma_4.json')
         set_biases(net[-1], './0077.beta_2.json')
         set_var(net[-1], './0117.var_2.json')
@@ -91,7 +91,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0051.weights_2.json')
         
-        net.append(nn.BatchNorm2d(num_features=64, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=64, track_running_stats=False))
         set_bn_weights(net[-1], './0176.gamma_6.json')
         set_biases(net[-1], './0077.beta_3.json')
         set_var(net[-1], './0117.var_3.json')
@@ -101,7 +101,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0051.weights_3.json')
         
-        net.append(nn.BatchNorm2d(num_features=64, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=64, track_running_stats=False))
         set_bn_weights(net[-1], './0176.gamma_8.json')
         set_biases(net[-1], './0077.beta_4.json')
         set_var(net[-1], './0117.var_4.json')
@@ -112,7 +112,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, stride=2, padding=0))
         set_weights(net[-1], './0063.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=False))
         set_bn_weights(net[-1], './0131.gamma_0.json')
         set_biases(net[-1], './0166.beta_0.json')
         set_var(net[-1], './0172.var_0.json')
@@ -122,7 +122,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1))  # correct the shape
         set_weights(net[-1], './0153.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=False))
         set_bn_weights(net[-1], './0131.gamma_2.json')
         set_biases(net[-1], './0166.beta_1.json')
         set_var(net[-1], './0172.var_1.json')
@@ -132,7 +132,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0115.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=False))
         set_bn_weights(net[-1], './0131.gamma_4.json')
         set_biases(net[-1], './0166.beta_2.json')
         set_var(net[-1], './0172.var_2.json')
@@ -143,7 +143,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0115.weights_1.json')
         
-        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=False))
         set_bn_weights(net[-1], './0131.gamma_6.json')
         set_biases(net[-1], './0166.beta_3.json')
         set_var(net[-1], './0172.var_3.json')
@@ -153,7 +153,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0115.weights_2.json')
         
-        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=128, track_running_stats=False))
         set_bn_weights(net[-1], './0131.gamma_8.json')
         set_biases(net[-1], './0166.beta_4.json')
         set_var(net[-1], './0172.var_4.json')
@@ -164,7 +164,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1, stride=2, padding=0))
         set_weights(net[-1], './0059.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=False))
         set_bn_weights(net[-1], './0081.gamma_0.json')
         set_biases(net[-1], './0065.beta_0.json')
         set_var(net[-1], './0100.var_0.json')
@@ -173,7 +173,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1))
         set_weights(net[-1], './0122.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=False))
         set_bn_weights(net[-1], './0081.gamma_2.json')
         set_biases(net[-1], './0065.beta_1.json')
         set_var(net[-1], './0100.var_1.json')
@@ -183,7 +183,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0160.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=False))
         set_bn_weights(net[-1], './0081.gamma_4.json')
         set_biases(net[-1], './0065.beta_2.json')
         set_var(net[-1], './0100.var_2.json')
@@ -194,7 +194,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0160.weights_1.json')
         
-        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=False))
         set_bn_weights(net[-1], './0081.gamma_6.json')
         set_biases(net[-1], './0065.beta_3.json')
         set_var(net[-1], './0100.var_3.json')
@@ -204,7 +204,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0160.weights_2.json')
         
-        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=256, track_running_stats=False))
         set_bn_weights(net[-1], './0081.gamma_8.json')
         set_biases(net[-1], './0065.beta_4.json')
         set_var(net[-1], './0100.var_4.json')
@@ -215,7 +215,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=2, padding=0))
         set_weights(net[-1], './0170.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=False))
         set_bn_weights(net[-1], './0085.gamma_0.json')
         set_biases(net[-1], './0096.beta_0.json')
         set_var(net[-1], './0083.var_0.json')
@@ -224,7 +224,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1))
         set_weights(net[-1], './0142.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=False))
         set_bn_weights(net[-1], './0085.gamma_2.json')
         set_biases(net[-1], './0096.beta_1.json')
         set_var(net[-1], './0083.var_1.json')
@@ -234,7 +234,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0090.weights_0.json')
         
-        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=False))
         set_bn_weights(net[-1], './0085.gamma_4.json')
         set_biases(net[-1], './0096.beta_2.json')
         set_var(net[-1], './0083.var_2.json')
@@ -245,7 +245,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0090.weights_1.json')
         
-        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=False))
         set_bn_weights(net[-1], './0085.gamma_6.json')
         set_biases(net[-1], './0096.beta_3.json')
         set_var(net[-1], './0083.var_3.json')
@@ -255,7 +255,7 @@ class MyResNet(nn.Module):
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
         set_weights(net[-1], './0090.weights_2.json')
         
-        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=True))
+        net.append(nn.BatchNorm2d(num_features=512, track_running_stats=False))
         set_bn_weights(net[-1], './0085.gamma_8.json')
         set_biases(net[-1], './0096.beta_4.json')
         set_var(net[-1], './0083.var_4.json')
@@ -268,7 +268,7 @@ class MyResNet(nn.Module):
         net.append(nn.Linear(in_features=512, out_features=1000))
         set_weights(net[-1], './0092.dense_weights_0.json')
         set_biases(net[-1], '0155.biases_0.json')
-        self.net = net
+        self.net = nn.ModuleList(net)
 
     def forward(self, x):
         length = len(self.net)
@@ -321,3 +321,23 @@ if __name__ == "__main__":
     print(max_index)
     # print(out)
     print(out.detach().numpy()[0, max_index])
+
+
+    # Input to the model
+    vgg.eval()
+    batch_size = 1
+    torch_out = vgg(x)
+
+    # Export the model
+    torch.onnx.export(vgg,               # model being run
+                      x,                         # model input (or a tuple for multiple inputs)
+                      "resnet18_tvmO0_rebuild.onnx",   # where to save the model (can be a file or file-like object)
+                      export_params=True,        # store the trained parameter weights inside the model file
+                      opset_version=11,          # the ONNX version to export the model to
+                      training=True,   # to disable all optimization and keep the BN layers
+                      do_constant_folding=False,
+                      # do_constant_folding=True,  # whether to execute constant folding for optimization
+                      input_names = ['input'],   # the model's input names
+                      output_names = ['output'], # the model's output names
+                      )
+    exit(0)

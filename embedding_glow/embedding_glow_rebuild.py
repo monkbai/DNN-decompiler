@@ -31,15 +31,13 @@ class NET(nn.Module):
     def __init__(self, seq_len):
         super().__init__()
         net = []
-        net.append(nn.Embedding(25002, 100))
+        net.append(nn.Embedding(25002, 100, padding_idx=1))
         set_weights(net[-1], '0008.embedding_2.params_0.json')
 
         net.append(nn.AvgPool2d((seq_len, 1)))
 
         net.append(nn.Linear(in_features=100, out_features=1))
         set_weights(net[-1], '0010.libjit_matmul_f.params_0.json')
-
-        net.append(nn.Linear(in_features=1, out_features=1))
         set_biases(net[-1], '0011.libjit_stacked_kernel.params_0.json')
 
         self.net = net
@@ -76,3 +74,17 @@ if __name__ == "__main__":
     print(type(out))
     print(out)
 
+    # Input to the model
+    vgg.eval()
+    torch_out = vgg(x)
+    # Export the model
+    torch.onnx.export(vgg,               # model being run
+                      x,                         # model input (or a tuple for multiple inputs)
+                      "embedding_2_glow_rebuild.onnx",   # where to save the model (can be a file or file-like object)
+                      export_params=True,        # store the trained parameter weights inside the model file
+                      opset_version=10,          # the ONNX version to export the model to
+                      # do_constant_folding=True,  # whether to execute constant folding for optimization
+                      input_names = ['input'],   # the model's input names
+                      output_names = ['output'], # the model's output names
+                      )
+    exit(0)

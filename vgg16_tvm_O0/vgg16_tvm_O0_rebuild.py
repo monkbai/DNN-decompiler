@@ -163,3 +163,21 @@ if __name__ == "__main__":
     print(max_index)
     # print(out)
     print(out.detach().numpy()[0, max_index])
+
+
+    # Input to the model
+    vgg.eval()
+    batch_size = 1
+    torch_out = vgg(x)
+
+    # Export the model
+    torch.onnx.export(vgg,               # model being run
+                      x,                         # model input (or a tuple for multiple inputs)
+                      "vgg16_tvmO0_rebuild.onnx",   # where to save the model (can be a file or file-like object)
+                      export_params=True,        # store the trained parameter weights inside the model file
+                      opset_version=10,          # the ONNX version to export the model to
+                      # do_constant_folding=True,  # whether to execute constant folding for optimization
+                      input_names = ['input'],   # the model's input names
+                      output_names = ['output'], # the model's output names
+                      )
+    exit(0)

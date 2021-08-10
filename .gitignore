@@ -5,3 +5,5 @@ __pycache__/
 *.asm
 *.lst
 *.bin
+*.png
+*.onnx
