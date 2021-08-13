@@ -480,86 +480,6 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
 # Handle all conv2d functions
 # ==============================================================
 
-"""
-# move to trace_filter
-def get_early_stop_point(func_asm_path: str):
-    start_addr = ''
-    end_addr = ''
-    with open(func_asm_path, 'r') as f:
-        asm_txt = f.read()
-        lines = asm_txt.split('\n')
-        lines.reverse()
-        idx = 0
-        while idx < len(lines):
-            line = lines[idx]
-            idx += 1
-            if line.startswith(';') or len(line) < 1:
-                continue
-            if line.startswith('0x'):
-                early_stop_addr = line.split(':')[0]
-                opcode = line[44:].strip()
-                opcode = opcode.split(' ')[0]
-                if opcode.startswith('j'):  # the last jump
-                    prev_line = lines[idx]
-                    loop_size = prev_line.split(' ')[-1].strip()
-                    if loop_size[0].isnumeric():
-                        loop_size = int(loop_size, 16)
-                        if loop_size < 64:
-                            early_stop_addr = early_stop_addr + '_ignore'
-                    else:
-                        loop_size = 64
-                        early_stop_addr = early_stop_addr+'_ignore'
-                    break
-    loop_size = max(loop_size, 64)
-    return early_stop_addr, loop_size * 4  # 4 <- length of float
-"""
-"""
-# move to trace_filter
-def find_rand_addr(prog_path: str, in_data: str, log_path: str, label_file_path: str):
-    prog_path = os.path.abspath(prog_path)
-    in_data = os.path.abspath(in_data)
-    log_path = os.path.abspath(log_path)
-    label_file_path = os.path.abspath(label_file_path)
-    # --- get conv2d functions' name
-    funcs_name_list = []
-    with open(label_file_path, 'r') as f:
-        labels = f.read()
-        lines = labels.split('\n')
-        for line in lines:
-            if ':' not in line:
-                continue
-            name, label = line.split(':')
-            if len(label.strip()) > 0 and ('dense' in label or 'conv2d' in label):
-                name = name.strip()
-                funcs_name_list.append(name)
-
-    func_addrs = dict()  # start_addr, end_addr, mid_output_addr
-    for func_name in funcs_name_list:
-        print(func_name)
-        mem_write_log_path = log_path
-        mem_write_log_path = os.path.abspath(mem_write_log_path)
-        prog_path = prog_path
-        data_path = in_data
-
-        func_asm_path = os.path.join(funcs_dir, func_name)
-        func_asm_path = os.path.abspath(func_asm_path)
-        start_addr, end_addr = get_func_range(func_asm_path)
-        early_stop_addr, loop_size = get_early_stop_point(func_asm_path)
-        mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
-        write_mem_regions = memory_slices(mem_write_log_path)
-        out_mem = (0, 0)
-        for mem_blk in write_mem_regions:
-            if (mem_blk[1] - mem_blk[0]) > (out_mem[1] - out_mem[0]):
-                out_mem = mem_blk
-        rnd_addr = random.randrange(out_mem[0], out_mem[1], 4)
-        #mid_addr = out_mem[0] + (out_mem[1] - out_mem[0])/2
-        #mid_addr = int(mid_addr)
-        #mid_addr = hex(mid_addr)
-        rnd_addr = hex(rnd_addr)
-        func_addrs[func_name] = (start_addr, end_addr, early_stop_addr, loop_size, rnd_addr, (hex(out_mem[0]), hex(out_mem[1])))
-    return func_addrs
-"""
-
 
 def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
                     func_trace_map=dict(), compiler='tvm', optimized=False):
@@ -755,6 +675,8 @@ def extract_params_nnfusion(prog_path: str, in_data: str, w_shape: tuple, dump_p
                 json_name = func_name[:func_name.rfind('.')] + '.params_{}.json'.format(i)
             elif reg_num == 2:
                 json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
+            else:
+                json_name = func_name[:func_name.rfind('.')] + '.param{}_{}.json'.format(reg_num, i)
 
             with open(json_name, 'w') as wf:
                 wf.write(json_str)

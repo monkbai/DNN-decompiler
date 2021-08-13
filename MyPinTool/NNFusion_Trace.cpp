@@ -40,7 +40,7 @@ KNOB<std::string>   KnobAddrsFile(KNOB_MODE_WRITEONCE,  "pintool",
 // Utilities
 /* ===================================================================== */
 
-VOID RecordInst(VOID * ip, ADDRINT rdi_value, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value)
+VOID RecordInst(VOID * ip, ADDRINT rdi_value, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value, ADDRINT r8_value, ADDRINT r9_value)
 {
     //fprintf(trace,"Function Addr: %p\n", ip);
     // rdi
@@ -51,7 +51,7 @@ VOID RecordInst(VOID * ip, ADDRINT rdi_value, ADDRINT rsi_value, ADDRINT rdx_val
     //fprintf(trace, "Param Addr 3: %p\n", (VOID *)rdx_value);
     // rcx
     //fprintf(trace, "Param Addr 4: %p\n", (VOID *)rcx_value);
-    fprintf(trace, "%p: %p,%p,%p,%p\n", ip, (VOID *)rdi_value, (VOID *)rsi_value, (VOID *)rdx_value, (VOID *)rcx_value);
+    fprintf(trace, "%p: %p,%p,%p,%p,%p,%p\n", ip, (VOID *)rdi_value, (VOID *)rsi_value, (VOID *)rdx_value, (VOID *)rcx_value, (VOID *)r8_value, (VOID *)r9_value);
     fprintf(trace, "\n");
 }
 
@@ -106,6 +106,8 @@ VOID Instruction(INS ins, VOID *v)
         IARG_REG_VALUE, LEVEL_BASE::REG_RSI,
         IARG_REG_VALUE, LEVEL_BASE::REG_RDX,
         IARG_REG_VALUE, LEVEL_BASE::REG_RCX,
+        IARG_REG_VALUE, LEVEL_BASE::REG_R8,
+        IARG_REG_VALUE, LEVEL_BASE::REG_R9,
         IARG_END);
     return;
 

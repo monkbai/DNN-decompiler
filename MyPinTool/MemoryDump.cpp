@@ -39,7 +39,7 @@ uint64_t dump_addr = 0;
 uint64_t length = 0;
 uint64_t dump_point = 0;
 
-uint32_t reg_num = 0;  // 1-> rdx -> weights, rcx -> biases
+int32_t reg_num = 0;  // 1-> rdx -> weights, rcx -> biases
 /* ===================================================================== */
 // Command line switches
 /* ===================================================================== */
@@ -72,9 +72,13 @@ VOID PrintDword(const int * addr, int length){
     fprintf(trace, "end\n");
 }
 
-VOID Dump(VOID * ip, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value){
+VOID Dump(VOID * ip, ADDRINT rdi_value, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value, ADDRINT r8_value, ADDRINT r9_value){
     // get address from register rsi/rdx/rcx
-    if (reg_num == 0){  // rsi
+    if (reg_num == -1){  // rdi
+        printf("rdi: %p\n", (void *)rdi_value);
+        PrintDword((const int *)rdi_value, (int)length);
+    }
+    else if (reg_num == 0){  // rsi
         printf("rsi: %p\n", (void *)rsi_value);
         PrintDword((const int *)rsi_value, (int)length);
     }
@@ -85,6 +89,14 @@ VOID Dump(VOID * ip, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value){
     else if (reg_num == 2){  // rcx
         printf("rcx: %p\n", (void *)rcx_value);
         PrintDword((const int *)rcx_value, (int)length);
+    }
+    else if (reg_num == 3){  // r8
+        printf("r8: %p\n", (void *)r8_value);
+        PrintDword((const int *)r8_value, (int)length);
+    }
+    else if (reg_num == 4){  // r9
+        printf("r9: %p\n", (void *)r9_value);
+        PrintDword((const int *)r9_value, (int)length);
     }
 }
 
@@ -118,9 +130,12 @@ VOID Instruction(INS ins, VOID *v)
         INS_InsertPredicatedCall(
             ins, IPOINT_BEFORE, (AFUNPTR)Dump,
             IARG_INST_PTR,
+            IARG_REG_VALUE, LEVEL_BASE::REG_RDI,
             IARG_REG_VALUE, LEVEL_BASE::REG_RSI,
             IARG_REG_VALUE, LEVEL_BASE::REG_RDX,
             IARG_REG_VALUE, LEVEL_BASE::REG_RCX,
+            IARG_REG_VALUE, LEVEL_BASE::REG_R8,
+            IARG_REG_VALUE, LEVEL_BASE::REG_R9,
             IARG_END);
         return;
     }
