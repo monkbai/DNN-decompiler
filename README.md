@@ -46,5 +46,8 @@ https://www.dropbox.com/s/nook5hs9srjveev/images.zip?dl=0
 https://www.dropbox.com/s/9y0k71dbowixs8w/embedding_input.zip?dl=0
 
 # Recompilation
+The first package includes recompiled new DNN executables on x86 platforms. This is in accordance with our recompilation evaluation in Section 6.5.  
 https://www.dropbox.com/s/i8ub0kihusy1evk/cpu_recompile.zip?dl=0  
+
+The second package includes legacy code migration demo. As clarified in Section 7 (the Discussion section; Downstream Applications paragraph), we decompiled x86 DNN executables, and try to migrate the decompiled models to GPUs by compiling them again using TVM with cuda as target device.  
 https://www.dropbox.com/s/01zu0oyh00e57pw/gpu_recompile.zip?dl=0
