@@ -45,7 +45,7 @@ https://www.dropbox.com/s/lf297rjgx7e39id/DNN_executables.zip?dl=0
 https://www.dropbox.com/s/nook5hs9srjveev/images.zip?dl=0  
 https://www.dropbox.com/s/9y0k71dbowixs8w/embedding_input.zip?dl=0
 
-# Recompilation
+### Recompilation
 The first package includes recompiled new DNN executables on x86 platforms. This is in accordance with our recompilation evaluation in Section 6.5.  
 https://www.dropbox.com/s/i8ub0kihusy1evk/cpu_recompile.zip?dl=0  
 
