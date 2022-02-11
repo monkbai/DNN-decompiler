@@ -6,8 +6,8 @@ import logging
 print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
 
-from scripts.e9patch_tools import all_inst_trace_2, all_inst_trace_1
-import scripts.explain
+# from e9patch_tools import all_inst_trace_2, all_inst_trace_1
+import explain
 
 
 # /* ===================================================================== */
@@ -317,14 +317,19 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
                 elif 'expf' == extern_functions[code_list[1]]:
                     handle_expf(code_list, rax_value)
                 else:
-                    print('call not implemented: {}'.format(extern_functions[code_list[1]]))
+                    logger.info('call not implemented: {}'.format(extern_functions[code_list[1]]))
+                    #print('call not implemented: {}'.format(extern_functions[code_list[1]]))
                     # TODO: even if the function is unknown, we should get the RAX value
                     handle_unknown_call(code_list, rax_value)
             else:
-                print('call not implemented')
-                print(log_line)
-                print(code_list)
-                print(extern_functions)
+                logger.info('call not implemented')
+                logger.info(log_line)
+                logger.info(code_list)
+                logger.info(extern_functions)
+                #print('call not implemented')
+                #print(log_line)
+                #print(code_list)
+                #print(extern_functions)
                 handle_unknown_call(code_list, rax_value)
         elif mnemonic == 'add' or mnemonic.startswith('sub') or \
                 mnemonic.startswith('idiv') or mnemonic.startswith('imul') or \
@@ -1308,7 +1313,8 @@ def handle_memset(code_list, rax_value):
     # TODO: currently can only set memory to zero --syntax=intel
     global mem_state
     addr = reg_state['rdi']
-    print('memset addr: {}'.format(addr))
+    #print('memset addr: {}'.format(addr))
+    logger.info('memset addr: {}'.format(addr))
     size = int(reg_state['edx'], 16)
     # TODO: what if the addr is not an address? e.g., it is maybe empty?
     if len(addr) > 0 and ',' not in addr:  # if addr is not an address

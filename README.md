@@ -1,6 +1,6 @@
 # BTD: DNN Executables Decompiler
 
-Artifact for USENIX Security 2022 submission: "Decompiling x86 Deep Neural Network Executables"
+Artifact for draft: "Decompiling x86 Deep Neural Network Executables"
 
 ## Structure
 

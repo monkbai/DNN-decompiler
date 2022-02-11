@@ -267,7 +267,7 @@ class MyResNet(nn.Module):
         
         net.append(nn.Linear(in_features=512, out_features=1000))
         set_weights(net[-1], './0092.dense_weights_0.json')
-        set_biases(net[-1], '0155.biases_0.json')
+        set_biases(net[-1], '0155.bias_add_0.json')
         self.net = nn.ModuleList(net)
 
     def forward(self, x):
@@ -295,7 +295,7 @@ class MyResNet(nn.Module):
 
 if __name__ == "__main__":
     # x = torch.rand(size=(1, 3, 224, 224))
-    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/resnet18_tvm_O0/cat.bin", 'br') as f:
+    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)
@@ -322,6 +322,7 @@ if __name__ == "__main__":
     # print(out)
     print(out.detach().numpy()[0, max_index])
 
+    exit(0)
 
     # Input to the model
     vgg.eval()
@@ -340,4 +341,4 @@ if __name__ == "__main__":
                       input_names = ['input'],   # the model's input names
                       output_names = ['output'], # the model's output names
                       )
-    exit(0)
+

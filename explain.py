@@ -198,7 +198,7 @@ def get_output_channel(exp: str, one_channel_size: int, mem_regions: list, compi
 def get_input_shape(name, exp, mem_regions, input_channel, size):
     offset_list = get_addr_list(exp, 'tvm', size)
     input_start_addr = min(offset_list)
-    print('input start addr', hex(input_start_addr))
+    # print('input start addr', hex(input_start_addr))  # for debugging
     for mem_start, mem_end in mem_regions:
         if mem_start <= input_start_addr < mem_end:
             return math.floor(math.sqrt(((mem_end-mem_start)/input_channel)/4))
@@ -239,14 +239,14 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         input_shape[1] = kernel_num
         input_shape[2] = input_shape[3] = input_num
         output_shape[2] = output_shape[3] = math.ceil(input_num/2)
-        print('special case: stride 2')
+        # print('special case: stride 2')
     else:
         # get the filter shape and input shape from first output
         if exp.startswith('sub'):
             offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=input_region)
         else:
             offset_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=input_region)  # analyze the first expression (with the smallest address)
-        print('debug input offset_list', offset_list)  # debug
+        # print('debug input offset_list', offset_list)  # debug
         
         stride = offset_list[1] - offset_list[0]  # not the real stride
         index = 0
@@ -312,12 +312,12 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     if not ignore_flag:
         # try to get the weights layout indicators
         ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions)
-        print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
-        # final shape
-        print('input shape', input_shape)
-        print('filter shape', filter_shape)
-        print('output shape', output_shape)
-        print('layout indicators: {}, {}'.format(ind_a, ind_b))
+        # print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
+        # final shape, for debugging
+        # print('input shape', input_shape)
+        # print('filter shape', filter_shape)
+        # print('output shape', output_shape)
+        # print('layout indicators: {}, {}'.format(ind_a, ind_b))
         if blk_size:  # kernel --> 1, 1
             ind_a = blk_size
             layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
@@ -327,14 +327,14 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             layout_shape = [filter_shape[0]/ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1]/ind_a, ind_b]
         elif filter_shape[1] <= ind_a: 
             layout_shape = [filter_shape[0]/ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
-        print('layout shape', layout_shape)
-        print('stride {}'.format(guess_stride))
+        # print('layout shape', layout_shape)
+        # print('stride {}'.format(guess_stride))
         return filter_shape, input_shape, output_shape, layout_shape
     else:
         #print('input shape', input_shape)
         #print('filter shape', filter_shape)
         #print('output shape', output_shape)
-        print('not a reasonable guess, ignored')
+        # print('not a reasonable guess, ignored')
         return filter_shape, input_shape, output_shape, (0, 0, 0, 0, 0, 0)
 
 

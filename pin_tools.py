@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from subprocess import Popen, PIPE, STDOUT
-from scripts import config
+import config
 
 import os
 import re
@@ -27,7 +27,7 @@ class cd:
 
 def cmd(commandline):
     with cd(project_dir):
-        print(commandline)
+        #print(commandline)
         logger.debug(commandline)
         status, output = subprocess.getstatusoutput(commandline)
         # print(output)
@@ -193,13 +193,19 @@ def mem_read_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, 
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
     localtime = time.asctime( time.localtime(time.time()) )
-    print ("Mem Read Logging Start", localtime)
+    logger.info("Mem Read Logging Start:" + localtime)
+
+    start_time = time.time()
     status, output = cmd(mem_read_log_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
+    end_time = time.time()
 
-    logger.info('Mem Read Logging Time - {}'.format(output[output.find('real'):]))
-    print(output[output.find('real'):])
+    # logger.info('Mem Read Logging Time - {}'.format(output[output.find('real'):]))  # time in Ubuntu 18.04
+    # logger.info('Mem Read Logging Time - {}'.format(output[output.find('timing'):]))  # time in Ubuntu 20.04
+    logger.info('Mem Read Logging Time - {}s'.format(end_time - start_time))
+    # print(output[output.find('real'):])
+    print("Mem Read Logging Time: {}s".format(end_time - start_time))
     project_dir = project_dir_backup
 
 
@@ -212,13 +218,19 @@ def mem_write_log(log_path: str, start_addr: str, end_addr: str, prog_path: str,
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
     localtime = time.asctime( time.localtime(time.time()) )
-    print ("Mem Write Logging Start", localtime)
+    logger.info("Mem Write Logging Start:" + localtime)
+
+    start_time = time.time()
     status, output = cmd(mem_write_log_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
+    end_time = time.time()
 
-    logger.info('Mem Write Logging Time - {}'.format(output[output.find('real'):]))
-    print(output[output.find('real'):])
+    #logger.info('Mem Write Logging Time - {}'.format(output[output.find('real'):]))  # time in Ubuntu 18.04
+    #logger.info('Mem Write Logging Time - {}'.format(output[output.find('timing'):]))  # time in Ubuntu 20.04
+    logger.info('Mem Write Logging Time - {}s'.format(end_time - start_time))
+    #print(output[output.find('real'):])
+    print("Mem Write Logging Time: {}s".format(end_time - start_time))
     project_dir = project_dir_backup
 
 
@@ -237,7 +249,7 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
         status, output = cmd(inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     else:
         status, output = cmd(timeout_inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
-    if status != 0:
+    if status != 0 and not timeout:
         print(output)
 
     logger.info('Trace Logging Time - {}'.format(log_path))
@@ -269,16 +281,20 @@ def dump_dwords_2(prog_path: str, input_data_path: str, inst_addr: str, dwords_l
 
     localtime = time.asctime( time.localtime(time.time()) )
     print("Dump Dwords 2 Start", localtime)
-    
+    logger.info('Dump Dwords 2 Start {}'.format(localtime))
+    start_time = time.time()
     status, output = cmd(
         mem_dump_2_log_cmd.format(log_path, dwords_len, inst_addr, data_index, prog_path, input_data_path))
     # print(output)
     if status != 0:
         print(output)
-    
-    logger.info('Dump Dwords 2 Time - {}'.format(output[output.find('real'):]))
-    print(output[output.find('real'):])
 
+    end_time = time.time()
+    
+    # logger.info('Dump Dwords 2 Time - {}'.format(output[output.find('real'):]))
+    # print(output[output.find('real'):])
+    logger.info('Dump Dwords 2 Time - {}s'.format(end_time - start_time))
+    print('Dump Dwords 2 Time - {}s'.format(end_time - start_time))
     project_dir = project_dir_backup
 
 

@@ -4,21 +4,36 @@ import random
 import sys
 import json
 import numpy as np
-from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
-from scripts.pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
-from scripts.pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
-from scripts.se_engine import lightweight_SymEx
-from scripts.mem_slices import memory_slices
-from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
-from scripts.explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
-from scripts.explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
-from scripts.explain import explain_glow_avgpool_result, explain_tvm_embedding_result
+from pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
+from pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
+from pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
+from se_engine import lightweight_SymEx
+from mem_slices import memory_slices
+from explain import explain_tvm_conv2d_result, explain_tvm_dense_result
+from explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
+from explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
+from explain import explain_glow_avgpool_result, explain_tvm_embedding_result
+
+
+def list_to_json(dict_obj: dict, output_path: str):
+    j = json.dumps(dict_obj, sort_keys=True, indent=4)
+    with open(output_path, 'w') as f:
+        f.write(j)
 
 
 def dict_to_json(dict_obj: dict, output_path: str):
-    j = json.dumps(dict_obj)
+    j = json.dumps(dict_obj, sort_keys=True, indent=4)
     with open(output_path, 'w') as f:
         f.write(j)
+
+
+def json_to_list(json_path: str):
+    if not os.path.exists(json_path):
+        return dict()
+    with open(json_path, 'r') as f:
+        j_txt = f.read()
+        list_obj = json.loads(s=j_txt)
+        return list_obj
 
 
 def json_to_dict(json_path: str):
@@ -168,6 +183,7 @@ def print_input_id(trace_log_path: str):
 
     params_list = []
     id = 0
+    id2addr = dict()
     with open(trace_log_path, 'r') as f:
         trace_txt = f.read()
         lines = trace_txt.split('\n')
@@ -185,12 +201,17 @@ def print_input_id(trace_log_path: str):
             idx = addr_list.index(addr) + 1
             label = addr2label[addr_list[idx]]  # type: str
 
+            id2addr[id] = (addr_list[idx], addr)
+
             if 'add add' not in label:
                 params_list.append((id, label, inputs, output))
                 id += 1
-                if 'relu' in label:
-                    params_list.append((id, 'relu', [output], output))
-                    id += 1
+            # if 'add add' not in label:  # TODO: why it looks like this?
+            #     params_list.append((id, label, inputs, output))
+            #     id += 1
+            #     if 'relu' in label:
+            #         params_list.append((id, 'relu', [output], output))
+            #         id += 1
             else:
                 conv2d_label = label.replace('add ', '', 1)
                 params_list.append((id, conv2d_label, inputs[1:], output))
@@ -200,6 +221,8 @@ def print_input_id(trace_log_path: str):
                 if 'relu' in label:
                     params_list.append((id, 'relu', [output], output))
                     id += 1
+
+    # generate input_id_list
     input_id_list = []
     for i in range(len(params_list)-1, -1, -1):
         input_addrs = params_list[i][2]
@@ -215,9 +238,31 @@ def print_input_id(trace_log_path: str):
         input_id_list.insert(0, input_id)
 
     print(input_id_list)
+    output_dict = dict()
+    topology_list = []
+    func_count = dict()
     for param in params_list:
+        func_addr, entry_addr = id2addr[param[0]]
+        print('addr:', func_addr, end=' ')
+        print('func:', addr2funcs[func_addr], end=' ')
         print(param, end=' ')
         print(input_id_list[param[0]])
+        func_name = addr2funcs[func_addr]
+        # (name, shape, fused_func, type, padding, stride, param_index)
+        output_dict[param[0]] = [func_name, [], entry_addr, param[1], None, None, None]
+        if addr2funcs[func_addr] not in func_count.keys():
+            func_count[addr2funcs[func_addr]] = 0
+        else:
+            func_count[addr2funcs[func_addr]] += 1
+        topology_list.append([param[0],  # id
+                              addr2funcs[func_addr],  # func name
+                              param[1],  # label
+                              param[2],  # input addresses
+                              param[3],  # output address
+                              input_id_list[param[0]],  # input ids
+                              func_count[addr2funcs[func_addr]]  # func_count/the number of occurrences
+                              ])
+    return output_dict, topology_list
 
 
 def print_layer_label(trace_log_path: str, config_path=''):  # for glow
@@ -432,8 +477,8 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
     start_addr, end_addr = get_func_range(func_asm_path)
 
     mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-    mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
     read_mem_regions = memory_slices(mem_read_log_path)
+    mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
     write_mem_regions = memory_slices(mem_write_log_path)
     if 'conv2d' in func_type:
         filter_shape = (0, 0, 0, 0)
@@ -441,7 +486,7 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
         output_shape = (0, 0, 0, 0)
         layout_shape = (0, 0, 0, 0)
         for stride in range(1, 4):
-            print('try with stride: {}'.format(stride))
+            # print('try with stride: {}'.format(stride))
             tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_layout_shape = \
                 explain_tvm_conv2d_result(mem_exp_log, read_mem_regions,
                                           write_mem_regions, guess_stride=stride,
@@ -456,7 +501,7 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
         return filter_shape, input_shape, output_shape, layout_shape
     elif 'dense' in func_type or 'matmul' in func_type:
         input_size, output_size = explain_tvm_dense_result(mem_exp_log, write_mem_regions)
-        print('({}, {})'.format(input_size, output_size))
+        # print('({}, {})'.format(input_size, output_size))
         return output_size, input_size
     elif 'add' in func_type:
         if len(read_mem_regions) > 1 and \
@@ -516,14 +561,14 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
         mem_read_log_path = 'mem_read.log'  # tmp file
         mem_write_log_path = 'mem_write.log'  # tmp file
         if compiler == 'tvm':
-            filter_shape = recover_shape_tvm(func_name, exp_log_path,
+            all_shapes = recover_shape_tvm(func_name, exp_log_path,
                                              mem_read_log_path, mem_write_log_path,
                                              prog_path, in_data, func_type=func_types[func_name], optimized=optimized)
         else:
-            filter_shape = recover_shape(func_name, exp_log_path,
+            all_shapes = recover_shape(func_name, exp_log_path,
                                          mem_read_log_path, mem_write_log_path,
                                          prog_path, in_data, func_type=func_types[func_name])
-        func_shape[func_name] = filter_shape
+        func_shape[func_name] = all_shapes  # filter_shape, input_shape, output_shape, layout_shape
     return func_shape
 
 
@@ -760,4 +805,9 @@ if __name__ == '__main__':
         print(new_id_list)
 
 
-    tmp_handle_func_call('/home/lifter/Documents/tvm_output/func_call.txt')
+    # tmp_handle_func_call('/home/lifter/Documents/tvm_output/func_call.txt')
+
+    funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/resnet18_funcs/"
+    generate_inst_trace('0098.txt', '0098.log',
+                        '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/resnet18_tvm_O0_strip',
+                        '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/cat.bin', timeout=True)
