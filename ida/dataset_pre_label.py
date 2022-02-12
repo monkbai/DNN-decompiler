@@ -29,13 +29,13 @@ project_dir = rootdir = r"./"
 labels_set = set()
 
 
-def get_TVM_O0_labels(file_name: str):
+def get_TVM_O0_labels(file_name: str, prefix='fused_'):
     global labels_set
     file_name = file_name.split('.')[1]
-    if not file_name.startswith('fused'):
+    if not file_name.startswith(prefix):
         return []
     else:
-        file_name = file_name.replace('fused_', '')
+        file_name = file_name.replace(prefix, '')
     if file_name[-1].isdigit():
         file_name = file_name[:file_name.rfind('_')]
 
@@ -156,6 +156,60 @@ def main_TVM(the_dir: str, opt_level=0):
             print('continue?')
 
 
+def main_tvm_v08(the_dir: str, opt_level=0):
+    if opt_level == 3:
+        labels_set.add('batch_flatten')
+        labels_set.add('layout_transform')
+        labels_set.add('dense')
+        labels_set.add('conv2d')
+        labels_set.add('reshape')
+
+    the_dir = os.path.abspath(the_dir)
+    for root, dirs, files in os.walk(the_dir):
+        root = os.path.abspath(root)
+        for d in dirs:
+            curr_d = os.path.join(root, d)
+            label_path = os.path.join(curr_d, 'labels.txt')
+            # if os.path.exists(label_path):
+            #     continue
+            print(curr_d)
+            asm_files = os.listdir(curr_d)
+            asm_files.sort()
+            current_labels = []
+            labels_list = []
+            with open(label_path, 'w') as f:
+                index = 0
+                while index < len(asm_files):
+                    asm_f = asm_files[index]
+                    f.write('{}: '.format(asm_f))
+                    if 'tvmgen_default_fused_' in asm_f and 'compute_' not in asm_f:
+                        current_labels.append('entry')
+                        if opt_level == 0:
+                            labels_list = get_TVM_O0_labels(asm_f, prefix='tvmgen_default_fused_')
+                        else:
+                            assert False, "not implemented"
+                            # labels_list = get_TVM_O3_labels(asm_f)
+
+                    if index < len(asm_files) - 1 and \
+                            (('fused' in asm_files[index + 1] and 'compute_' not in asm_files[index + 1]) or 'TLB_Find' in asm_files[index + 1]):
+                        current_labels += labels_list
+                        labels_list = []
+
+                    if len(current_labels) > 0:
+                        idx = 0
+                        while idx < len(current_labels) - 1:
+                            f.write('{}, '.format(current_labels[idx]))
+                            idx += 1
+                        f.write(current_labels[idx])
+                        current_labels = []
+
+                    f.write('\n')
+                    index += 1
+                f.close()
+
+            # print('continue?')
+
+
 def main_GLOW(the_dir: str):
     global labels_set
     the_dir = os.path.abspath(the_dir)
@@ -195,6 +249,7 @@ def main_GLOW(the_dir: str):
 if __name__ == '__main__':
     # main_TVM('./TVM_binaries/O0/')
     # main_TVM('./TVM_binaries/O3/', opt_level=3)
-    main_GLOW('./GLOW_binaries/')
-    for label in labels_set:
-        print(label)
+    #main_GLOW('./GLOW_binaries/')
+    #for label in labels_set:
+    #    print(label)
+    main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/')
