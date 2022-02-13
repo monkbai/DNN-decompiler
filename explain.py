@@ -83,6 +83,35 @@ def choose_one_4bytes(exp_log_path: str, mem_write_regions=[], num=0):
         return name, exp
 
 
+def choose_one_8bytes(exp_log_path: str, mem_write_regions=[], num=0):
+    if len(mem_write_regions) == 0:
+        out_mem = (0, 0xffffffff)
+    else:
+        out_mem = biggest_region(mem_write_regions)
+    exp_log_path = os.path.abspath(exp_log_path)
+    with open(exp_log_path, 'r') as f:
+        exp_txt = f.read()
+        lines = exp_txt.split('\n')
+        f.close()
+        index = 0
+        length = len(lines)
+        name = ''
+        exp = ''
+        while index < length-2:
+            tmp_name = lines[index]
+            index += 1
+            tmp_exp = lines[index].strip('<>')
+            index += 1
+            if (not tmp_name.endswith(',8')) or tmp_name.startswith('0x7ff'):
+                continue
+            else:  # choose the longest expression of one 4 bytes memory block
+                if out_mem[0] <= int(tmp_name.split(',')[0], 16) <= out_mem[1]:
+                    if tmp_exp.count('*') > exp.count('*'):
+                        name = tmp_name
+                        exp = tmp_exp
+        return name, exp
+
+
 def choose_one_16bytes(exp_log_path: str, mem_write_regions: list, num=0):
     if len(mem_write_regions) == 0:
         out_mem = (0, 0xffffffff)
@@ -758,6 +787,9 @@ def get_weights_addrs(exp: str, size=4, on_the_right=True):
 def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
     name, exp = choose_one_4bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
+        name, exp = choose_one_8bytes(exp_log_path, mem_write_regions)
+    if len(name) == 0:
+        print('explain: explain_tvm_dense_result(): failed to choose expression')
         exit(-1)
 
     input_size = exp.count('*')

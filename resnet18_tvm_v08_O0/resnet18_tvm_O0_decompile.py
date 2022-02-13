@@ -14,11 +14,12 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/resnet18_funcs/"
-    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/resnet18_tvm_O0_strip"
-    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/cat.bin"
-    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/step1.txt"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/resnet18_funcs/"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/resnet18_tvm_O0_strip"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/ground_truth.txt"
+    # label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/step1.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -80,21 +81,6 @@ if __name__ == '__main__':
     # Step 2.2 Recover Shape with Symbolic Execution
     # Step 2.2.1 Conv and Matmul layers
 
-    # generated in previous stage, can be removed, just for debugging
-    func_trace_map = {'0170.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0170_slice.log',
-                      '0160.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0160_slice.log',
-                      '0153.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0153_slice.log',
-                      '0142.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0142_slice.log',
-                      '0122.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0122_slice.log',
-                      '0115.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0115_slice.log',
-                      '0090.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0090_slice.log',
-                      '0063.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0063_slice.log',
-                      '0059.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0059_slice.log',
-                      '0051.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0051_slice.log',
-                      '0028.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0028_slice.log',  # conv
-
-                      '0092.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0092_slice.log',  # dense
-                      }
     # not used
     # func_rndaddr_map = {'0170.txt': ('0x46917c8', 64, '0x432d50', '0x434875'),
     #                     '0160.txt': ('0x377d7c8', 64, '0x42ec00', '0x430F8F'),
@@ -113,14 +99,14 @@ if __name__ == '__main__':
     # Sometimes we may want to re-log/symex/analyze the trace for specific operator
     #se_engine.extern_functions = {'0x400c10': 'memset'}
     # utils.generate_inst_trace('0153.txt', tmp_log_path, prog_path, in_data, timeout=True)
-    #utils.generate_symbolic_expression('0153.txt', '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0153_slice.log', exp_log_path)
+    #utils.generate_symbolic_expression('0153.txt', '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/0153_slice.log', exp_log_path)
     #shape = utils.recover_shape_tvm('0153.txt', exp_log_path, mem_read_log_path, mem_write_log_path, prog_path, in_data, func_type='conv2d', optimized=True)
     #print(shape)
     #exit(0)
 
     # We have to pass the external function address to SE engine
     # This can be done automatically, but we do it manually for simplicity
-    se_engine.extern_functions = {'0x400c10': 'memset'}  # address in .plt, name
+    se_engine.extern_functions = {'0x401120': 'memset'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm')
     print('all conv and dense done.')
@@ -143,11 +129,11 @@ if __name__ == '__main__':
     
     # Step 2.2.2 Other layers
     # the BatchNorm2d is implemented with a special sequence
-    # [add, sqrt, divide, multiply, expand_dims, multiply, negative, multiply, add, expand_dims, add]
+    # [add, sqrt, divide, multiply, multiply, negative, multiply, add, add]
     # For this special sequence, we try to merge it back into BatchNorm in fused_trace.py
     
     asm_files = os.listdir(utils.funcs_dir)
-    se_engine.extern_functions = {'0x400c10': 'memset'}  # address in .plt, name
+    se_engine.extern_functions = {'0x401120': 'memset'}  # address in .plt, name
     results_dict = dict()
     for asm_file in asm_files:
         if 'labels' not in asm_file and asm_file.endswith('.txt'):
@@ -206,7 +192,7 @@ if __name__ == '__main__':
             new_meta_data.append(meta_data)
     func_meta_data = new_meta_data
     for meta_data in func_meta_data:
-        if meta_data[0] == '0153.txt':
+        if meta_data[0] == '0166.txt':
             new_shape = list(meta_data[1])
             new_shape[0] = [128, 64, 3, 3]
             meta_data[1] = tuple(new_shape)  # manually fix the wrong shape, can be inferred from previous/succeed op

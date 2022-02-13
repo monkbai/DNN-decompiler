@@ -56,6 +56,21 @@ funcs_dir = './vgg16_glow_funcs/'
 # ==============================================================
 
 
+def rm_duplicated_call(log_path: str):
+    """ Seems caused by bugs inside TVM"""
+    with open(log_path, 'r') as f:
+        old_trace = f.read()
+    new_trace = ''
+    old_lines = old_trace.split('\n')
+    for i in range(len(old_lines)):
+        if i > 0 and old_lines[i-1] == old_lines[i]:
+            continue
+        new_trace += old_lines[i] + '\n'
+
+    with open(log_path, 'w') as f:
+        f.write(new_trace)
+
+
 def get_addr_list(label_path: str, fused=False):
     addr_list = []
     with open(label_path, 'r') as f:
@@ -95,6 +110,7 @@ def get_funcs_trace(prog_path: str, in_data: str, log_path: str, label_file: str
 
     if compiler == 'tvm' and only_fused:
         fused_rdi(prog_path, in_data, addr_list, log_path)
+        # rm_duplicated_call(log_path)  # to track the index of add/multiply, have to keep duplicated calls
     elif compiler == 'glow':
         fun_call_rdi_rsi(prog_path, in_data, addr_list, log_path)
     elif compiler == 'tvm' and not only_fused:
@@ -807,7 +823,5 @@ if __name__ == '__main__':
 
     # tmp_handle_func_call('/home/lifter/Documents/tvm_output/func_call.txt')
 
-    funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/resnet18_funcs/"
-    generate_inst_trace('0098.txt', '0098.log',
-                        '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/resnet18_tvm_O0_strip',
-                        '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/cat.bin', timeout=True)
+    funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/resnet18_funcs/"
+    generate_symbolic_expression('0207.txt', './resnet18_tvm_v08_O0/0207.log', './resnet18_tvm_v08_O0/mem_exp.log', max_inst=5000000)
