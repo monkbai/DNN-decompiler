@@ -158,7 +158,7 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
                 label = addr2label[addr_list[idx]]
 
                 # print the func type
-                print('{}: {:<16}:'.format(addr, label), end=' ')
+                print('{}: {:<18}:'.format(addr, label), end=' ')
                 params = line.split(':')[1].strip()
                 params = params.split(',')[:-1]
                 param_labels = []

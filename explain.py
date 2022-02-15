@@ -418,7 +418,8 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
         input_shape[1] = kernel_num
         input_shape[2] = input_shape[3] = input_num
         output_shape[2] = output_shape[3] = math.ceil(input_num / 2)
-        print('special case: stride 2')
+        #print('special case: stride 2')
+        guess_stride = 2
     else:
         offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16)
         # print(offset_list)
@@ -477,12 +478,12 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
     if not ignore_flag:
         # try to get the weights layout indicators
         ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions, size=16)
-        print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
+        #print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
         # final shape
-        print('input shape', input_shape)
-        print('filter shape', filter_shape)
-        print('output shape', output_shape)
-        print('layout indicators: {}, {}'.format(ind_a, ind_b))
+        #print('input shape', input_shape)
+        #print('filter shape', filter_shape)
+        #print('output shape', output_shape)
+        #print('layout indicators: {}, {}'.format(ind_a, ind_b))
         if blk_size:  # kernel --> 1, 1
             ind_a = blk_size
             layout_shape = [filter_shape[0] / ind_b, filter_shape[1] / ind_a, filter_shape[2], filter_shape[3], ind_a,
@@ -495,14 +496,14 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
                             ind_b]
         elif filter_shape[1] <= ind_a: 
             layout_shape = [filter_shape[0] / ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
-        print('layout shape', layout_shape)
-        print('stride {}'.format(guess_stride))
+        #print('layout shape', layout_shape)
+        #print('stride {}'.format(guess_stride))
         return filter_shape, input_shape, output_shape, layout_shape
     else:
         #print('input shape', input_shape)
         #print('filter shape', filter_shape)
         #print('output shape', output_shape)
-        print('not a reasonable guess, ignored')
+        #print('not a reasonable guess, ignored')
         return filter_shape, input_shape, output_shape, (0, 0, 0, 0, 0, 0)
 
 
