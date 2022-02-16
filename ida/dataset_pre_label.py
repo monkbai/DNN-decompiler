@@ -44,15 +44,15 @@ def get_TVM_O0_labels(file_name: str, prefix='fused_'):
     return [file_name]
 
 
-def get_TVM_O3_labels(file_name: str):
+def get_TVM_O3_labels(file_name: str, prefix='fused_'):
     global labels_set
     contrib_flag = False
     labels = []
     file_name = file_name.split('.')[1]
-    if not file_name.startswith('fused'):
+    if not file_name.startswith(prefix):
         return []
     else:
-        file_name = file_name.replace('fused_', '')
+        file_name = file_name.replace(prefix, '')
 
     if 'contrib' in file_name:
         contrib_flag = True
@@ -187,8 +187,7 @@ def main_tvm_v08(the_dir: str, opt_level=0):
                         if opt_level == 0:
                             labels_list = get_TVM_O0_labels(asm_f, prefix='tvmgen_default_fused_')
                         else:
-                            assert False, "not implemented"
-                            # labels_list = get_TVM_O3_labels(asm_f)
+                            labels_list = get_TVM_O3_labels(asm_f, prefix='tvmgen_default_fused_')
 
                     if index < len(asm_files) - 1 and \
                             (('fused' in asm_files[index + 1] and 'compute_' not in asm_files[index + 1]) or 'TLB_Find' in asm_files[index + 1]):
@@ -252,4 +251,4 @@ if __name__ == '__main__':
     #main_GLOW('./GLOW_binaries/')
     #for label in labels_set:
     #    print(label)
-    main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/')
+    main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O3/', opt_level=3)
