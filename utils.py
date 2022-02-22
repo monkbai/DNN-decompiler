@@ -482,7 +482,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
 
 def recover_shape_tvm(func_name: str, mem_exp_log: str,
                   mem_read_log_path: str, mem_write_log_path: str,
-                  prog_path: str, data_path: str, func_type='conv2d', optimized=False):
+                  prog_path: str, data_path: str, func_type='conv2d', optimized=False, func_info=[]):
     mem_read_log_path = os.path.abspath(mem_read_log_path)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
     prog_path = os.path.abspath(prog_path)
@@ -516,7 +516,7 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
                     break
         return filter_shape, input_shape, output_shape, layout_shape
     elif 'dense' in func_type or 'matmul' in func_type:
-        input_size, output_size = explain_tvm_dense_result(mem_exp_log, write_mem_regions)
+        input_size, output_size = explain_tvm_dense_result(mem_exp_log, read_mem_regions, write_mem_regions, func_info)
         # print('({}, {})'.format(input_size, output_size))
         return output_size, input_size
     elif 'add' in func_type:
@@ -543,7 +543,7 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
 
 
 def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
-                    func_trace_map=dict(), compiler='tvm', optimized=False):
+                    func_trace_map=dict(), compiler='tvm', optimized=False, topo_list=[]):
     label_file_path = os.path.abspath(label_file_path)
     # --- get conv2d functions' name
     funcs_name_list = []
@@ -563,6 +563,12 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
     func_shape = dict()
     for func_name in funcs_name_list:
         print('\n' + func_name)
+        func_info = []
+        if len(topo_list) > 0:
+            for node in topo_list:
+                if node[1] == func_name:
+                    func_info = node
+                    break
         # --- recover the shape of each layer
         # tmp_log_path = './inst_trace.log'
         if func_name in func_trace_map:
@@ -578,8 +584,9 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
         mem_write_log_path = 'mem_write.log'  # tmp file
         if compiler == 'tvm':
             all_shapes = recover_shape_tvm(func_name, exp_log_path,
-                                             mem_read_log_path, mem_write_log_path,
-                                             prog_path, in_data, func_type=func_types[func_name], optimized=optimized)
+                                           mem_read_log_path, mem_write_log_path,
+                                           prog_path, in_data, func_type=func_types[func_name],
+                                           optimized=optimized,func_info=func_info)
         else:
             all_shapes = recover_shape(func_name, exp_log_path,
                                          mem_read_log_path, mem_write_log_path,
@@ -617,10 +624,14 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
             float_array = convert_dwords2float(dw_txt, dwords_len)
 
             w = np.asarray(float_array)
-            if len(special_layout) > 0:
+            if len(special_layout) == 5:
                 w = w.reshape(special_layout)
                 w = np.transpose(w, (0, 5, 1, 4, 2, 3))
                 w = w.reshape(w_shape)
+            elif len(special_layout) == 3:
+                w = w.reshape(special_layout)
+                w1 = np.transpose(w, (0, 2, 1))
+                w = w1.reshape(w_shape)
             else:
                 w = w.reshape(w_shape)
             # print(type(w))
@@ -628,11 +639,11 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
             json_str = json.dumps(lists)
             # print(json_str)
             json_str = json_str.replace('],', '],\n')
-            if func_type == 'conv2d':
+            if 'conv2d' in func_type:
                 json_name = func_name[:func_name.rfind('.')] + '.weights_{}.json'.format(i)
-            elif func_type == 'dense':
+            elif 'dense' in func_type:
                 json_name = func_name[:func_name.rfind('.')] + '.dense_weights_{}.json'.format(i)
-            elif func_type == 'add':
+            elif 'add' in func_type:
                 json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
             else:
                 json_name = func_name[:func_name.rfind('.')] + '.{}_{}.json'.format(func_type, i)

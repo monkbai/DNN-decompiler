@@ -785,19 +785,30 @@ def get_weights_addrs(exp: str, size=4, on_the_right=True):
 # ==============================================================
 # Heuristics used to recover shape for TVM dense/fully-connected layer
 # ==============================================================
-def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
+def explain_tvm_dense_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list, func_info=[]):
     name, exp = choose_one_4bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
         name, exp = choose_one_8bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
+        name, exp = choose_one_16bytes(exp_log_path, mem_write_regions)
+    if len(name) == 0:
         print('explain: explain_tvm_dense_result(): failed to choose expression')
         exit(-1)
+    if len(func_info) > 0:
+        input_start = func_info[3][0]
+        input_mem = (0, 0)
+        for mem_blk in mem_read_regions:
+            if mem_blk[1] > int(input_start, 16) >= mem_blk[0]:
+                input_mem = mem_blk
+                break
+        input_size = int((input_mem[1] - input_mem[0]) / 4)
+    else:
+        input_size = exp.count('*')
+        if input_size == exp.count('16 *'):
+            input_size *= 4
+        elif input_size == exp.count('32 *'):
+            input_size *= 8
 
-    input_size = exp.count('*')
-    if input_size == exp.count('16 *'):
-        input_size *= 4
-    elif input_size == exp.count('32 *'):
-        input_size *= 8
     output_size = 0
     big_mem = (0, 0)
     for mem_blk in mem_write_regions:
