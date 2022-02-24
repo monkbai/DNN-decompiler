@@ -662,10 +662,13 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
     data_path = os.path.abspath(data_path)
     log_path = os.path.abspath(log_path)
 
+    slice_log = log_path.replace('.log', '_slice.log')
+    if os.path.exists(slice_log):
+        print('{} already exists.'.format(slice_log))
+        return slice_log, 'unknown', -1, 'unknown', 'unknown'
     rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type)
     # rnd_addr = '0x230fd760'  # debug
     print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
-    slice_log = log_path.replace('.log', '_slice.log')
 
     target_addr = rnd_addr
     mem_list = []

@@ -265,12 +265,16 @@ def dump_dwords(prog_path: str, input_data_path: str, inst_addr: str, dwords_len
 
     localtime = time.asctime( time.localtime(time.time()) )
     print ("Dump Dwords Start", localtime)
+    start_time = time.time()
     status, output = cmd(mem_dump_log_cmd.format(log_path, dwords_len, inst_addr, reg_num, prog_path, input_data_path))
     # print(output)
+    end_time = time.time()
     if status != 0:
         print(output)
-    logger.info('Dump Dwords Time - {}'.format(output[output.find('real'):]))
-    print(output[output.find('real'):])
+    # logger.info('Dump Dwords Time - {}'.format(output[output.find('real'):]))
+    # print(output[output.find('real'):])
+    logger.info('Dump Dwords Time - {}s'.format(end_time - start_time))
+    print('Dump Dwords Time - {}s'.format(end_time - start_time))
     project_dir = project_dir_backup
 
 

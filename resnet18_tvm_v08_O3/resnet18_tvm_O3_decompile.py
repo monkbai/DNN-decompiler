@@ -219,7 +219,7 @@ if __name__ == '__main__':
             w_shape = w_shape[0]
             layout_shape = [int(layout_shape[i]) for i in range(len(layout_shape))]
         elif 'dense' in func_type:
-            layout_shape = (int(w_shape[0]/8), int(w_shape[1]), 8)
+            layout_shape = (int(w_shape[0]/8), int(w_shape[1]), 8)  # TODO: should we write another rule for this?
 
         w_shape = [int(w_shape[i]) for i in range(len(w_shape))]
         utils.extract_params_tvm(prog_path, in_data, w_shape, dump_point, mem_dump_log_path, func_name,
