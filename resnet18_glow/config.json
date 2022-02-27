@@ -1,0 +1,14 @@
+{"take": ["param", "in", "out"],
+ "transpose": ["in", "out", "dims"],
+ "reshape": ["in", "out", "none"],
+ "pad": ["in", "out", "none"],
+ "avg_pool": ["in", "out", "none"],
+ "max_pool": ["in", "out", "none"],
+ "squeeze": ["in", "out", "none"],
+ "matmul": ["out", "in", "weight"],
+ "add, relu": ["in/out", "in", "none"],
+ "batchedadd": ["out", "in", "param"],
+ "add": ["param", "in", "out"],
+ "conv": ["out", "in", "weight", "bias"],
+ "relu": ["in/out", "none", "none"]
+}

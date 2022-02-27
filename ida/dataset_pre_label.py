@@ -248,7 +248,7 @@ def main_GLOW(the_dir: str):
 if __name__ == '__main__':
     # main_TVM('./TVM_binaries/O0/')
     # main_TVM('./TVM_binaries/O3/', opt_level=3)
-    #main_GLOW('./GLOW_binaries/')
+    main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow')
     #for label in labels_set:
     #    print(label)
-    main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O3/', opt_level=3)
+    # main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O3/', opt_level=3)
