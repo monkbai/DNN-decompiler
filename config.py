@@ -1,7 +1,7 @@
 import logging
 
-pin_home = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/"
-pintool_dir = "/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/"
+pin_home = "/export/d1/zliudc/TOOL/pin-3.14-98223-gb010a12c6-gcc-linux/"
+pintool_dir = "/export/d1/zliudc/TOOL/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/"
 
 
 
