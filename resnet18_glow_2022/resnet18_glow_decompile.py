@@ -12,12 +12,12 @@ print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/resnet18_glow_ida/"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/resnet18_glow_funcs"
 
-    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/resnet18_strip.out"
-    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/cat.bin"
-    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/step1.txt"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/resnet18_strip.out"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -63,51 +63,12 @@ if __name__ == '__main__':
     # Step 2.2.0 Choose Another Random Target Address (if needed)
     #func_name = '0030.txt'
     #asm_path = os.path.join(utils.funcs_dir, func_name)
-    #slice_log, rnd_addr, loop_size = trace_filter.filt_trace(asm_path, prog_path, in_data, '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0030_rev.log')
+    #slice_log, rnd_addr, loop_size = trace_filter.filt_trace(asm_path, prog_path, in_data, '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/0030_rev.log')
     #print(' slice_log {}\n rnd_addr {}\n loop_size {}\n'.format(slice_log, rnd_addr, loop_size))
-    #utils.generate_symbolic_expression(func_name, '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0030_slice.log', exp_log_path, max_inst=5000000)
+    #utils.generate_symbolic_expression(func_name, '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/0030_slice.log', exp_log_path, max_inst=5000000)
     #exit(0)
 
     # Step 2.2.1 Conv and Matmul layers
-    
-    # func_trace_map = {'0013.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0013_slice.log',
-    #                   '0016.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0016_slice.log',
-    #                   '0029.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0029_slice.log',
-    #                   '0020.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0020_slice.log',
-    #                   '0017.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0017_slice.log',
-    #                   '0032.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0032_slice.log',
-    #                   '0022.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0022_slice.log',
-    #                   '0028.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0028_slice.log',
-    #                   '0023.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0023_slice.log',
-    #                   '0026.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0026_slice.log',
-    #                   '0030.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0030_slice.log',
-    #                   '0024.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0024_slice.log',
-    #                   '0010.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0010_slice.log',
-    #                   '0018.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0018_slice.log',
-    #                   '0012.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0012_slice.log',  # conv
-    #
-    #                   '0035.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/0035_slice.log'  # matmul
-    #                   }
-
-    # func_rndaddr_map = {'0013.txt': ('0x3200c10', 64, '0x4029c0', '0x4030f9'),
-    #                     '0016.txt': ('0x313b2cc', 64, '0x403320', '0x40382F'),
-    #                     '0029.txt': ('0x315cd6c', 512, '0x409300', '0x40B8AE'),
-    #                     '0020.txt': ('0x319d0ac', 128, '0x4045f0', '0x404C6B'),
-    #                     '0017.txt': ('0x31b0010', 128, '0x403850', '0x403E8C'),
-    #                     '0032.txt': ('0x3163440', 512, '0x40e000', '0x410631'),
-    #                     '0022.txt': ('0x31ac1d0', 64, '0x404da0', '0x405442'),
-    #                     '0028.txt': ('0x313aed8', 512, '0x406d70', '0x4092D8'),
-    #                     '0023.txt': ('0x31edc1c', 256, '0x405450', '0x405BAC'),
-    #                     '0026.txt': ('0x313b14c', 256, '0x4064b0', '0x406C32'),
-    #                     '0030.txt': ('0x31703b4', 512, '0x40b8d0', '0x40DED4'),
-    #                     '0024.txt': ('0x3162358', 256, '0x405bd0', '0x40637C'),
-    #                     '0010.txt': ('0x31d24c0', 64, '0x401850', '0x401F4A'),
-    #                     '0018.txt': ('0x323d73c', 64, '0x403eb0', '0x4044dc'),
-    #                     '0012.txt': ('0x313c544', 64, '0x402200', '0x40299B'),  # conv
-    #
-    #                     '0035.txt': ('0x313ad58', 64, '0x410b60', '0x41118d')  # matmul
-    #                     }
-
 
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='glow') # also matmul layer
     print('all conv and matmul done.')
@@ -209,42 +170,7 @@ if __name__ == '__main__':
         if meta_data[6]:  # has parameters to be extracted
             print(meta_data)
     dict_to_json(func_meta_data, './new_meta_data.json')
-    # (name, shape, fused_func, type, padding, stride, param_index)
-    # func_meta_data = [('0010.txt', (64, 3, 7, 7), '0x401850', 'conv2d'),
-    #                   ('0010. txt', (1, 64), '0x401850', 'add'),
-    #                   ('0012.txt', (64, 64, 3, 3), '0x402200', 'conv2d'),
-    #                   ('0012.txt', (1, 64), '0x402200', 'add'),
-    #                   ('0013.txt', (64, 64, 3, 3), '0x4029c0', 'convDKKC8'),
-    #                   ('0013.txt', (1, 64), '0x4029c0', 'add'),
-    #                   ('0016.txt', (128, 64, 1, 1), '0x403320', 'convDKKC8'),
-    #                   ('0016.txt', (1, 128), '0x403320', 'add'),
-    #                   ('0017.txt', (128, 64, 3, 3), '0x403850', 'conv2d'),
-    #                   ('0017.txt', (1, 128), '0x403850', 'add'),
-    #                   ('0018.txt', (128, 128, 3, 3), '0x403eb0', 'convDKKC8'),
-    #                   ('0018.txt', (1, 128), '0x403eb0', 'add'),
-    #                   ('0020.txt', (128, 128, 3, 3), '0x4045f0', 'conv2d'),
-    #                   ('0020.txt', (1, 128), '0x4045f0', 'add'),
-    #                   ('0022.txt', (256, 128, 1, 1), '0x404da0', 'convDKKC8'),
-    #                   ('0022.txt', (1, 256), '0x404da0', 'add'),
-    #                   ('0023.txt', (256, 128, 3, 3), '0x405450', 'conv2d'),
-    #                   ('0023.txt', (1, 256), '0x405450', 'add'),
-    #                   ('0024.txt', (256, 256, 3, 3), '0x405bd0', 'convDKKC8'),
-    #                   ('0024.txt', (1, 256), '0x405bd0', 'add'),
-    #                   ('0026.txt', (256, 256, 3, 3), '0x4064b0', 'conv2d'),
-    #                   ('0026.txt', (1, 256), '0x4064b0', 'add'),
-    #                   ('0028.txt', (512, 256, 1, 1), '0x406d70', 'convDKKC8'),
-    #                   ('0028.txt', (1, 512), '0x406d70', 'add'),
-    #                   ('0029.txt', (512, 256, 3, 3), '0x409300', 'conv2d'),
-    #                   ('0029.txt', (1, 512), '0x409300', 'add'),
-    #                   ('0030.txt', (512, 512, 3, 3), '0x40b8d0', 'convDKKC8'),
-    #                   ('0030.txt', (1, 512), '0x40b8d0', 'add'),
-    #                   ('0032.txt', (512, 512, 3, 3), '0x40e000', 'conv2d'),
-    #                   ('0032.txt', (1, 512), '0x40e000', 'add'),
-    #
-    #                   ('0035.txt', (512, 1000), '0x410b60', 'matmul'),
-    #                   ('0036.txt', (1, 1000), '0x411190', 'batchedadd'),
-    #
-    #                   ]
+
     for fun_data in func_meta_data:
         func_name = fun_data[0]
         w_shape = fun_data[1]

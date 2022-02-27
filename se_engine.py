@@ -6,8 +6,8 @@ import logging
 print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
 
-from scripts.e9patch_tools import all_inst_trace_2, all_inst_trace_1
-import scripts.explain
+# from e9patch_tools import all_inst_trace_2, all_inst_trace_1
+import explain
 
 
 # /* ===================================================================== */
@@ -200,20 +200,11 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         elif mnemonic == 'call':
             rax_value = ''
 
-        # debug
-        #if asm_addr == '0x401ccd':
-        #    debug_count += 1
-        #    print('debug')
-        #if asm_addr == '0x402ff2':
-        #    print('debug')
-        #if asm_addr == '0x4297dd':
-        #    print('debug')
-        #if '0x22f700a0,4' in mem_state.keys():
-        #    print('debug')
-
         # TODO: should we update the mem_value of the address to be read?
         if len(mem_value) > 0 and mem_size == 8 and mem_addr.startswith('0x7ff'):
-            set_mem(mem_value, mem_addr, mem_size)
+            # debug: resnet18 TVM v0.8 O0 dense layer
+            if not check_mem(mem_value, mem_addr, mem_size):
+                set_mem(mem_value, mem_addr, mem_size)
 
         # ymm register related instructions
         if mnemonic.startswith('vmovups'):
@@ -317,14 +308,19 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
                 elif 'expf' == extern_functions[code_list[1]]:
                     handle_expf(code_list, rax_value)
                 else:
-                    print('call not implemented: {}'.format(extern_functions[code_list[1]]))
+                    logger.info('call not implemented: {}'.format(extern_functions[code_list[1]]))
+                    #print('call not implemented: {}'.format(extern_functions[code_list[1]]))
                     # TODO: even if the function is unknown, we should get the RAX value
                     handle_unknown_call(code_list, rax_value)
             else:
-                print('call not implemented')
-                print(log_line)
-                print(code_list)
-                print(extern_functions)
+                logger.info('call not implemented')
+                logger.info(log_line)
+                logger.info(code_list)
+                logger.info(extern_functions)
+                #print('call not implemented')
+                #print(log_line)
+                #print(code_list)
+                #print(extern_functions)
                 handle_unknown_call(code_list, rax_value)
         elif mnemonic == 'add' or mnemonic.startswith('sub') or \
                 mnemonic.startswith('idiv') or mnemonic.startswith('imul') or \
@@ -428,7 +424,7 @@ def check_sub_mem(mem_addr: str, size: int):
     mem_start = int(mem_addr, 16)
     mem_end = mem_start + size
     size_list = [4, 8, 16, 32]
-    for key_start in range(mem_start-16, mem_start+4, 4):
+    for key_start in range(mem_start-16, mem_start+16, 4):
         for key_size in size_list:
             key_end = key_start + key_size
             if key_start <= mem_start < mem_end <= key_end:
@@ -484,6 +480,28 @@ def reg2mem(reg_name: str, mem_addr: str, size: int):
             # check overlap
             remove_overlap_mem(mem_addr, size)
             mem_state[mem_key] = reg_state[reg_name]
+
+
+def check_mem(imme_value: str, mem_addr: str, size: int):
+    """ Check the mem before set_mem with immediate value in the log.
+        Return Ture if the mem should be set.
+        Return False if the imm value should be ignored.
+    """
+    global mem_state
+    mem_key = mem_addr + ',' + str(size)
+    if mem_key in mem_state.keys() and '(' in mem_state[mem_key]:
+        return False  # already stored a expressiono in the mem slot
+    else:  # also, check overlapped mem slot to find expressions
+        mem_start = int(mem_addr, 16)
+        mem_end = mem_start + size
+        size_list = [4, 8, 16, 32]  # dwrod, qword, xmmword, ymmword
+        overlap_key_list = []
+        for key_start in range(mem_start, mem_end, 4):
+            for key_size in size_list:
+                key = hex(key_start) + ',' + str(key_size)
+                if key in mem_state.keys():
+                    return True
+    return True
 
 
 def set_mem(imme_value: str, mem_addr: str, size: int):
@@ -1308,7 +1326,8 @@ def handle_memset(code_list, rax_value):
     # TODO: currently can only set memory to zero --syntax=intel
     global mem_state
     addr = reg_state['rdi']
-    print('memset addr: {}'.format(addr))
+    #print('memset addr: {}'.format(addr))
+    logger.info('memset addr: {}'.format(addr))
     size = int(reg_state['edx'], 16)
     # TODO: what if the addr is not an address? e.g., it is maybe empty?
     if len(addr) > 0 and ',' not in addr:  # if addr is not an address

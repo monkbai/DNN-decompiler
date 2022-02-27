@@ -83,6 +83,35 @@ def choose_one_4bytes(exp_log_path: str, mem_write_regions=[], num=0):
         return name, exp
 
 
+def choose_one_8bytes(exp_log_path: str, mem_write_regions=[], num=0):
+    if len(mem_write_regions) == 0:
+        out_mem = (0, 0xffffffff)
+    else:
+        out_mem = biggest_region(mem_write_regions)
+    exp_log_path = os.path.abspath(exp_log_path)
+    with open(exp_log_path, 'r') as f:
+        exp_txt = f.read()
+        lines = exp_txt.split('\n')
+        f.close()
+        index = 0
+        length = len(lines)
+        name = ''
+        exp = ''
+        while index < length-2:
+            tmp_name = lines[index]
+            index += 1
+            tmp_exp = lines[index].strip('<>')
+            index += 1
+            if (not tmp_name.endswith(',8')) or tmp_name.startswith('0x7ff'):
+                continue
+            else:  # choose the longest expression of one 4 bytes memory block
+                if out_mem[0] <= int(tmp_name.split(',')[0], 16) <= out_mem[1]:
+                    if tmp_exp.count('*') > exp.count('*'):
+                        name = tmp_name
+                        exp = tmp_exp
+        return name, exp
+
+
 def choose_one_16bytes(exp_log_path: str, mem_write_regions: list, num=0):
     if len(mem_write_regions) == 0:
         out_mem = (0, 0xffffffff)
@@ -198,7 +227,7 @@ def get_output_channel(exp: str, one_channel_size: int, mem_regions: list, compi
 def get_input_shape(name, exp, mem_regions, input_channel, size):
     offset_list = get_addr_list(exp, 'tvm', size)
     input_start_addr = min(offset_list)
-    print('input start addr', hex(input_start_addr))
+    # print('input start addr', hex(input_start_addr))  # for debugging
     for mem_start, mem_end in mem_regions:
         if mem_start <= input_start_addr < mem_end:
             return math.floor(math.sqrt(((mem_end-mem_start)/input_channel)/4))
@@ -239,14 +268,14 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         input_shape[1] = kernel_num
         input_shape[2] = input_shape[3] = input_num
         output_shape[2] = output_shape[3] = math.ceil(input_num/2)
-        print('special case: stride 2')
+        # print('special case: stride 2')
     else:
         # get the filter shape and input shape from first output
         if exp.startswith('sub'):
             offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=input_region)
         else:
             offset_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=input_region)  # analyze the first expression (with the smallest address)
-        print('debug input offset_list', offset_list)  # debug
+        # print('debug input offset_list', offset_list)  # debug
         
         stride = offset_list[1] - offset_list[0]  # not the real stride
         index = 0
@@ -312,12 +341,12 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     if not ignore_flag:
         # try to get the weights layout indicators
         ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions)
-        print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
-        # final shape
-        print('input shape', input_shape)
-        print('filter shape', filter_shape)
-        print('output shape', output_shape)
-        print('layout indicators: {}, {}'.format(ind_a, ind_b))
+        # print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
+        # final shape, for debugging
+        # print('input shape', input_shape)
+        # print('filter shape', filter_shape)
+        # print('output shape', output_shape)
+        # print('layout indicators: {}, {}'.format(ind_a, ind_b))
         if blk_size:  # kernel --> 1, 1
             ind_a = blk_size
             layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
@@ -327,14 +356,14 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             layout_shape = [filter_shape[0]/ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1]/ind_a, ind_b]
         elif filter_shape[1] <= ind_a: 
             layout_shape = [filter_shape[0]/ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
-        print('layout shape', layout_shape)
-        print('stride {}'.format(guess_stride))
+        # print('layout shape', layout_shape)
+        # print('stride {}'.format(guess_stride))
         return filter_shape, input_shape, output_shape, layout_shape
     else:
         #print('input shape', input_shape)
         #print('filter shape', filter_shape)
         #print('output shape', output_shape)
-        print('not a reasonable guess, ignored')
+        # print('not a reasonable guess, ignored')
         return filter_shape, input_shape, output_shape, (0, 0, 0, 0, 0, 0)
 
 
@@ -389,7 +418,8 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
         input_shape[1] = kernel_num
         input_shape[2] = input_shape[3] = input_num
         output_shape[2] = output_shape[3] = math.ceil(input_num / 2)
-        print('special case: stride 2')
+        #print('special case: stride 2')
+        guess_stride = 2
     else:
         offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16)
         # print(offset_list)
@@ -448,12 +478,12 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
     if not ignore_flag:
         # try to get the weights layout indicators
         ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions, size=16)
-        print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
+        #print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
         # final shape
-        print('input shape', input_shape)
-        print('filter shape', filter_shape)
-        print('output shape', output_shape)
-        print('layout indicators: {}, {}'.format(ind_a, ind_b))
+        #print('input shape', input_shape)
+        #print('filter shape', filter_shape)
+        #print('output shape', output_shape)
+        #print('layout indicators: {}, {}'.format(ind_a, ind_b))
         if blk_size:  # kernel --> 1, 1
             ind_a = blk_size
             layout_shape = [filter_shape[0] / ind_b, filter_shape[1] / ind_a, filter_shape[2], filter_shape[3], ind_a,
@@ -466,14 +496,14 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
                             ind_b]
         elif filter_shape[1] <= ind_a: 
             layout_shape = [filter_shape[0] / ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
-        print('layout shape', layout_shape)
-        print('stride {}'.format(guess_stride))
+        #print('layout shape', layout_shape)
+        #print('stride {}'.format(guess_stride))
         return filter_shape, input_shape, output_shape, layout_shape
     else:
         #print('input shape', input_shape)
         #print('filter shape', filter_shape)
         #print('output shape', output_shape)
-        print('not a reasonable guess, ignored')
+        #print('not a reasonable guess, ignored')
         return filter_shape, input_shape, output_shape, (0, 0, 0, 0, 0, 0)
 
 
@@ -755,16 +785,30 @@ def get_weights_addrs(exp: str, size=4, on_the_right=True):
 # ==============================================================
 # Heuristics used to recover shape for TVM dense/fully-connected layer
 # ==============================================================
-def explain_tvm_dense_result(exp_log_path: str, mem_write_regions: list):
+def explain_tvm_dense_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list, func_info=[]):
     name, exp = choose_one_4bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
+        name, exp = choose_one_8bytes(exp_log_path, mem_write_regions)
+    if len(name) == 0:
+        name, exp = choose_one_16bytes(exp_log_path, mem_write_regions)
+    if len(name) == 0:
+        print('explain: explain_tvm_dense_result(): failed to choose expression')
         exit(-1)
+    if len(func_info) > 0:
+        input_start = func_info[3][0]
+        input_mem = (0, 0)
+        for mem_blk in mem_read_regions:
+            if mem_blk[1] > int(input_start, 16) >= mem_blk[0]:
+                input_mem = mem_blk
+                break
+        input_size = int((input_mem[1] - input_mem[0]) / 4)
+    else:
+        input_size = exp.count('*')
+        if input_size == exp.count('16 *'):
+            input_size *= 4
+        elif input_size == exp.count('32 *'):
+            input_size *= 8
 
-    input_size = exp.count('*')
-    if input_size == exp.count('16 *'):
-        input_size *= 4
-    elif input_size == exp.count('32 *'):
-        input_size *= 8
     output_size = 0
     big_mem = (0, 0)
     for mem_blk in mem_write_regions:

@@ -1,24 +1,41 @@
 #! /usr/bin/python3
+import copy
 import os
 import random
 import sys
 import json
 import numpy as np
-from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
-from scripts.pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
-from scripts.pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
-from scripts.se_engine import lightweight_SymEx
-from scripts.mem_slices import memory_slices
-from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
-from scripts.explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
-from scripts.explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
-from scripts.explain import explain_glow_avgpool_result, explain_tvm_embedding_result
+import warnings
+from pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
+from pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
+from pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
+from se_engine import lightweight_SymEx
+from mem_slices import memory_slices
+from explain import explain_tvm_conv2d_result, explain_tvm_dense_result
+from explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
+from explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
+from explain import explain_glow_avgpool_result, explain_tvm_embedding_result
+
+
+def list_to_json(dict_obj: dict, output_path: str):
+    j = json.dumps(dict_obj, sort_keys=True, indent=4)
+    with open(output_path, 'w') as f:
+        f.write(j)
 
 
 def dict_to_json(dict_obj: dict, output_path: str):
-    j = json.dumps(dict_obj)
+    j = json.dumps(dict_obj, sort_keys=True, indent=4)
     with open(output_path, 'w') as f:
         f.write(j)
+
+
+def json_to_list(json_path: str):
+    if not os.path.exists(json_path):
+        return dict()
+    with open(json_path, 'r') as f:
+        j_txt = f.read()
+        list_obj = json.loads(s=j_txt)
+        return list_obj
 
 
 def json_to_dict(json_path: str):
@@ -39,6 +56,21 @@ funcs_dir = './vgg16_glow_funcs/'
 # ==============================================================
 # Generate the function call trace
 # ==============================================================
+
+
+def rm_duplicated_call(log_path: str):
+    """ Seems caused by bugs inside TVM"""
+    with open(log_path, 'r') as f:
+        old_trace = f.read()
+    new_trace = ''
+    old_lines = old_trace.split('\n')
+    for i in range(len(old_lines)):
+        if i > 0 and old_lines[i-1] == old_lines[i]:
+            continue
+        new_trace += old_lines[i] + '\n'
+
+    with open(log_path, 'w') as f:
+        f.write(new_trace)
 
 
 def get_addr_list(label_path: str, fused=False):
@@ -80,6 +112,7 @@ def get_funcs_trace(prog_path: str, in_data: str, log_path: str, label_file: str
 
     if compiler == 'tvm' and only_fused:
         fused_rdi(prog_path, in_data, addr_list, log_path)
+        # rm_duplicated_call(log_path)  # to track the index of add/multiply, have to keep duplicated calls
     elif compiler == 'glow':
         fun_call_rdi_rsi(prog_path, in_data, addr_list, log_path)
     elif compiler == 'tvm' and not only_fused:
@@ -127,7 +160,7 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
                 label = addr2label[addr_list[idx]]
 
                 # print the func type
-                print('{}: {:<16}:'.format(addr, label), end=' ')
+                print('{}: {:<18}:'.format(addr, label), end=' ')
                 params = line.split(':')[1].strip()
                 params = params.split(',')[:-1]
                 param_labels = []
@@ -159,8 +192,8 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
     return param_list
 
 
-def print_input_id(trace_log_path: str):
-    global addr2label, addr2funcs, addr2param
+def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict()):
+    global addr2label, addr2funcs  # , addr2param
     addr2label = json_to_dict('./addr2label.json')  # type: dict
     addr2funcs = json_to_dict('./addr2funcs.json')  # type: dict
 
@@ -168,38 +201,68 @@ def print_input_id(trace_log_path: str):
 
     params_list = []
     id = 0
-    with open(trace_log_path, 'r') as f:
-        trace_txt = f.read()
-        lines = trace_txt.split('\n')
-        for line in lines:
-            if not line.startswith('0x'):
-                continue
-            addr = hex(int(line.split(':')[0].strip(), 16))
-            params = line.split(':')[1].strip(' ,')
-            params = params.split(',')
-            inputs = params[:-1]
-            output = params[-1]
+    id2addr = dict()
+    if compiler == 'tvm':
+        with open(trace_log_path, 'r') as f:
+            trace_txt = f.read()
+            lines = trace_txt.split('\n')
+            for line in lines:
+                if not line.startswith('0x'):
+                    continue
+                addr = hex(int(line.split(':')[0].strip(), 16))
+                params = line.split(':')[1].strip(' ,')
+                params = params.split(',')
+                inputs = params[:-1]
+                output = params[-1]
 
-            addr_list = list(addr2label.keys())  # type: list
-            addr_list.sort()
-            idx = addr_list.index(addr) + 1
-            label = addr2label[addr_list[idx]]  # type: str
+                addr_list = list(addr2label.keys())  # type: list
+                addr_list.sort()
+                idx = addr_list.index(addr) + 1
+                label = addr2label[addr_list[idx]]  # type: str
 
-            if 'add add' not in label:
+                id2addr[id] = (addr_list[idx], addr)
+
+                if 'add add' not in label:
+                    params_list.append((id, label, inputs, output))
+                    id += 1
+                # if 'add add' not in label:  # TODO: why it looks like this?
+                #     params_list.append((id, label, inputs, output))
+                #     id += 1
+                #     if 'relu' in label:
+                #         params_list.append((id, 'relu', [output], output))
+                #         id += 1
+                else:
+                    conv2d_label = label.replace('add ', '', 1)
+                    params_list.append((id, conv2d_label, inputs[1:], output))
+                    id += 1
+                    params_list.append((id, 'add', [inputs[0], output], output))
+                    id += 1
+                    if 'relu' in label:
+                        params_list.append((id, 'relu', [output], output))
+                        id += 1
+    elif compiler == 'glow':
+        assert len(addr2param) > 0, 'addr2param not provided.'
+        with open(trace_log_path, 'r') as f:
+            trace_txt = f.read()
+            lines = trace_txt.split('\n')
+            for line in lines:
+                if not line.startswith('0x'):
+                    continue
+                addr = hex(int(line.split(':')[0].strip(), 16))
+                func_name = addr2funcs[addr]
+                params = line.split(':')[1].strip(' ,')
+                params = params.split(',')  # not used, inputs and output is produced in utils.print_layer_label()
+                inputs = addr2param[id][2][0]
+                assert len(addr2param[id][2][1]) == 1, 'len(output_list) should be 1.'
+                output = addr2param[id][2][1][0]
+                label = addr2label[addr]  # type: str
+
                 params_list.append((id, label, inputs, output))
                 id += 1
-                if 'relu' in label:
-                    params_list.append((id, 'relu', [output], output))
-                    id += 1
-            else:
-                conv2d_label = label.replace('add ', '', 1)
-                params_list.append((id, conv2d_label, inputs[1:], output))
-                id += 1
-                params_list.append((id, 'add', [inputs[0], output], output))
-                id += 1
-                if 'relu' in label:
-                    params_list.append((id, 'relu', [output], output))
-                    id += 1
+    else:
+        assert False, "compiler {} is currently not supported.".format(compiler)
+
+    # generate input_id_list
     input_id_list = []
     for i in range(len(params_list)-1, -1, -1):
         input_addrs = params_list[i][2]
@@ -215,21 +278,63 @@ def print_input_id(trace_log_path: str):
         input_id_list.insert(0, input_id)
 
     print(input_id_list)
+    output_dict = dict()
+    topology_list = []
+    func_count = dict()
     for param in params_list:
+        if compiler == 'tvm':
+            func_addr, entry_addr = id2addr[param[0]]
+        else:
+            func_addr = entry_addr = addr2param[param[0]][0]  # for glow, there will be only one address
+        print('addr:', func_addr, end=' ')
+        print('func:', addr2funcs[func_addr], end=' ')
         print(param, end=' ')
         print(input_id_list[param[0]])
+        func_name = addr2funcs[func_addr]
+        # (name, shape, fused_func, type, padding, stride, param_index)
+        output_dict[param[0]] = [func_name, [], entry_addr, param[1], None, None, None]
+        if addr2funcs[func_addr] not in func_count.keys():
+            func_count[addr2funcs[func_addr]] = 0
+        else:
+            func_count[addr2funcs[func_addr]] += 1
+        topology_list.append([param[0],  # id
+                              addr2funcs[func_addr],  # func name
+                              param[1],  # label
+                              param[2],  # input addresses
+                              param[3],  # output address
+                              input_id_list[param[0]],  # input ids
+                              func_count[addr2funcs[func_addr]]  # func_count/the number of occurrences
+                              ])
+    return output_dict, topology_list
+
+
+def refine_glow_config(f2p: dict()) -> dict:
+    new_dict = copy.deepcopy(f2p)  # type: dict
+    for key, value in f2p.items():
+        if len(value) < 4:
+            for i in range(len(value), 4):
+                value.append('none')
+            new_dict[key] = value
+    return new_dict
 
 
 def print_layer_label(trace_log_path: str, config_path=''):  # for glow
     global addr2label, addr2funcs, addr2param, func2param
     addr2label = json_to_dict('./addr2label.json')
     addr2funcs = json_to_dict('./addr2funcs.json')
-    addr2param = json_to_dict('./addr2param.json')
+    # addr2param = json_to_dict('./addr2param.json')  # should be empty right now
     if len(config_path) > 0:
         config_path = os.path.abspath(config_path)
-        func2param = json_to_dict(config_path)  # type: dict
+        if not os.path.exists(config_path):
+            warnings.warn('Glow config file does not exist.')
+        else:
+            func2param = json_to_dict(config_path)  # type: dict
+            func2param = refine_glow_config(func2param)
+    else:
+        warnings.warn('No Glow config file provided.')
 
     trace_log_path = os.path.abspath(trace_log_path)
+    node_id = 0
     with open(trace_log_path, 'r') as f:
         trace_txt = f.read()
         lines = trace_txt.split('\n')
@@ -246,19 +351,25 @@ def print_layer_label(trace_log_path: str, config_path=''):  # for glow
                     addr_list[i] = addr_list[i].replace('rsi ', '').strip()
                 elif 'rdx' in addr_list[i]:
                     addr_list[i] = addr_list[i].replace('rdx ', '').strip()
+                elif 'rcx' in addr_list[i]:
+                    addr_list[i] = addr_list[i].replace('rcx ', '').strip()
             config_flag = False
             for key, param_list in func2param.items():
                 if key in addr2label[addr]:
-                    print('{}: {:>10} - {:<16}: {} {}, {} {}, {} {}'.format(addr, addr2funcs[addr], addr2label[addr],
+                    print('{}: {:>10} - {:<16}: {} {}, {} {}, {} {}, {} {}'.format(addr, addr2funcs[addr], addr2label[addr],
                                                                             param_list[0], addr_list[0],
                                                                             param_list[1], addr_list[1],
-                                                                            param_list[2], addr_list[2]))
-                    if 'in/out' in param_list[0]:
-                        addr2param[addr] = (addr_list[0], addr_list[0])
-                    elif 'in' in param_list[0] and 'out' in param_list[1]:
-                        addr2param[addr] = (addr_list[0], addr_list[1])
-                    elif 'out' in param_list[0] and 'in' in param_list[1]:
-                        addr2param[addr] = (addr_list[1], addr_list[0])
+                                                                            param_list[2], addr_list[2],
+                                                                            param_list[3], addr_list[3]))
+                    input_list = []
+                    output_list = []
+                    for i in range(len(param_list)):
+                        p = param_list[i]
+                        if 'in' in p:
+                            input_list.append(addr_list[i])
+                        if 'out' in p:
+                            output_list.append(addr_list[i])
+                    addr2param[node_id] = [addr, addr2funcs[addr], (input_list, output_list)]
                     config_flag = True  # found definition in the config.json
                     break
             if not config_flag:  # not defined in config.json
@@ -271,7 +382,8 @@ def print_layer_label(trace_log_path: str, config_path=''):  # for glow
                     else:
                         end_str = ', '
                     print('param{} {}'.format(i + 1, addr_list[i]), end=end_str)
-                addr2param[addr] = (addr_list[0], addr_list[1])  # TODO: not accurate
+                addr2param[node_id] = [addr, addr2funcs[key], (addr_list[0], addr_list[1])]  # TODO: not accurate
+            node_id += 1
             """
             if 'reshape' != addr2label[addr]:
                 if 'max-pool' in addr2label[addr] or 'avg-pool' in addr2label[addr]:
@@ -299,6 +411,7 @@ def print_layer_label(trace_log_path: str, config_path=''):  # for glow
                         addr2param[addr] = (in_addr, out_addr)
             """
     dict_to_json(addr2param, './addr2param.json')
+    return copy.deepcopy(addr2param)
 
 
 # ==============================================================
@@ -366,9 +479,14 @@ def recover_shape(func_name: str, mem_exp_log: str,
     func_asm_path = os.path.join(funcs_dir, func_name)
     func_asm_path = os.path.abspath(func_asm_path)
     start_addr, end_addr = get_func_range(func_asm_path)
-    in_addr = addr2param[start_addr][0]
+
+    #in_addr = addr2param[start_addr][0]
+    param_list = [addr2param[k] if addr2param[k][0]==start_addr else None for k in addr2param.keys()]
+    param_list = list(filter(lambda a: a != None, param_list))
+    in_addr = param_list[0][2][0]
+    assert 'conv' not in func_type or len(in_addr) == 1, 'the size of inputs of conv operator should be 1.'
+    in_addr = int(in_addr[0], 16)
     #out_addr= addr2param[start_addr][1]
-    in_addr = int(in_addr, 16)
     #out_addr = int(out_addr, 16)
 
     mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
@@ -397,11 +515,11 @@ def recover_shape(func_name: str, mem_exp_log: str,
                     with_relu = tmp_with_relu
                     if filter_shape[2] == filter_shape[3] == 1:
                         print('stride: 2')
-                        return filter_shape  # no need to guess padding/stride
+                        return filter_shape, input_shape, output_shape, with_relu  # no need to guess padding/stride
         print(filter_shape)
         if filter_shape[0] == 0:
             exit(0)
-        return filter_shape
+        return filter_shape, input_shape, output_shape, with_relu
     elif 'matmul' in func_type:  # dense in tvm
         input_size, output_size = explain_glow_dense_result(mem_exp_log, write_mem_regions)
         return output_size, input_size
@@ -421,7 +539,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
 
 def recover_shape_tvm(func_name: str, mem_exp_log: str,
                   mem_read_log_path: str, mem_write_log_path: str,
-                  prog_path: str, data_path: str, func_type='conv2d', optimized=False):
+                  prog_path: str, data_path: str, func_type='conv2d', optimized=False, func_info=[]):
     mem_read_log_path = os.path.abspath(mem_read_log_path)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
     prog_path = os.path.abspath(prog_path)
@@ -432,8 +550,8 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
     start_addr, end_addr = get_func_range(func_asm_path)
 
     mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
-    mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
     read_mem_regions = memory_slices(mem_read_log_path)
+    mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
     write_mem_regions = memory_slices(mem_write_log_path)
     if 'conv2d' in func_type:
         filter_shape = (0, 0, 0, 0)
@@ -441,7 +559,7 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
         output_shape = (0, 0, 0, 0)
         layout_shape = (0, 0, 0, 0)
         for stride in range(1, 4):
-            print('try with stride: {}'.format(stride))
+            # print('try with stride: {}'.format(stride))
             tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_layout_shape = \
                 explain_tvm_conv2d_result(mem_exp_log, read_mem_regions,
                                           write_mem_regions, guess_stride=stride,
@@ -455,8 +573,8 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
                     break
         return filter_shape, input_shape, output_shape, layout_shape
     elif 'dense' in func_type or 'matmul' in func_type:
-        input_size, output_size = explain_tvm_dense_result(mem_exp_log, write_mem_regions)
-        print('({}, {})'.format(input_size, output_size))
+        input_size, output_size = explain_tvm_dense_result(mem_exp_log, read_mem_regions, write_mem_regions, func_info)
+        # print('({}, {})'.format(input_size, output_size))
         return output_size, input_size
     elif 'add' in func_type:
         if len(read_mem_regions) > 1 and \
@@ -482,7 +600,7 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
 
 
 def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
-                    func_trace_map=dict(), compiler='tvm', optimized=False):
+                    func_trace_map=dict(), compiler='tvm', optimized=False, topo_list=[]):
     label_file_path = os.path.abspath(label_file_path)
     # --- get conv2d functions' name
     funcs_name_list = []
@@ -502,6 +620,12 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
     func_shape = dict()
     for func_name in funcs_name_list:
         print('\n' + func_name)
+        func_info = []
+        if len(topo_list) > 0:
+            for node in topo_list:
+                if node[1] == func_name:
+                    func_info = node
+                    break
         # --- recover the shape of each layer
         # tmp_log_path = './inst_trace.log'
         if func_name in func_trace_map:
@@ -516,14 +640,15 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
         mem_read_log_path = 'mem_read.log'  # tmp file
         mem_write_log_path = 'mem_write.log'  # tmp file
         if compiler == 'tvm':
-            filter_shape = recover_shape_tvm(func_name, exp_log_path,
-                                             mem_read_log_path, mem_write_log_path,
-                                             prog_path, in_data, func_type=func_types[func_name], optimized=optimized)
+            all_shapes = recover_shape_tvm(func_name, exp_log_path,
+                                           mem_read_log_path, mem_write_log_path,
+                                           prog_path, in_data, func_type=func_types[func_name],
+                                           optimized=optimized,func_info=func_info)
         else:
-            filter_shape = recover_shape(func_name, exp_log_path,
+            all_shapes = recover_shape(func_name, exp_log_path,
                                          mem_read_log_path, mem_write_log_path,
                                          prog_path, in_data, func_type=func_types[func_name])
-        func_shape[func_name] = filter_shape
+        func_shape[func_name] = all_shapes  # filter_shape, input_shape, output_shape, layout_shape
     return func_shape
 
 
@@ -556,10 +681,14 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
             float_array = convert_dwords2float(dw_txt, dwords_len)
 
             w = np.asarray(float_array)
-            if len(special_layout) > 0:
+            if len(special_layout) == 5:
                 w = w.reshape(special_layout)
                 w = np.transpose(w, (0, 5, 1, 4, 2, 3))
                 w = w.reshape(w_shape)
+            elif len(special_layout) == 3:
+                w = w.reshape(special_layout)
+                w1 = np.transpose(w, (0, 2, 1))
+                w = w1.reshape(w_shape)
             else:
                 w = w.reshape(w_shape)
             # print(type(w))
@@ -567,11 +696,11 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
             json_str = json.dumps(lists)
             # print(json_str)
             json_str = json_str.replace('],', '],\n')
-            if func_type == 'conv2d':
+            if 'conv2d' in func_type:
                 json_name = func_name[:func_name.rfind('.')] + '.weights_{}.json'.format(i)
-            elif func_type == 'dense':
+            elif 'dense' in func_type:
                 json_name = func_name[:func_name.rfind('.')] + '.dense_weights_{}.json'.format(i)
-            elif func_type == 'add':
+            elif 'add' in func_type:
                 json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
             else:
                 json_name = func_name[:func_name.rfind('.')] + '.{}_{}.json'.format(func_type, i)
@@ -760,4 +889,7 @@ if __name__ == '__main__':
         print(new_id_list)
 
 
-    tmp_handle_func_call('/home/lifter/Documents/tvm_output/func_call.txt')
+    # tmp_handle_func_call('/home/lifter/Documents/tvm_output/func_call.txt')
+
+    funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/resnet18_funcs/"
+    generate_symbolic_expression('0207.txt', './resnet18_tvm_v08_O0/0207.log', './resnet18_tvm_v08_O0/mem_exp.log', max_inst=5000000)

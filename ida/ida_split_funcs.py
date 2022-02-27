@@ -110,7 +110,7 @@ def handle_lst_file(lst_path: str, asm_path: str, output_dir: str):
     split_funcs(asm_path, output_dir)
 
 
-def main():
+def main(rootdir: str):
     for root, dirs, files in os.walk(rootdir):
         root = os.path.abspath(root)
         for file in files:
@@ -128,5 +128,8 @@ if __name__ == '__main__':
     # asm_file = './tmp.asm'
     # output_dir = './tmp'
     # handle_lst_file(lst_file, asm_file, output_dir)
-    main()
+    if len(sys.argv) == 2:
+        project_dir = rootdir = sys.argv[1]
+        print(sys.argv[1])
+        main(sys.argv[1])
 

@@ -40,17 +40,19 @@ KNOB<std::string>   KnobAddrsFile(KNOB_MODE_WRITEONCE,  "pintool",
 // Utilities
 /* ===================================================================== */
 
-VOID Dump(VOID * ip, ADDRINT rdi_value, ADDRINT rsi_value, ADDRINT rdx_value){
+VOID Dump(VOID * ip, ADDRINT rdi_value, ADDRINT rsi_value, ADDRINT rdx_value, ADDRINT rcx_value){
     //fprintf(trace, "Start:\n");
     // get address from register rdi 
     void * rdi = (void *)rdi_value;
     void * rsi = (void *)rsi_value;
     void * rdx = (void *)rdx_value;
+    void * rcx = (void *)rcx_value;
     fprintf(trace,"%p: ", ip);
     
     fprintf(trace, "rdi %p, ", rdi);
     fprintf(trace, "rsi %p, ", rsi);
-    fprintf(trace, "rdx %p", rdx);
+    fprintf(trace, "rdx %p, ", rdx);
+    fprintf(trace, "rcx %p", rcx);
     
     fprintf(trace, "\n");
     return;
@@ -104,6 +106,7 @@ VOID Instruction(INS ins, VOID *v)
         IARG_REG_VALUE, LEVEL_BASE::REG_RDI,
         IARG_REG_VALUE, LEVEL_BASE::REG_RSI,
         IARG_REG_VALUE, LEVEL_BASE::REG_RDX,
+        IARG_REG_VALUE, LEVEL_BASE::REG_RCX,
         IARG_END);
     return;
     

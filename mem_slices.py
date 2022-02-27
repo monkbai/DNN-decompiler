@@ -5,6 +5,7 @@ import logging
 print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
+
 def memory_slices(mem_read_trace: str):
     mem_obj = dict()  # id --> mem_obj(start, end)
     end_map = dict()  # end_addr --> id
@@ -90,15 +91,16 @@ def memory_slices(mem_read_trace: str):
                 new_mem_objs.append(old_obj)
             else:
                 print('unexpected')
-        if len(new_mem_objs) < 20:
-            for start_addr, end_addr in new_mem_objs:
-                print('[{}, {}] {}'.format(hex(start_addr), hex(end_addr), hex(end_addr - start_addr)))
-        else:
-            for start_addr, end_addr in new_mem_objs[:20]:
-                print('[{}, {}] {}'.format(hex(start_addr), hex(end_addr), hex(end_addr - start_addr)))
-            print('......')
+        # For Debugging
+        # if len(new_mem_objs) < 20:
+        #     for start_addr, end_addr in new_mem_objs:
+        #         print('[{}, {}] {}'.format(hex(start_addr), hex(end_addr), hex(end_addr - start_addr)))
+        # else:
+        #     for start_addr, end_addr in new_mem_objs[:20]:
+        #         print('[{}, {}] {}'.format(hex(start_addr), hex(end_addr), hex(end_addr - start_addr)))
+        #     print('......')
     end_time = time.time()
-    print('time:', end_time - start_time)
+    print('Memory Clustering Time: {}s'.format(end_time - start_time))
     logger.info('Memory Clustering time - {}s'.format(end_time - start_time))
     return new_mem_objs
 

@@ -265,20 +265,20 @@ def reverse_taint(re_trace_log: str, new_trace: str):
             if line.startswith('0x'):  # end of one inst, handle current inst
                 read_buf.insert(0, line)
                 idx += 1
-                if idx % 1000000 == 0:  # debug, million
-                    print(idx)
-                    print('len final_bufs {}'.format(len(final_bufs)))
-                    print('len tainted_mems {}'.format(len(tainted_mems)))
-                    print('len tainted_regs {}'.format(len(tainted_regs)))
-                    '''# debug
-                    if len(final_bufs) > 1000000:
-                        with open(new_trace_log, 'w') as f:
-                            for r_buf in final_bufs:
-                                for line in r_buf:
-                                    f.write(line)
-                            f.close()
-                        exit(0)
-                    '''
+                # if idx % 1000000 == 0:  # debug, million
+                #     print(idx)
+                #     print('len final_bufs {}'.format(len(final_bufs)))
+                #     print('len tainted_mems {}'.format(len(tainted_mems)))
+                #     print('len tainted_regs {}'.format(len(tainted_regs)))
+                #     '''# debug
+                #     if len(final_bufs) > 1000000:
+                #         with open(new_trace_log, 'w') as f:
+                #             for r_buf in final_bufs:
+                #                 for line in r_buf:
+                #                     f.write(line)
+                #             f.close()
+                #         exit(0)
+                #     '''
                 # TODO: handle the current instruction
                 # the core function of reverse taint
                 if handle_inst(read_buf):  # handle instructions
@@ -662,10 +662,13 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
     data_path = os.path.abspath(data_path)
     log_path = os.path.abspath(log_path)
 
+    slice_log = log_path.replace('.log', '_slice.log')
+    if os.path.exists(slice_log):
+        print('{} already exists.'.format(slice_log))
+        return slice_log, 'unknown', -1, 'unknown', 'unknown'
     rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type)
     # rnd_addr = '0x230fd760'  # debug
     print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
-    slice_log = log_path.replace('.log', '_slice.log')
 
     target_addr = rnd_addr
     mem_list = []
