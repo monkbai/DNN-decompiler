@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
-# sys.path.append("../..")
+sys.path.append("../")
 import utils
 import trace_filter
 from utils import list_to_json, dict_to_json, json_to_list, json_to_dict
@@ -12,12 +12,12 @@ print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/resnet18_glow_funcs"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/resnet18_glow/resnet18_glow_funcs"
 
-    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/resnet18_strip.out"
-    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/cat.bin"
-    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/ground_truth.txt"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/resnet18_glow/resnet18_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/resnet18_glow/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/resnet18_glow/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/resnet18_glow/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -64,9 +64,9 @@ if __name__ == '__main__':
     # Step 2.2.0 Choose Another Random Target Address (if needed)
     #func_name = '0030.txt'
     #asm_path = os.path.join(utils.funcs_dir, func_name)
-    #slice_log, rnd_addr, loop_size = trace_filter.filt_trace(asm_path, prog_path, in_data, '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/0030_rev.log')
+    #slice_log, rnd_addr, loop_size = trace_filter.filt_trace(asm_path, prog_path, in_data, '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/resnet18_glow/0030_rev.log')
     #print(' slice_log {}\n rnd_addr {}\n loop_size {}\n'.format(slice_log, rnd_addr, loop_size))
-    #utils.generate_symbolic_expression(func_name, '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/0030_slice.log', exp_log_path, max_inst=5000000)
+    #utils.generate_symbolic_expression(func_name, '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/resnet18_glow/0030_slice.log', exp_log_path, max_inst=5000000)
     #exit(0)
 
     # Step 2.2.1 Conv and Matmul layers
@@ -97,9 +97,17 @@ if __name__ == '__main__':
             asm_path = os.path.join(utils.funcs_dir, asm_file)
             start_addr, _ = utils.get_func_range(asm_path)
             if start_addr in utils.addr2label.keys():
+                # get func type and func_info
                 func_type = utils.addr2label[start_addr]
+                func_info = []
+                if len(topo_list) > 0:
+                    for node in topo_list:
+                        if node[1] == asm_file:
+                            func_info = node
+                            break
+                
                 if 'matmul' not in func_type and 'conv' not in func_type and \
-                   'trans' not in func_type and 'add, relu' not in func_type:  # transpose could be ignored, (add, relu) layer is known
+                   'trans' not in func_type and 'relu' not in func_type:  # transpose could be ignored, (add, relu) layer is known
                     print('SE for {}, {}'.format(asm_file, func_type))
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
                     # gnereate tmp trace file, it should be fast
@@ -109,7 +117,7 @@ if __name__ == '__main__':
                     # --- try to interpret the filter shape from symbolic expression log
                     shape = utils.recover_shape(asm_file, exp_log_path,
                                                 mem_read_log_path, mem_write_log_path,
-                                                prog_path, in_data, func_type=func_type)
+                                                prog_path, in_data, func_type=func_type, func_info=func_info)
                     print('shape:', shape)
                     results_dict[asm_file] = shape
     for name, result in results_dict.items():
