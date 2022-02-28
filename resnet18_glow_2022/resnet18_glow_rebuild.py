@@ -89,88 +89,88 @@ class MyResNet(nn.Module):
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=1, stride=2, padding=0))
-        set_weights(net[-1], './0016.weights_0.json')
-        set_biases(net[-1], '0016.biases_0.json')
+        set_weights(net[-1], './0018.weights_0.json')
+        set_biases(net[-1], '0018.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=2, padding=1))  # correct the shape
-        set_weights(net[-1], './0017.weights_0.json')
-        set_biases(net[-1], '0017.biases_0.json')
+        set_weights(net[-1], './0019.weights_0.json')
+        set_biases(net[-1], '0019.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0018.weights_0.json')
-        set_biases(net[-1], '0018.biases_0.json')
+        set_weights(net[-1], './0020.weights_0.json')
+        set_biases(net[-1], '0020.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0020.weights_0.json')
-        set_biases(net[-1], '0020.biases_0.json')
+        set_weights(net[-1], './0023.weights_0.json')
+        set_biases(net[-1], '0023.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0018.weights_1.json')
-        set_biases(net[-1], '0018.biases_1.json')
+        set_weights(net[-1], './0020.weights_1.json')
+        set_biases(net[-1], '0020.biases_1.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=1, stride=2, padding=0))
-        set_weights(net[-1], './0022.weights_0.json')
-        set_biases(net[-1], '0022.biases_0.json')
+        set_weights(net[-1], './0026.weights_0.json')
+        set_biases(net[-1], '0026.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=2, padding=1))
-        set_weights(net[-1], './0023.weights_0.json')
-        set_biases(net[-1], '0023.biases_0.json')
+        set_weights(net[-1], './0027.weights_0.json')
+        set_biases(net[-1], '0027.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0024.weights_0.json')
-        set_biases(net[-1], '0024.biases_0.json')
+        set_weights(net[-1], './0028.weights_0.json')
+        set_biases(net[-1], '0028.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0026.weights_0.json')
-        set_biases(net[-1], '0026.biases_0.json')
+        set_weights(net[-1], './0031.weights_0.json')
+        set_biases(net[-1], '0031.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0024.weights_1.json')
-        set_biases(net[-1], '0024.biases_1.json')
+        set_weights(net[-1], './0028.weights_1.json')
+        set_biases(net[-1], '0028.biases_1.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=1, stride=2, padding=0))
-        set_weights(net[-1], './0028.weights_0.json')
-        set_biases(net[-1], '0028.biases_0.json')
+        set_weights(net[-1], './0034.weights_0.json')
+        set_biases(net[-1], '0034.biases_0.json')
         net.append(nn.Identity())  #  net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=2, padding=1))
-        set_weights(net[-1], './0029.weights_0.json')
-        set_biases(net[-1], '0029.biases_0.json')
+        set_weights(net[-1], './0035.weights_0.json')
+        set_biases(net[-1], '0035.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0030.weights_0.json')
-        set_biases(net[-1], '0030.biases_0.json')
+        set_weights(net[-1], './0036.weights_0.json')
+        set_biases(net[-1], '0036.biases_0.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
 
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0032.weights_0.json')
-        set_biases(net[-1], '0032.biases_0.json')
+        set_weights(net[-1], './0039.weights_0.json')
+        set_biases(net[-1], '0039.biases_0.json')
         net.append(nn.ReLU())
 
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, stride=1, padding=1))
-        set_weights(net[-1], './0030.weights_1.json')
-        set_biases(net[-1], '0030.biases_1.json')
+        set_weights(net[-1], './0036.weights_1.json')
+        set_biases(net[-1], '0036.biases_1.json')
         net.append(nn.Identity())  # net.append(nn.ReLU())
 
         net.append(nn.ReLU())  # add relu
@@ -179,8 +179,8 @@ class MyResNet(nn.Module):
         net.append(nn.Flatten())
 
         net.append(nn.Linear(in_features=512, out_features=1000))
-        set_weights(net[-1], './0035.params_0.json')
-        set_biases(net[-1], './0036.params_0.json')
+        set_weights(net[-1], './0043.params_0.json')
+        set_biases(net[-1], './0043.biases_0.json')
         self.net = nn.ModuleList(net)
 
     def forward(self, x):
