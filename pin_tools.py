@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from subprocess import Popen, PIPE, STDOUT
-from scripts import config
+import config
 
 import os
 import re

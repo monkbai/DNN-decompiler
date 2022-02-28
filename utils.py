@@ -6,15 +6,15 @@ import sys
 import json
 import numpy as np
 import warnings
-from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
-from scripts.pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
-from scripts.pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
-from scripts.se_engine import lightweight_SymEx
-from scripts.mem_slices import memory_slices
-from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
-from scripts.explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
-from scripts.explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
-from scripts.explain import explain_glow_avgpool_result, explain_tvm_embedding_result
+from pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
+from pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
+from pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
+from se_engine import lightweight_SymEx
+from mem_slices import memory_slices
+from explain import explain_tvm_conv2d_result, explain_tvm_dense_result
+from explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
+from explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
+from explain import explain_glow_avgpool_result, explain_tvm_embedding_result
 
 
 def list_to_json(dict_obj: dict, output_path: str):
@@ -53,6 +53,8 @@ addr2param = dict()
 func2param = dict()
 
 funcs_dir = './vgg16_glow_funcs/'
+
+
 # ==============================================================
 # Generate the function call trace
 # ==============================================================
@@ -65,7 +67,7 @@ def rm_duplicated_call(log_path: str):
     new_trace = ''
     old_lines = old_trace.split('\n')
     for i in range(len(old_lines)):
-        if i > 0 and old_lines[i-1] == old_lines[i]:
+        if i > 0 and old_lines[i - 1] == old_lines[i]:
             continue
         new_trace += old_lines[i] + '\n'
 
@@ -98,7 +100,6 @@ def get_addr_list(label_path: str, fused=False):
 
 
 def get_funcs_trace(prog_path: str, in_data: str, log_path: str, label_file: str, compiler='glow', only_fused=False):
-
     prog_path = os.path.abspath(prog_path)
     if len(in_data) > 0:
         in_data = os.path.abspath(in_data)
@@ -144,7 +145,7 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
                     continue
                 addr = hex(int(line.split(':')[0].strip(), 16))
                 print('{}: {}'.format(addr, addr2label[addr]))
-                #if 'reshape' != addr2label[addr]:
+                # if 'reshape' != addr2label[addr]:
                 #    print('{}: {}'.format(addr, addr2label[addr]))
     else:
         with open(trace_log_path, 'r') as f:
@@ -172,9 +173,9 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
                 with_label = True
                 if len(params) != len(param_labels):
                     with_label = False
-                
+
                 for i in range(len(params)):
-                    if i != len(params)-1:
+                    if i != len(params) - 1:
                         if with_label:
                             print('{} {},'.format(param_labels[i], params[i]), end=' ')
                         else:
@@ -264,7 +265,7 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict()):
 
     # generate input_id_list
     input_id_list = []
-    for i in range(len(params_list)-1, -1, -1):
+    for i in range(len(params_list) - 1, -1, -1):
         input_addrs = params_list[i][2]
         input_id = []
         for input_addr in input_addrs:
@@ -356,11 +357,12 @@ def print_layer_label(trace_log_path: str, config_path=''):  # for glow
             config_flag = False
             for key, param_list in func2param.items():
                 if key in addr2label[addr]:
-                    print('{}: {:>10} - {:<16}: {} {}, {} {}, {} {}, {} {}'.format(addr, addr2funcs[addr], addr2label[addr],
-                                                                            param_list[0], addr_list[0],
-                                                                            param_list[1], addr_list[1],
-                                                                            param_list[2], addr_list[2],
-                                                                            param_list[3], addr_list[3]))
+                    print('{}: {:>10} - {:<16}: {} {}, {} {}, {} {}, {} {}'.format(addr, addr2funcs[addr],
+                                                                                   addr2label[addr],
+                                                                                   param_list[0], addr_list[0],
+                                                                                   param_list[1], addr_list[1],
+                                                                                   param_list[2], addr_list[2],
+                                                                                   param_list[3], addr_list[3]))
                     input_list = []
                     output_list = []
                     for i in range(len(param_list)):
@@ -373,11 +375,11 @@ def print_layer_label(trace_log_path: str, config_path=''):  # for glow
                     config_flag = True  # found definition in the config.json
                     break
             if not config_flag:  # not defined in config.json
-                #print('{}: {:<16}: param1 {}, param2 {}, param3 {}'.format(addr, addr2label[addr],
+                # print('{}: {:<16}: param1 {}, param2 {}, param3 {}'.format(addr, addr2label[addr],
                 #                                                           addr_list[0], addr_list[1], addr_list[2]))
                 print('{}: {:>10} - {:<16}:'.format(addr, addr2funcs[addr], addr2label[addr]), end=' ')
                 for i in range(len(addr_list)):
-                    if i == len(addr_list)-1:
+                    if i == len(addr_list) - 1:
                         end_str = '\n'
                     else:
                         end_str = ', '
@@ -480,14 +482,14 @@ def recover_shape(func_name: str, mem_exp_log: str,
     func_asm_path = os.path.abspath(func_asm_path)
     start_addr, end_addr = get_func_range(func_asm_path)
 
-    #in_addr = addr2param[start_addr][0]
-    param_list = [addr2param[k] if addr2param[k][0]==start_addr else None for k in addr2param.keys()]
+    # in_addr = addr2param[start_addr][0]
+    param_list = [addr2param[k] if addr2param[k][0] == start_addr else None for k in addr2param.keys()]
     param_list = list(filter(lambda a: a != None, param_list))
-    in_addr = param_list[0][2][0]
+    in_addr = param_list[0][2][0]  # use th first one, as we only log the first occurence
     assert 'conv' not in func_type or len(in_addr) == 1, 'the size of inputs of conv operator should be 1.'
     in_addr = int(in_addr[0], 16)
-    #out_addr= addr2param[start_addr][1]
-    #out_addr = int(out_addr, 16)
+    # out_addr= addr2param[start_addr][1]
+    # out_addr = int(out_addr, 16)
 
     mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
     mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
@@ -501,13 +503,14 @@ def recover_shape(func_name: str, mem_exp_log: str,
         with_relu = False
         for stride in range(1, 4):
             for padding in range(0, 4):
-                #print('try with stride: {}, padding: {}'.format(stride, padding))
-                tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_with_relu = explain_glow_conv2d_result(mem_exp_log,
-                                                                                                 read_mem_regions,
-                                                                                                 write_mem_regions,
-                                                                                                 in_addr=in_addr,
-                                                                                                 guess_stride=stride,
-                                                                                                 guess_padding=padding)
+                # print('try with stride: {}, padding: {}'.format(stride, padding))
+                tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_with_relu = explain_glow_conv2d_result(
+                    mem_exp_log,
+                    read_mem_regions,
+                    write_mem_regions,
+                    in_addr=in_addr,
+                    guess_stride=stride,
+                    guess_padding=padding)
                 if tmp_filter_shape[0] != 0:
                     filter_shape = tmp_filter_shape
                     input_shape = tmp_input_shape
@@ -518,7 +521,11 @@ def recover_shape(func_name: str, mem_exp_log: str,
                         return filter_shape, input_shape, output_shape, with_relu  # no need to guess padding/stride
         print(filter_shape)
         if filter_shape[0] == 0:
-            assert False, "failed to predict the filter shape."
+            assert False, ("failed to predict the filter shape. \n"
+                           "Sometimes this will happen, mainly because implicit padding in Glow binary.\n"
+                           "In such case, you may delete the log file corresponding to current function, and retry again.\n"
+                           "the trace_filter will randomly pick an address again."
+                           )
         return filter_shape, input_shape, output_shape, with_relu
     elif 'matmul' in func_type:  # dense in tvm
         input_size, output_size = explain_glow_dense_result(mem_exp_log, write_mem_regions)
@@ -538,8 +545,8 @@ def recover_shape(func_name: str, mem_exp_log: str,
 
 
 def recover_shape_tvm(func_name: str, mem_exp_log: str,
-                  mem_read_log_path: str, mem_write_log_path: str,
-                  prog_path: str, data_path: str, func_type='conv2d', optimized=False, func_info=[]):
+                      mem_read_log_path: str, mem_write_log_path: str,
+                      prog_path: str, data_path: str, func_type='conv2d', optimized=False, func_info=[]):
     mem_read_log_path = os.path.abspath(mem_read_log_path)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
     prog_path = os.path.abspath(prog_path)
@@ -612,7 +619,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label) and '0013' in name:
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()
@@ -643,11 +650,11 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             all_shapes = recover_shape_tvm(func_name, exp_log_path,
                                            mem_read_log_path, mem_write_log_path,
                                            prog_path, in_data, func_type=func_types[func_name],
-                                           optimized=optimized,func_info=func_info)
+                                           optimized=optimized, func_info=func_info)
         else:
             all_shapes = recover_shape(func_name, exp_log_path,
-                                         mem_read_log_path, mem_write_log_path,
-                                         prog_path, in_data, func_type=func_types[func_name])
+                                       mem_read_log_path, mem_write_log_path,
+                                       prog_path, in_data, func_type=func_types[func_name])
         func_shape[func_name] = all_shapes  # filter_shape, input_shape, output_shape, layout_shape
     return func_shape
 
@@ -677,7 +684,7 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
         dw_segs = dw_txt.split('end')[:end_count]
         for i in range(end_count):
             dw_txt = dw_segs[i].strip()
-            dw_txt = dw_txt[dw_txt.find('\n')+1:]
+            dw_txt = dw_txt[dw_txt.find('\n') + 1:]
             float_array = convert_dwords2float(dw_txt, dwords_len)
 
             w = np.asarray(float_array)
@@ -730,7 +737,7 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
         dw_segs = dw_txt.split('end')[:end_count]
         for i in range(end_count):
             dw_txt = dw_segs[i].strip()
-            dw_txt = dw_txt[dw_txt.find('\n')+1:]
+            dw_txt = dw_txt[dw_txt.find('\n') + 1:]
             float_array = convert_dwords2float(dw_txt, dwords_len)
 
             w = np.asarray(float_array)
@@ -738,7 +745,7 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
             if 'DKKC8' in func_type:  # Glow applies special layout alteration named DKKC8
                 # w = np.swapaxes(w, 0, 3)
                 w = np.transpose(w, (3, 1, 2, 0, 4))
-                new_shape = (w_shape[3], w_shape[1], w_shape[2], w_shape[0]*w_shape[4])
+                new_shape = (w_shape[3], w_shape[1], w_shape[2], w_shape[0] * w_shape[4])
                 w = np.reshape(w, new_shape, order='C')
                 w = np.transpose(w, (3, 0, 1, 2))
             if reg_num == 1 and len(w_shape) == 4 and func_type != 'matmul':
@@ -762,7 +769,7 @@ def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point
                 json_name = func_name[:func_name.rfind('.')] + '.params_{}.json'.format(i)
             elif reg_num == 2:
                 json_name = func_name[:func_name.rfind('.')] + '.biases_{}.json'.format(i)
-            
+
             with open(json_name, 'w') as wf:
                 wf.write(json_str)
                 wf.close()
@@ -789,7 +796,7 @@ def extract_params_nnfusion(prog_path: str, in_data: str, w_shape: tuple, dump_p
         dw_segs = dw_txt.split('end')[:end_count]
         for i in range(end_count):
             dw_txt = dw_segs[i].strip()
-            dw_txt = dw_txt[dw_txt.find('\n')+1:]
+            dw_txt = dw_txt[dw_txt.find('\n') + 1:]
             float_array = convert_dwords2float(dw_txt, dwords_len)
 
             w = np.asarray(float_array)
@@ -833,7 +840,7 @@ def extract_params_general(prog_path: str, in_data: str, w_shape: tuple, dump_po
         dw_segs = dw_txt.split('end')[:end_count]
         for i in range(end_count):
             dw_txt = dw_segs[i].strip()
-            dw_txt = dw_txt[dw_txt.find('\n')+1:]
+            dw_txt = dw_txt[dw_txt.find('\n') + 1:]
             float_array = convert_dwords2float(dw_txt, dwords_len)
 
             w = np.asarray(float_array)
@@ -860,11 +867,11 @@ if __name__ == '__main__':
                 if not line.startswith('0x'):
                     continue
                 in_addrs = line.split(':')[2].strip()
-                in_addrs = in_addrs[in_addrs.find('in ')+3:]
+                in_addrs = in_addrs[in_addrs.find('in ') + 3:]
                 in_addrs = in_addrs[:in_addrs.find('out')]
                 in_addrs = in_addrs.strip(' ,')
                 in_addrs = in_addrs.split(',')
-                out_addr = line[line.find('out')+4:].strip()
+                out_addr = line[line.find('out') + 4:].strip()
 
                 id_list.append((idx, in_addrs, out_addr))
                 idx += 1
@@ -892,4 +899,5 @@ if __name__ == '__main__':
     # tmp_handle_func_call('/home/lifter/Documents/tvm_output/func_call.txt')
 
     funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O0/resnet18_funcs/"
-    generate_symbolic_expression('0207.txt', './resnet18_tvm_v08_O0/0207.log', './resnet18_tvm_v08_O0/mem_exp.log', max_inst=5000000)
+    generate_symbolic_expression('0207.txt', './resnet18_tvm_v08_O0/0207.log', './resnet18_tvm_v08_O0/mem_exp.log',
+                                 max_inst=5000000)
