@@ -7,7 +7,7 @@ print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
 
 # from e9patch_tools import all_inst_trace_2, all_inst_trace_1
-import explain
+from scripts import explain
 
 
 # /* ===================================================================== */

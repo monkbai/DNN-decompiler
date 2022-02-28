@@ -369,7 +369,7 @@ def handle_inst(read_buf: list):
         elif opcode.startswith('maxss') or opcode.startswith('addss') or opcode.startswith('mulss') or \
              opcode.startswith('maxps') or opcode.startswith('addps') or opcode.startswith('mulps'):
             kept = handle_two_arith(opcode, operands, mem_addr)
-        elif opcode.startswith('vfmadd231ss') or opcode.startswith('vfmadd213ps') or opcode.startswith('vfmadd231ps'):
+        elif opcode.startswith('vfmadd231ss') or opcode.startswith('vfmadd213ps') or opcode.startswith('vfmadd231ps') or opcode.startswith('vfmadd132ss'):
             kept = handle_three(opcode, operands, mem_addr, read_op1=True)
         elif opcode.startswith('vxorps'):
             # print(read_buf[0])  # debug
@@ -645,7 +645,7 @@ def handle_xor(opcode: str, operands: list, mem_addr: str):
 def handle_not_implemented(opcode: str, operands: list):
     print(tainted_regs)
     print('inst not implemented')
-    print('{} {}'.format(opcode, operands))
+    assert False, '{} {}'.format(opcode, operands)
     exit(0)
 
 

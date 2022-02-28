@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 from subprocess import Popen, PIPE, STDOUT
-import config
+from scripts import config
 
 import os
 import re
@@ -27,7 +27,7 @@ class cd:
 
 def cmd(commandline):
     with cd(project_dir):
-        #print(commandline)
+        # print(commandline)
         logger.debug(commandline)
         status, output = subprocess.getstatusoutput(commandline)
         # print(output)

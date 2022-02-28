@@ -6,15 +6,15 @@ import sys
 import json
 import numpy as np
 import warnings
-from pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
-from pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
-from pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
-from se_engine import lightweight_SymEx
-from mem_slices import memory_slices
-from explain import explain_tvm_conv2d_result, explain_tvm_dense_result
-from explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
-from explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
-from explain import explain_glow_avgpool_result, explain_tvm_embedding_result
+from scripts.pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
+from scripts.pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
+from scripts.pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
+from scripts.se_engine import lightweight_SymEx
+from scripts.mem_slices import memory_slices
+from scripts.explain import explain_tvm_conv2d_result, explain_tvm_dense_result
+from scripts.explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
+from scripts.explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
+from scripts.explain import explain_glow_avgpool_result, explain_tvm_embedding_result
 
 
 def list_to_json(dict_obj: dict, output_path: str):
@@ -382,7 +382,7 @@ def print_layer_label(trace_log_path: str, config_path=''):  # for glow
                     else:
                         end_str = ', '
                     print('param{} {}'.format(i + 1, addr_list[i]), end=end_str)
-                addr2param[node_id] = [addr, addr2funcs[key], (addr_list[0], addr_list[1])]  # TODO: not accurate
+                addr2param[node_id] = [addr, addr2funcs[addr], (addr_list[0], addr_list[1])]  # TODO: not accurate
             node_id += 1
             """
             if 'reshape' != addr2label[addr]:
@@ -518,7 +518,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
                         return filter_shape, input_shape, output_shape, with_relu  # no need to guess padding/stride
         print(filter_shape)
         if filter_shape[0] == 0:
-            exit(0)
+            assert False, "failed to predict the filter shape."
         return filter_shape, input_shape, output_shape, with_relu
     elif 'matmul' in func_type:  # dense in tvm
         input_size, output_size = explain_glow_dense_result(mem_exp_log, write_mem_regions)

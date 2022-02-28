@@ -59,7 +59,7 @@ top1 = np.argmax(outputs.asnumpy()[0])
 print(top1)
 print(outputs.asnumpy()[0,top1])
 
-exit(0)
+# exit(0)
 
 # save model
 path_lib = './deploy_lib.tar'
@@ -74,7 +74,8 @@ with open('./deploy_params', 'wb') as f:
 
 # load model back
 loaded_json = open('./deploy_graph.json').read()
-loaded_lib = tvm.module.load(path_lib)
+# loaded_lib = tvm.module.load(path_lib)
+loaded_lib = tvm.runtime.load_module(path_lib)
 loaded_params = bytearray(open('./deploy_params', 'rb').read())
 module = graph_runtime.create(loaded_json, loaded_lib, ctx)
 
