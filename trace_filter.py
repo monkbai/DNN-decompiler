@@ -50,7 +50,7 @@ def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str, co
     asm_path = os.path.abspath(asm_path)
     early_stop, loop_count = get_early_stop(asm_path, compiler, func_type)
     start_addr, end_addr = utils.get_func_range(asm_path)
-    if len(early_stop) > 0:  # for matmul/dense layer, no need to early stop
+    if len(early_stop) > 0 and compiler!='glow':  # for matmul/dense layer, no need to early stop
         end_addr = early_stop
 
     log_path = os.path.abspath(out_log_path)
@@ -100,7 +100,7 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
             out_mem = (out_mem[0], early_part)
         print('after', out_mem[1]-out_mem[0])  # debug
     '''
-    print(out_mem)
+    print('({}, {})'.format(hex(out_mem[0]), hex(out_mem[1])))
     rnd_addr = random.randrange(out_mem[0], out_mem[1], 4)
     
     # mid_addr = out_mem[0] + (out_mem[1] - out_mem[0])/2
@@ -666,25 +666,30 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
     if os.path.exists(slice_log):
         print('{} already exists.'.format(slice_log))
         return slice_log, 'unknown', -1, 'unknown', 'unknown'
-    rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type)
-    # rnd_addr = '0x230fd760'  # debug
-    print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
+    while True:
+        rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type)
+        # rnd_addr = '0x230fd760'  # debug
+        print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
 
-    target_addr = rnd_addr
-    mem_list = []
-    addr_int = int(target_addr, 16)
-    loop_size = max(loop_size, 64)
-    if 'matmul' in func_type:
-        loop_size = 16  # for simplicity
-    size = loop_size * 4
-    for step in range(0, size, 4):  # the smallest unit is 4 bytes
-        m_addr = hex(addr_int + step)
-        mem_list.append(m_addr)
-    set_tainted(mem_list)
-    if not os.path.exists(slice_log):
-        reverse_taint(rev_log, slice_log)
-    else:
-        print('{} already exists.'.format(slice_log))
+        target_addr = rnd_addr
+        mem_list = []
+        addr_int = int(target_addr, 16)
+        loop_size = max(loop_size, 64)
+        if 'matmul' in func_type:
+            loop_size = 16  # for simplicity
+        size = loop_size * 4
+        for step in range(0, size, 4):  # the smallest unit is 4 bytes
+            m_addr = hex(addr_int + step)
+            mem_list.append(m_addr)
+        set_tainted(mem_list)
+        if not os.path.exists(slice_log):
+            reverse_taint(rev_log, slice_log)
+        else:
+            print('{} already exists.'.format(slice_log))
+
+        if os.path.getsize(slice_log) > (1024 * 1):  # 5kb, any conv/dense slice log should be larger than this
+            break  # if the size of slice log is too small, it indicates a inappropriate rnd_addr has been chosed
+    
     logger.debug(' slice_log {}\n rnd_addr {}\n loop_size {}\n start_addr {}\n end_addr {}\n'.format(slice_log, rnd_addr, loop_size, start_addr, end_addr))
     return slice_log, rnd_addr, loop_size, start_addr, end_addr
 

@@ -469,7 +469,7 @@ def generate_symbolic_expression(func_name: str, inst_log_path: str, exp_log_pat
 
 def recover_shape(func_name: str, mem_exp_log: str,
                   mem_read_log_path: str, mem_write_log_path: str,
-                  prog_path: str, data_path: str, func_type='conv2d'):
+                  prog_path: str, data_path: str, func_type='conv2d', func_info=[]):
     global addr2param
     addr2param = json_to_dict('./addr2param.json')
 
@@ -523,7 +523,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
         if filter_shape[0] == 0:
             assert False, ("failed to predict the filter shape. \n"
                            "Sometimes this will happen, mainly because implicit padding in Glow binary.\n"
-                           "In such case, you may delete the log file corresponding to current function, and retry again.\n"
+                           "In such case, you may delete the slice log file corresponding to current function, and try again.\n"
                            "the trace_filter will randomly pick an address again."
                            )
         return filter_shape, input_shape, output_shape, with_relu
@@ -531,6 +531,15 @@ def recover_shape(func_name: str, mem_exp_log: str,
         input_size, output_size = explain_glow_dense_result(mem_exp_log, write_mem_regions)
         return output_size, input_size
     elif 'add' in func_type:
+        if len(read_mem_regions) == 1:
+            # split the read region
+            input_addrs = [ int(x, 16) for x in func_info[3]]
+            assert len(input_addrs) == 2, "what if the number of inputs for 'add' is {}".format(len(input_addrs))
+            large_addr = max(input_addrs)
+            addr1 = read_mem_regions[0][0]
+            addr2 = read_mem_regions[0][1]
+            assert addr1 < large_addr < addr2, 'what if the small_addr is not inside the read_mem_region'
+            read_mem_regions = [[addr1, large_addr], [large_addr, addr2]]
         if read_mem_regions[0][1] - read_mem_regions[0][0] == read_mem_regions[1][1] - read_mem_regions[1][0]:
             # the case of add layer after dense/fully-connected layer
             return (read_mem_regions[0][1] - read_mem_regions[0][0]) / 4
@@ -619,7 +628,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label) and '0013' in name:
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()

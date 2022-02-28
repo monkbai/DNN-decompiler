@@ -538,6 +538,11 @@ def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
         print('compiler not supported:', compiler)
         exit(-1)
         return
+    assert len(offset_list) != 0, ("the symbolic expression is not corectly genreated.\n"
+                                   "It is verly likely due to the randome target address is not correctly picked.\n"
+                                   "You may want to delete the corresponding *_slice.log file and try again.\n"
+                                   "Hopefully, a new target address picked by trace_filter will solve this.\n"
+                                  )
     start_addr = min(offset_list)
     for i in range(len(offset_list)):
         offset_list[i] = (offset_list[i] - start_addr) / 4
