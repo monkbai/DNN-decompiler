@@ -7,6 +7,7 @@ import math
 import trace_filter
 import utils
 import se_engine
+from utils import list_to_json, dict_to_json, json_to_dict, json_to_list
 import logging
 from fused_trace import fuse_batchnorm
 print('get logger: {}'.format('decompiler.'+__name__))
@@ -179,8 +180,10 @@ if __name__ == '__main__':
                 break
         print(name)
         print(result)
-    #exit(0)
     
+    list_to_json(topo_list, './topo_list.json')
+    dict_to_json(func_meta_data, './meta_data.json')
+
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================
@@ -215,7 +218,7 @@ if __name__ == '__main__':
             meta_data[6] = 1
         if meta_data[6]:
             print(meta_data)
-    
+    dict_to_json(func_meta_data, './new_meta_data.json')
     # (name, shape, fused_func, type, padding, stride, param_index)
     # func_meta_data = [('0028.txt', (64, 3, 7, 7), '0x4022b0', 'conv2d', 3, 2, 1),
     #                   ('0051.txt', (64, 64, 3, 3), '0x408330', 'conv2d', 1, 1, 1),
