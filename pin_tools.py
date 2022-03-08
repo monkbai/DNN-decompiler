@@ -61,10 +61,12 @@ inst_trace_cmd = "time " + \
 timeout_inst_trace_cmd = "time timeout 15s " + \
                          pin_home + "pin -t " + \
                          mypintool_dir + "obj-intel64/InstTrace.so -o {} -start {} -end {} -- {} {}"
-mem_read_log_cmd = "time " + pin_home + "pin -t " + \
-                   mypintool_dir + "obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
+timeout_mem_write_log_cmd = "time timeout 15s " + pin_home + "pin -t " + \
+                            mypintool_dir + "obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
 mem_write_log_cmd = "time " + pin_home + "pin -t " + \
                     mypintool_dir + "obj-intel64/MemoryWrite.so -o {} -start {} -end {} -- {} {}"
+mem_read_log_cmd = "time " + pin_home + "pin -t " + \
+                   mypintool_dir + "obj-intel64/MemoryRead.so -o {} -start {} -end {} -- {} {}"
 mem_dump_log_cmd = "time " + pin_home + "pin -t " + \
                    mypintool_dir + "obj-intel64/MemoryDump.so -o {} -length {} -dump_point {} -reg_num {} -- {} {}"
 mem_dump_2_log_cmd = "time " + pin_home + "pin -t " + \
@@ -209,7 +211,7 @@ def mem_read_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, 
     project_dir = project_dir_backup
 
 
-def mem_write_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str):
+def mem_write_log(log_path: str, start_addr: str, end_addr: str, prog_path: str, data_path: str, timeout=False):
     global project_dir
     project_dir_backup = project_dir
     project_dir = mypintool_dir
@@ -221,7 +223,10 @@ def mem_write_log(log_path: str, start_addr: str, end_addr: str, prog_path: str,
     logger.info("Mem Write Logging Start:" + localtime)
 
     start_time = time.time()
-    status, output = cmd(mem_write_log_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
+    if timeout:
+        status, output = cmd(timeout_mem_write_log_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
+    else:
+        status, output = cmd(mem_write_log_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     if status != 0:
         print(output)
     end_time = time.time()

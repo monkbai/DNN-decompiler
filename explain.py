@@ -809,7 +809,7 @@ def explain_tvm_dense_result(exp_log_path: str, mem_read_regions: list, mem_writ
         input_size = int((input_mem[1] - input_mem[0]) / 4)
     else:
         input_size = exp.count('*')
-        if input_size == exp.count('16 *'):
+        if input_size == exp.count('16 *'):  # why use this heuristic?
             input_size *= 4
         elif input_size == exp.count('32 *'):
             input_size *= 8
