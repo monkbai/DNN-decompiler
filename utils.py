@@ -697,7 +697,7 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
             float_array = convert_dwords2float(dw_txt, dwords_len)
 
             w = np.asarray(float_array)
-            if len(special_layout) == 5:
+            if len(special_layout) == 6:
                 w = w.reshape(special_layout)
                 w = np.transpose(w, (0, 5, 1, 4, 2, 3))
                 w = w.reshape(w_shape)
@@ -867,6 +867,26 @@ def extract_params_general(prog_path: str, in_data: str, w_shape: tuple, dump_po
 
 
 if __name__ == '__main__':
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O3/vgg16_tvm_O3_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O3/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O3/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O3/step1.txt"
+
+    tmp_log_path = './inst_trace.log'
+    exp_log_path = './mem_exp.log'
+    mem_read_log_path = './mem_read.log'
+    mem_write_log_path = './mem_write.log'
+    mem_dump_log_path = 'mem_dump.log'
+    w_shape = [64, 3, 3, 3]
+    dump_point = "0x426f90"
+    func_name = "0070.txt"
+    func_type = 'conv2d'
+    data_index = 1
+    layout_shape = [2, 1, 3, 3, 3, 32]
+    extract_params_tvm(prog_path, in_data, w_shape, dump_point, mem_dump_log_path, func_name,
+                                 func_type=func_type, data_idx=data_index, special_layout=layout_shape)
+
+    exit(0)
     def tmp_handle_func_call(func_call_trace: str):
         id_list = []
         idx = 0
