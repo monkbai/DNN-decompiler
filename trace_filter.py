@@ -274,11 +274,11 @@ def reverse_taint(re_trace_log: str, new_trace: str):
                 rev_read_buf = copy.deepcopy(read_buf)
                 rev_read_buf.reverse()
                 idx += 1
-                if idx % 1000000 == 0:  # debug, million
-                    print(idx)
-                    print('len final_bufs {}'.format(len(final_bufs)))
-                    print('len tainted_mems {}'.format(len(tainted_mems)))
-                    print('len tainted_regs {}'.format(len(tainted_regs)))
+                # if idx % 1000000 == 0:  # debug, million
+                #     print(idx)
+                #     print('len final_bufs {}'.format(len(final_bufs)))
+                #     print('len tainted_mems {}'.format(len(tainted_mems)))
+                #     print('len tainted_regs {}'.format(len(tainted_regs)))
                 #     '''# debug
                 #     if len(final_bufs) > 1000000:
                 #         with open(new_trace_log, 'w') as f:

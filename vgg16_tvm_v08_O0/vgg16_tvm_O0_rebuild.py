@@ -35,69 +35,69 @@ class SE_VGG(nn.Module):
 
         # block 1
         net.append(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1, stride=1))  # 0
-        set_weights(net[0], './0064.weights_0.json')
-        set_biases(net[0], './0019.biases_0.json')
+        set_weights(net[0], './0049.weights_0.json')
+        set_biases(net[0], './0031.biases_0.json')
         net.append(nn.ReLU())  # 1
         # the input channels is the output channels of previous conv2d layer
         net.append(nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1, stride=1))  # 2
-        set_weights(net[2], './0069.weights_0.json')
-        set_biases(net[2], './0019.biases_1.json')
+        set_weights(net[2], './0055.weights_0.json')
+        set_biases(net[2], './0031.biases_1.json')
         net.append(nn.ReLU())  # 3
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 4
 
         # block 2
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1))  # 5
-        set_weights(net[5], './0081.weights_0.json')
-        set_biases(net[5], './0050.biases_0.json')
+        set_weights(net[5], './0061.weights_0.json')
+        set_biases(net[5], './0034.biases_0.json')
         net.append(nn.ReLU())  # 6
         net.append(nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, stride=1, padding=1))  # 7
-        set_weights(net[7], './0103.weights_0.json')
-        set_biases(net[7], './0050.biases_1.json')
+        set_weights(net[7], './0067.weights_0.json')
+        set_biases(net[7], './0034.biases_1.json')
         net.append(nn.ReLU())  # 8
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 9
 
         # block 3
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1, stride=1))  # 10
-        set_weights(net[10], './0110.weights_0.json')
-        set_biases(net[10], './0105.biases_0.json')
+        set_weights(net[10], './0073.weights_0.json')
+        set_biases(net[10], './0037.biases_0.json')
         net.append(nn.ReLU())  # 11
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, stride=1))  # 12
-        set_weights(net[12], './0094.weights_0.json')
-        set_biases(net[12], './0105.biases_1.json')
+        set_weights(net[12], './0079.weights_0.json')
+        set_biases(net[12], './0037.biases_1.json')
         net.append(nn.ReLU())  # 13
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, stride=1))  # 14
-        set_weights(net[14], './0094.weights_1.json')
-        set_biases(net[14], './0105.biases_2.json')
+        set_weights(net[14], './0079.weights_1.json')
+        set_biases(net[14], './0037.biases_2.json')
         net.append(nn.ReLU())  # 15
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 16
 
         # block 4
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1, stride=1))  # 17
-        set_weights(net[17], './0030.weights_0.json')
-        set_biases(net[17], './0036.biases_0.json')
+        set_weights(net[17], './0085.weights_0.json')
+        set_biases(net[17], './0040.biases_0.json')
         net.append(nn.ReLU())  # 18
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 19
-        set_weights(net[19], './0057.weights_0.json')
-        set_biases(net[19], './0036.biases_1.json')
+        set_weights(net[19], './0091.weights_0.json')
+        set_biases(net[19], './0040.biases_1.json')
         net.append(nn.ReLU())  # 20
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 21
-        set_weights(net[21], './0057.weights_1.json')
-        set_biases(net[21], './0036.biases_2.json')
+        set_weights(net[21], './0091.weights_1.json')
+        set_biases(net[21], './0040.biases_2.json')
         net.append(nn.ReLU())  # 22
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 23
 
         # block 5
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 24
-        set_weights(net[24], './0074.weights_0.json')
-        set_biases(net[24], './0025.biases_0.json')
+        set_weights(net[24], './0097.weights_0.json')
+        set_biases(net[24], './0043.biases_0.json')
         net.append(nn.ReLU())  # 25
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 26
-        set_weights(net[26], './0074.weights_1.json')
-        set_biases(net[26], './0025.biases_1.json')
+        set_weights(net[26], './0097.weights_1.json')
+        set_biases(net[26], './0043.biases_1.json')
         net.append(nn.ReLU())  # 27
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 28
-        set_weights(net[28], './0074.weights_2.json')
-        set_biases(net[28], './0025.biases_2.json')
+        set_weights(net[28], './0097.weights_2.json')
+        set_biases(net[28], './0043.biases_2.json')
         net.append(nn.ReLU())  # 29
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 30
 
@@ -110,20 +110,20 @@ class SE_VGG(nn.Module):
         #print(type(classifier[0].weight))
         #print(classifier[0].weight.shape)
         #print(classifier[0].bias.shape)
-        set_weights(classifier[-1], './0040.dense_weights_0.json')
-        set_biases(classifier[-1], './0046.biases_0.json')
+        set_weights(classifier[-1], './0100.dense_weights_0.json')
+        set_biases(classifier[-1], './0020.biases_0.json')
         #print(classifier[0].bias.shape)
         #print(classifier[0].bias)
         classifier.append(nn.ReLU())
         # classifier.append(nn.Dropout(p=0.5))
         classifier.append(nn.Linear(in_features=4096, out_features=4096))
-        set_weights(classifier[-1], './0038.dense_weights_0.json')
-        set_biases(classifier[-1], './0046.biases_1.json')
+        set_weights(classifier[-1], './0103.dense_weights_0.json')
+        set_biases(classifier[-1], './0020.biases_1.json')
         classifier.append(nn.ReLU())
         # classifier.append(nn.Dropout(p=0.5))
         classifier.append(nn.Linear(in_features=4096, out_features=self.num_classes))
-        set_weights(classifier[-1], './0042.dense_weights_0.json')
-        set_biases(classifier[-1], './0034.biases_0.json')
+        set_weights(classifier[-1], './0106.dense_weights_0.json')
+        set_biases(classifier[-1], './0022.biases_0.json')
 
         # add classifier into class property
         self.classifier = nn.Sequential(*classifier)
@@ -137,7 +137,7 @@ class SE_VGG(nn.Module):
 
 if __name__ == "__main__":
     # x = torch.rand(size=(1, 3, 224, 224))
-    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_tvm_O0/cat.bin", 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/vgg16_tvm_O0/cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)
