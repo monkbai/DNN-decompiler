@@ -452,7 +452,7 @@ def generate_inst_trace(func_name: str, log_path: str, prog_path, data_path: str
     inst_trace_log(log_path, start_addr, end_addr, prog_path, data_path, timeout)
 
 
-def generate_symbolic_expression(func_name: str, inst_log_path: str, exp_log_path: str, max_inst=5000000):
+def generate_symbolic_expression(func_name: str, inst_log_path: str, exp_log_path: str, max_inst=10000000):
     func_asm_path = os.path.join(funcs_dir, func_name)
     func_asm_path = os.path.abspath(func_asm_path)
 

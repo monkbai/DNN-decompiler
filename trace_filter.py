@@ -75,7 +75,7 @@ def reverse_trace(original_trace: str, new_trace: str):
         print('{} already exists.'.format(new_trace))
 
 
-def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str, compiler='glow', func_type='conv'):
+def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str, compiler='glow', func_type='conv', func_info=[]):
     global timeout_flag
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
@@ -89,12 +89,20 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     
     utils.mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, in_data, timeout=timeout_flag)
     write_mem_regions = utils.memory_slices(mem_write_log_path)
-    if compiler == 'glow':
-        out_mem = explain.biggest_region(write_mem_regions)
-    elif compiler == 'tvm' and len(write_mem_regions) > 5:
-        out_mem = explain.smallest_region(write_mem_regions)
-    elif compiler == 'tvm' and len(write_mem_regions) <= 5:
-        out_mem = explain.biggest_last_region(write_mem_regions)
+    print('debug (write_mem_regions):', write_mem_regions)
+    print('debug (func_info):', func_info)
+    output_addr = int(func_info[4], 16)
+    out_mem = (0, 0)
+    for mem_blk in write_mem_regions:
+        if mem_blk[0] <= output_addr <= mem_blk[1]:
+            out_mem = mem_blk
+    assert out_mem[0] != 0, "failed to identify the output memory block. write_mem_regions: {}, func_info: {}.".format(write_mem_regions, func_info)
+    # if compiler == 'glow':
+    #     out_mem = explain.biggest_region(write_mem_regions)
+    # elif compiler == 'tvm' and len(write_mem_regions) > 5:
+    #     out_mem = explain.smallest_region(write_mem_regions)
+    # elif compiler == 'tvm' and len(write_mem_regions) <= 5:
+    #     out_mem = explain.biggest_last_region(write_mem_regions)
     '''
     # this optimization does not work
     if len(early_stop)!=0 and compiler == 'glow':
@@ -115,13 +123,13 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     return rnd_addr, loop_size
 
 
-def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv'):
+def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv', func_info=[]):
     # Generate trace
     rev_log_path = log_path.replace('.log', '_rev.log')
     start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path, compiler, func_type)
     # Random pick a target address
     tmp_mem_write_log = './tmp_mem_write.log'
-    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler, func_type)
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler, func_type, func_info=func_info)
     # Reverse trace
     reverse_trace(log_path, rev_log_path)
     logger.debug('log_path: {}, reverse_log_path: {}'.format(log_path, rev_log_path))
@@ -670,7 +678,7 @@ def handle_not_implemented(opcode: str, operands: list):
 # Interface
 #
 # ===============================================
-def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv'):
+def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv', func_info=[]):
     clear_state()
 
     asm_path = os.path.abspath(asm_path)
@@ -683,7 +691,7 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
         print('{} already exists.'.format(slice_log))
         return slice_log, 'unknown', -1, 'unknown', 'unknown'
     while True:
-        rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type)
+        rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type, func_info=func_info)
         # rnd_addr = '0x230fd760'  # debug
         print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
 

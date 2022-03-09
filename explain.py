@@ -797,7 +797,7 @@ def explain_tvm_dense_result(exp_log_path: str, mem_read_regions: list, mem_writ
     if len(name) == 0:
         name, exp = choose_one_16bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
-        print('explain: explain_tvm_dense_result(): failed to choose expression')
+        assert False, ('explain: explain_tvm_dense_result(): failed to choose expression')
         exit(-1)
     if len(func_info) > 0:
         input_start = func_info[3][0]
