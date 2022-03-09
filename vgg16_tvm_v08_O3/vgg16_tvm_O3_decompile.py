@@ -233,6 +233,9 @@ if __name__ == '__main__':
             layout_shape = fun_data[1][-1]
             w_shape = w_shape[0]
             layout_shape = [int(layout_shape[i]) for i in range(len(layout_shape))]
+        elif 'dense' in func_type:
+            layout_shape = (int(w_shape[0]/8), int(w_shape[1]), 8)  # TODO: should we write another rule for this?
+        
         w_shape = [int(w_shape[i]) for i in range(len(w_shape))]
         logger.info('Extract Parameter for {}'.format(func_name))
         print(func_name + " " + func_type)

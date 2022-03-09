@@ -89,8 +89,8 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     
     utils.mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, in_data, timeout=timeout_flag)
     write_mem_regions = utils.memory_slices(mem_write_log_path)
-    print('debug (write_mem_regions):', write_mem_regions)
-    print('debug (func_info):', func_info)
+    # print('debug (write_mem_regions):', write_mem_regions)
+    # print('debug (func_info):', func_info)
     output_addr = int(func_info[4], 16)
     out_mem = (0, 0)
     for mem_blk in write_mem_regions:
