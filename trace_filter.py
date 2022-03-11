@@ -51,7 +51,7 @@ def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str, co
     asm_path = os.path.abspath(asm_path)
     early_stop, loop_count = get_early_stop(asm_path, compiler, func_type)
     start_addr, end_addr = utils.get_func_range(asm_path)
-    if len(early_stop) > 0 and compiler!='glow':  # for matmul/dense layer, no need to early stop
+    if len(early_stop) > 0 or compiler!='glow':  # for matmul/dense layer, no need to early stop
         end_addr = early_stop
 
     log_path = os.path.abspath(out_log_path)
@@ -91,18 +91,20 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     write_mem_regions = utils.memory_slices(mem_write_log_path)
     # print('debug (write_mem_regions):', write_mem_regions)
     # print('debug (func_info):', func_info)
-    output_addr = int(func_info[4], 16)
-    out_mem = (0, 0)
-    for mem_blk in write_mem_regions:
-        if mem_blk[0] <= output_addr <= mem_blk[1]:
-            out_mem = mem_blk
-    assert out_mem[0] != 0, "failed to identify the output memory block. write_mem_regions: {}, func_info: {}.".format(write_mem_regions, func_info)
-    # if compiler == 'glow':
-    #     out_mem = explain.biggest_region(write_mem_regions)
-    # elif compiler == 'tvm' and len(write_mem_regions) > 5:
-    #     out_mem = explain.smallest_region(write_mem_regions)
-    # elif compiler == 'tvm' and len(write_mem_regions) <= 5:
-    #     out_mem = explain.biggest_last_region(write_mem_regions)
+    if len(func_info) != 0:
+        output_addr = int(func_info[4], 16)
+        out_mem = (0, 0)
+        for mem_blk in write_mem_regions:
+            if mem_blk[0] <= output_addr <= mem_blk[1]:
+                out_mem = mem_blk
+        assert out_mem[0] != 0, "failed to identify the output memory block. write_mem_regions: {}, func_info: {}.".format(write_mem_regions, func_info)
+    else:
+        if compiler == 'glow':
+            out_mem = explain.biggest_region(write_mem_regions)
+        elif compiler == 'tvm' and len(write_mem_regions) > 5:
+            out_mem = explain.smallest_region(write_mem_regions)
+        elif compiler == 'tvm' and len(write_mem_regions) <= 5:
+            out_mem = explain.biggest_last_region(write_mem_regions)
     '''
     # this optimization does not work
     if len(early_stop)!=0 and compiler == 'glow':
