@@ -859,7 +859,8 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
             exp1 = lines[idx]
             idx += 1
             if out_mem[0] <= int(name1.split(',')[0].strip(), 16) <= out_mem[1] and \
-                    int(math.sqrt(exp1.count('max')))**2 == exp1.count('max'):
+                    int(math.sqrt(exp1.count('max')))**2 == exp1.count('max') and \
+                        name1.split(',')[1] == lines[idx].split(',')[1]:  # ,4 and ,16 may appear at the same time
                 break
         name2 = lines[idx]
         idx += 1
