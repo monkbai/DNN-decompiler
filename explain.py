@@ -937,7 +937,14 @@ def explain_tvm_avgpool_result(exp_log_path: str, mem_read_regions: list, mem_wr
             kernel_size = (h, len(offset_list)/h)  # TODO: check resnet
             break
     '''
-    kernel_size = (math.sqrt(kernel_size[0]), kernel_size[1])
+    dimension_flag = 1
+    for i in range(len(offset_list) - 1):
+        if offset_list[i+1] - offset_list[i] != stride_size:
+            dimension_flag = 2
+    if dimension_flag == 2:
+        kernel_size = (math.sqrt(kernel_size[0]), kernel_size[1])
+    else:
+        pass
     return kernel_size, 1
 
 

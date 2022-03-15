@@ -1,10 +1,11 @@
 #! /usr/bin/python3
 import os
 import sys
-sys.path.append("../..")
+sys.path.append("../")
 import math
-from scripts import utils
-from scripts import pin_tools
+import utils
+from utils import list_to_json, dict_to_json, json_to_dict, json_to_list
+import pin_tools
 
 
 if __name__ == '__main__':
@@ -27,14 +28,18 @@ if __name__ == '__main__':
     # ===============================
     # Recover the Computational Graph
     # ===============================
-    # with parameters from entry functions
-    utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm', only_fused=True)
-    param_list = utils.print_layer_label_tvm(log_path, only_fused=True)
-
     # without parameters, only start addresses
     utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm', only_fused=False)
     utils.print_layer_label_tvm(log_path, only_fused=False)
 
+    # with parameters from entry functions
+    utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm', only_fused=True)
+    param_list = utils.print_layer_label_tvm(log_path, only_fused=True)
+    # print(param_list)
+    func_meta_data, topo_list = utils.print_input_id(log_path)  
+    # print(func_meta_data)
+    # print(topo_list)
+    
     # ===============================
     # Recover other layers
     # ===============================
@@ -55,13 +60,23 @@ if __name__ == '__main__':
                                         prog_path, in_data, func_type=func_type)
         print(shape)
         if 'embedding' in func_type:
-            embedding_start = int('0x41ec40', 16)
+            embedding_start = int('0x41ec40', 16)  # get fomr topo_list
             for param in param_list:
                 if param > embedding_start:
                     dict_size = (param - embedding_start)/4/shape
                     dict_size = math.floor(dict_size)
                     print('embedding dict size: {}'.format(dict_size))
                     break
+        for i in range(len(func_meta_data)):
+            if func_meta_data[i][0] == func_name:
+                if 'embedding' in func_type:
+                    func_meta_data[i][1] = (dict_size, shape)
+                else:
+                    func_meta_data[i][1] = shape
+                break
+    
+    list_to_json(topo_list, './topo_list.json')
+    dict_to_json(func_meta_data, './meta_data.json')
 
     # ===============================
     # Extract Parameters
