@@ -1037,7 +1037,15 @@ def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_
         addr = (addr - min_addr) / 4
         offset_list.append(addr)
     # TODO: is it possible that stride != kernel ?
-    return math.sqrt(len(offset_list)), 1
+    dimension_flag = 1
+    offset_step = offset_list[1] - offset_list[0]
+    for i in range(len(offset_list) - 1):
+        if offset_list[i+1] - offset_list[i] != offset_step:
+            dimension_flag = 2
+    if dimension_flag == 2:
+        return math.sqrt(len(offset_list)), 1
+    else:
+        return len(offset_list), 1
 
 
 if __name__ == '__main__':
