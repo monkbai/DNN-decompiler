@@ -1,0 +1,9 @@
+{"take": ["param", "in", "out"],
+ "transpose": ["in", "out"],
+ "reshape": ["in", "out"],
+ "pad": ["in", "out"],
+ "avg_pool2d": ["in", "out"],
+ "squeeze": ["in", "out"],
+ "matmul": ["in", "param", "out"],
+ "add": ["param", "in", "out"],
+}
