@@ -80,19 +80,19 @@ class SE_VGG(nn.Module):
 
         # block 2
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1))  # 3
-        set_weights(net[-1], './0070.sub_406Ec0.weights_0.json')
+        set_weights(net[-1], './0070.sub_406EC0.weights_0.json')
         set_biases(net[-1], './0054.sub_404A90.params_0.json')
         net.append(nn.ReLU())  # 4
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 5
 
         # block 3
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1, stride=1))  # 10
-        set_weights(net[-1], './0046.sub_4040f0.weights_0.json')
-        set_biases(net[-1], './0052.sub_4047b0.params_0.json')
+        set_weights(net[-1], './0046.sub_4040F0.weights_0.json')
+        set_biases(net[-1], './0052.sub_4047B0.params_0.json')
         net.append(nn.ReLU())  # 11
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, stride=1))  # 12
-        set_weights(net[-1], './0057.sub_404Ee0.weights_0.json')
-        set_biases(net[-1], './0052.sub_4047b0.params_1.json')
+        set_weights(net[-1], './0057.sub_404EE0.weights_0.json')
+        set_biases(net[-1], './0052.sub_4047B0.params_1.json')
         net.append(nn.ReLU())  # 13
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 16
 
@@ -102,18 +102,18 @@ class SE_VGG(nn.Module):
         set_biases(net[-1], './0066.sub_406630.params_0.json')
         net.append(nn.ReLU())  # 18
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 19
-        set_weights(net[-1], './0051.sub_4045e0.weights_0.json')
+        set_weights(net[-1], './0051.sub_4045E0.weights_0.json')
         set_biases(net[-1], './0066.sub_406630.params_1.json')
         net.append(nn.ReLU())  # 20
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 23
 
         # block 5
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 24
-        set_weights(net[-1], './0044.sub_403Ed0.weights_0.json')
+        set_weights(net[-1], './0044.sub_403ED0.weights_0.json')
         set_biases(net[-1], './0056.sub_404D70.params_0.json')
         net.append(nn.ReLU())  # 25
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 26
-        set_weights(net[-1], './0044.sub_403Ed0.weights_1.json')
+        set_weights(net[-1], './0044.sub_403ED0.weights_1.json')
         set_biases(net[-1], './0056.sub_404D70.params_1.json')
         net.append(nn.ReLU())  # 27
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 30
@@ -199,10 +199,10 @@ def validate():
 
 
 if __name__ == "__main__":
-    validate()
+    # validate()
 
     # x = torch.rand(size=(1, 3, 224, 224))
-    with open("cat2.bin", 'br') as f:
+    with open("cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)

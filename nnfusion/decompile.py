@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 import os
 import sys
-sys.path.append("../..")
-from scripts.pin_tools import nnfusion_conv, nnfusion_gemm, nnfusion_pool, nnfusion_trace, convert_dwords2float
-from scripts import utils
+sys.path.append("../")
+from pin_tools import nnfusion_conv, nnfusion_gemm, nnfusion_pool, nnfusion_trace, convert_dwords2float
+import utils
 import numpy as np
 import json
+import re
 import logging
 print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
@@ -44,15 +45,25 @@ def get_dict_name(func_offset: str):
             return name
 
 
+# def get_func_name(func_addr: str):
+#     if func_addr.startswith('0x'):
+#         func_addr = func_addr[2:]
+#     files = os.listdir(funcs_dir)
+#     func_addr = func_addr.upper()
+#     func_name = '_{}.txt'.format(func_addr)
+#     for file in files:
+#         if file.endswith(func_name):
+#             return os.path.join(funcs_dir, file)
 def get_func_name(func_addr: str):
-    if func_addr.startswith('0x'):
-        func_addr = func_addr[2:]
+    if not func_addr.startswith('0x'):
+        func_addr = '0x' + func_addr
+    func_addr = func_addr.lower()
     files = os.listdir(funcs_dir)
-    func_addr = func_addr.upper()
-    func_name = '_{}.txt'.format(func_addr)
-    for file in files:
-        if file.endswith(func_name):
-            return os.path.join(funcs_dir, file)
+    for f in files:
+        f_path = os.path.join(funcs_dir, f)
+        start_addr, end_addr = utils.get_func_range(f_path)
+        if start_addr == func_addr:
+            return f_path
 
 
 def get_all_operator():
@@ -112,7 +123,7 @@ def identify_operator(func_name: str):
                         pass
                         # callee_type = 'unknown'
         if len(callee_type) == 0:
-            callee_type = 'unknown'
+            callee_type = 'ignore'  # callee_type = 'unknown'
         if 'concurrency' in callee_type:
             func_ptr_list, asm_path_list = get_concurrency_func_ptr(func_name)
             print(func_ptr_list)
@@ -120,6 +131,9 @@ def identify_operator(func_name: str):
         # final label
         print('predict the operator type: {}'.format(callee_type))
         print(callee_addr_list)
+        if callee_type == 'Broadcast' or callee_type == 'Reshape' or callee_type == 'ignore':
+            return 
+        return [func_name[func_name.rfind('/')+1:], callee_type]
 
 
 def get_concurrency_func_ptr(op_file_path: str):
@@ -158,23 +172,75 @@ def simple_label(asm_path: str):
 
 
 # ----------------------------------------------------------
-
+pool_list = []
+conv_list = []
+gemm_list = []
 
 def get_shape_info():
+    global pool_list, conv_list, gemm_list
+    def get_pool_list(log_path: str):
+        pool_list = []
+        with open(log_path, 'r') as f:
+            log = f.read()
+            blks = log.split('\n\n')
+            for b in blks:
+                if 'MlasPool' in b:
+                    mat = re.search('KernelShape: ([0-9]+), ([0-9]+)', b)
+                    kernel = int(mat.group(1))
+                    mat = re.search('StrideShape: ([0-9]+), ([0-9]+)', b)
+                    stride = int(mat.group(1))
+                    pool_list.append([kernel, stride])
+        return pool_list
+    def get_conv_list(log_path: str):
+        conv_list = []
+        with open(log_path, 'r') as f:
+            log = f.read()
+            blks = log.split('\n\n')
+            for b in blks:
+                if 'MlasConv' in b:
+                    mat = re.search('output channels: ([0-9]+)', b)
+                    out_channels = int(mat.group(1))
+                    mat = re.search('dimensions: ([0-9]+)\ninput', b)
+                    dims = int(mat.group(1))
+                    mat = re.search('kernel shape: ([0-9]+), ([0-9]+)', b)
+                    ker_shape = int(mat.group(1))
+
+                    mat = re.search('padding: ([0-9]+), ([0-9]+)', b)
+                    padding = int(mat.group(1))
+                    mat = re.search('stride shape: ([0-9]+), ([0-9]+)', b)
+                    stride = int(mat.group(1))
+                    conv_list.append([(out_channels, dims, ker_shape, ker_shape), padding, stride])
+        return conv_list
+    def get_gemm_list(log_path: str):
+        gemm_list = []
+        with open(log_path, 'r') as f:
+            log = f.read()
+            blks = log.split('\n\n')
+            for b in blks:
+                if 'MlasGemm' in b:
+                    mat = re.search('output: ([0-9]+)', b)
+                    out_shape = int(mat.group(1))
+                    mat = re.search('input: ([0-9]+)', b)
+                    in_shape = int(mat.group(1))
+                    gemm_list.append([in_shape, out_shape])
+        return gemm_list
     pool_addr_list = [runtime_addr(addr_dict['MlasPool_addr'])]
     pool_log_path = './pool_info.log'
     pool_log_path = os.path.abspath(pool_log_path)
     nnfusion_pool(prog_path, data_path, pool_addr_list, pool_log_path)
+    pool_list = get_pool_list(pool_log_path)
     # return
     gemm_addr_list = [runtime_addr(addr_dict['MlasGemm_addr'])]
     gemm_log_path = './gemm_info.log'
     gemm_log_path = os.path.abspath(gemm_log_path)
     nnfusion_gemm(prog_path, data_path, gemm_addr_list, gemm_log_path)
+    gemm_list = get_gemm_list(gemm_log_path)
     # return
     conv_addr_list = [runtime_addr(addr_dict['MlasConvPrepare_addr'])]
     conv_log_path = './conv_info.log'
     conv_log_path = os.path.abspath(conv_log_path)
     nnfusion_conv(prog_path, data_path, conv_addr_list, conv_log_path)
+    conv_list = get_conv_list(conv_log_path)
 
 
 def get_func_trace(op_list: list):
@@ -191,7 +257,7 @@ def get_func_trace(op_list: list):
     nnfusion_trace(prog_path, data_path, fun_addr_list, trace_log_path)
 
 
-def extract_param():
+def extract_param(overall_list: list):
     func_meta_data = [
                       ('0068.sub_406A50.txt', (64, 3, 3, 3), '0x406A50', 'conv2d'),
                       ('0055.sub_404C00.txt', (1, 64), '0x404C00', 'add'),
@@ -218,11 +284,36 @@ def extract_param():
                       ('0074.sub_407760.txt', (1, 1001), '0x407760', 'add'),
 
                       ]
+    func_meta_data = [ [] for i in range(len(overall_list))]
+    pool_idx = conv_idx = 0
+    gemm_idx = len(gemm_list) - 1
+    for i in range(len(overall_list)):
+        f_name, op_type = overall_list[i]
+        start_addr, end_addr = utils.get_func_range(os.path.join(funcs_dir, f_name))
+        if op_type == 'Conv':
+            func_meta_data[i] = [f_name, conv_list[conv_idx][0], start_addr, 'conv2d']
+            conv_idx += 1
+        elif 'Add' in op_type and 'Conv' in overall_list[i-1][1]:
+            func_meta_data[i] = [f_name, (1, conv_list[conv_idx-1][0][0]), start_addr, 'add']
+        
+    for i in range(len(overall_list)-1, -1, -1):
+        f_name, op_type = overall_list[i]
+        start_addr, end_addr = utils.get_func_range(os.path.join(funcs_dir, f_name))
+        if op_type == 'Dense':
+            func_meta_data[i] = [f_name, gemm_list[gemm_idx], start_addr, 'dense']
+            gemm_idx -= 1
+        elif 'Add' in op_type and 'Dense' in overall_list[i-1][1]:
+            func_meta_data[i] = [f_name, (1, gemm_list[gemm_idx][1]), start_addr, 'add']
+
+    print(func_meta_data)
+
     in_data = data_path
     mem_dump_log_path = './mem_dump.log'
     mem_dump_log_path = os.path.abspath(mem_dump_log_path)
     utils.funcs_dir = funcs_dir
     for fun_data in func_meta_data:
+        if len(fun_data) == 0:
+            continue
         func_name = fun_data[0]
         w_shape = fun_data[1]
         dump_point = fun_data[2]
@@ -321,29 +412,32 @@ def convert_txt_to_float(txt_path: str, float_len: int):
 
 
 if __name__ == '__main__':
-    read_param()
-    exit(0)
+    # read_param()
+    # exit(0)
     # ------------------
     
     # ------------------
     
     # Step 1
-    #get_shape_info()  # get the shape information of conv, pool and gemm
+    get_shape_info()  # get the shape information of conv, pool and gemm
     # ------------------
 
     # Step 2
-    #operator_list = get_all_operator()  # the list of operaotrs
+    operator_list = get_all_operator()  # the list of operaotrs
     # print(operator_list)
-    #get_func_trace(operator_list)  # log the tracec of operator
+    get_func_trace(operator_list)  # log the tracec of operator
     # ------------------
 
     # Step 3
-    #for op_func_path in operator_list:  # identify operators
-    #    print('\n{}'.format(op_func_path))
-    #    if op_func_path:
-    #        identify_operator(op_func_path)
+    overall_list = []
+    for op_func_path in operator_list:  # identify operators
+       print('\n{}'.format(op_func_path))
+       if op_func_path:
+            callee_type = identify_operator(op_func_path)
+            if callee_type:
+                overall_list.append(callee_type)
     # ------------------
 
     # Step 4 Extract Parameters
-    #extract_param()
+    extract_param(overall_list)
     
