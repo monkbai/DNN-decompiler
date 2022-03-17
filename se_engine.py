@@ -340,11 +340,13 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             pass
         elif mnemonic.startswith('data16'):
             pass
+        elif mnemonic == 'mul':
+            pass
         else:
             if len(code_list) > 2 and ('[' in code_list[1] or '[' in code_list[2]):
-                print(log_line)
+                assert False, "Instruction not implemented:\n{}".format(log_line)
             else:
-                print(log_line)  # ret,
+                assert False, "Instruction not implemented:\n{}\ncode_list:{}".format(log_line, code_list)  # ret,
 
     # show the result
 
