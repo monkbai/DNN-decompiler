@@ -1042,3 +1042,16 @@ def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_
 if __name__ == '__main__':
     pass
     # explain_tvm_conv2d_result('./mem_log.txt')
+    import pin_tools
+    import mem_slices
+    prog_path = '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_tvm_O3_strip'
+    data_path = '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/cat.bin'
+    start_addr = '0x40b450'
+    end_addr = '0x40d5d7'
+    mem_read_log_path = './mem_read.log'
+    mem_write_log_path = './mem_write.log'
+    pin_tools.mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
+    read_mem_regions = mem_slices.memory_slices(mem_read_log_path)
+    pin_tools.mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
+    write_mem_regions = mem_slices.memory_slices(mem_write_log_path)
+    explain_tvm_conv2d_result('./mem_exp.log', read_mem_regions, write_mem_regions, guess_stride=1, optimized=False)

@@ -156,7 +156,7 @@ def clear_mem_state():
 """ Represent each memory block with its address """
 
 
-def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_inst_num: int):
+def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_inst_num=5000000):
     logger.info('Symbolic Execution Start - {}'.format(func_asm_path))
     localtime = time.asctime( time.localtime(time.time()) )
     print ("Symbolic Execution Start", localtime)
@@ -452,6 +452,22 @@ def check_sub_mem(mem_addr: str, size: int):
     return None
 
 
+def check_merge_mem(mem_addr: str, size: int):
+    global mem_state
+    assert size == 16, "For the sake of safety, currently only support check merge_mem of size 16."
+    start_addr = int(mem_addr, 16)
+    first_key = hex(start_addr)+','+str(4)
+    if first_key not in mem_state.keys() or not mem_state[first_key].startswith('sub('):
+        return None
+    first_value = mem_state[first_key]  # type: first_value[str]
+    for sub_addr in range(start_addr, start_addr+16, 4):
+        sub_key = hex(sub_addr)+','+str(4)
+        if sub_key not in mem_state.keys() or mem_state[sub_key] != first_value:
+            return None
+    value = first_value[4:-1]
+    return value
+
+
 def xmm2reg(reg1: str, xmm2: str):
     global reg_state, xmm_regs
     reg_state[reg1] = xmm_regs[xmm2]
@@ -521,10 +537,13 @@ def mem2xmm(xmm_name: str, mem_addr: str, size: int):
     if mem_key in mem_state.keys():
         xmm_regs[xmm_name] = mem_state[mem_key]
     else:
-        value = check_sub_mem(mem_addr, size)
-        if value:
+        value1 = check_sub_mem(mem_addr, size)
+        value2 = None if size != 16 else check_merge_mem(mem_addr, size)
+        if value1:
             # print('impossible?')
-            xmm_regs[xmm_name] = 'sub({})'.format(value)
+            xmm_regs[xmm_name] = 'sub({})'.format(value1)
+        elif value2:
+            xmm_regs[xmm_name] = value2
         else:
             xmm_regs[xmm_name] = mem_key
 
@@ -724,7 +743,12 @@ def xmm_add_mem(xmm_name: str, mem_addr: str, size: int):
         # TODO: this is inaccurate
         if mem_key.startswith('0x7f'):  # or mem_key.startswith('0x4'):
             return
-        xmm_regs[xmm_name] = '({} + {})'.format(xmm_regs[xmm_name], mem_key)
+
+        value = check_sub_mem(mem_addr, size)
+        if value:
+            xmm_regs[xmm_name] = '({} + sub({}))'.format(xmm_regs[xmm_name], value)
+        else:
+            xmm_regs[xmm_name] = '({} + {})'.format(xmm_regs[xmm_name], mem_key)
 
 
 def xmm_sub_mem(xmm_name: str, mem_addr: str, size: int):
@@ -1397,5 +1421,8 @@ if __name__ == '__main__':
     # explain_tvm_conv2d_result('./mem_log.txt')
     # test()
     # test_glow_function()
-    lightweight_SymEx('/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/pinatrace.out')
-    explain.explain_tvm_conv2d_result('./mem_log.txt')
+    extern_functions = {'0x401120': 'memset'}
+    lightweight_SymEx("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_funcs/0060.txt",
+                      "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/0060_slice.log",
+                      "./mem_exp.log", max_inst_num=7000000)
+    # explain.explain_tvm_conv2d_result('./mem_log.txt')
