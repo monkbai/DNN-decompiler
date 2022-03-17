@@ -164,7 +164,7 @@ if __name__ == "__main__":
     # print(out)
     print(out.detach().numpy()[0, max_index])
 
-
+    exit(0)
     # Input to the model
     vgg.eval()
     batch_size = 1

@@ -9,16 +9,16 @@ import pin_tools
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_tvm_O0_funcs/"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_tvm_v08_O3_funcs/"
 
     # prepared in advance
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_tvm_O0"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_tvm_v08_O3"
     in_data = ''  # no input needed
-    label_file = './step1.txt'
+    label_file = '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_tvm_v08_O3_funcs/labels.txt'
     config_file = './config.json'
 
     # (tmp files) generated during analysis
-    log_path = './embedding_tvm_O0_func_call.log'
+    log_path = './embedding_tvm_O3_func_call.log'
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
     mem_read_log_path = './mem_read.log'
@@ -44,10 +44,10 @@ if __name__ == '__main__':
     # Recover other layers
     # ===============================
     func_data = {
-                 'embedding': '0037.sub_405A30.txt',  # take
-                 'avg_pool': '0025.sub_403330.txt',
-                 'matmul': '0031.sub_4046E0.txt',
-                 'add': '0019.sub_401D70.txt'
+                 'embedding': '0020.tvmgen_default_fused_less_add_where_take_transpose_reshape_nn_pad_compute_.txt',  # take
+                 'avg_pool': '0022.tvmgen_default_fused_nn_avg_pool2d_compute_.txt',
+                 'matmul': '0024.tvmgen_default_fused_nn_contrib_dense_pack_compute_.txt',
+                 'add': '0026.tvmgen_default_fused_reshape_add_compute_.txt'
                  }
 
     for func_type, func_name in func_data.items():
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                                         prog_path, in_data, func_type=func_type)
         print(shape)
         if 'embedding' in func_type:
-            embedding_start = int('0x41ec40', 16)  # get fomr topo_list
+            embedding_start = int('0x418ea0', 16)  # the start addrees can get from previous output
             for param in param_list:
                 if param > embedding_start:
                     dict_size = (param - embedding_start)/4/shape
@@ -77,15 +77,15 @@ if __name__ == '__main__':
     
     list_to_json(topo_list, './topo_list.json')
     dict_to_json(func_meta_data, './meta_data.json')
-
+    
     # ===============================
     # Extract Parameters
     # ===============================
-    # func_meta_data is collected from previous output
+    # addresses in func_meta_data are collected from previous output
     func_meta_data = [
-                      ('0037.sub_405A30.txt', (25006, 100), '0x405a30', '0x41ec40', 'embedding'),
-                      ('0031.sub_4046E0.txt', (1, 100), '0x4046e0', '0xdacc40', 'matmul'),
-                      ('0019.sub_401D70.txt', (1, 1), '0x401d70', '0x415440', 'add'),
+                      ('0020.tvmgen_default_fused_less_add_where_take_transpose_reshape_nn_pad_compute_.txt', (25006, 100), '0x401DB0', '0x418ea0', 'embedding'),
+                      ('0024.tvmgen_default_fused_nn_contrib_dense_pack_compute_.txt', (1, 100), '0x402990', '0xda7aa0', 'matmul'),
+                      ('0026.tvmgen_default_fused_reshape_add_compute_.txt', (1, 1), '0x402CF0', '0xda82a0', 'add'),
                       ]
     for fun_data in func_meta_data:
         func_name = fun_data[0]

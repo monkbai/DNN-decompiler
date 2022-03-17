@@ -57,12 +57,12 @@ def get_embedding_region(entry_func: str, next_func: str, src_list: list):
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_glow_funcs/"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022_funcs/"
 
     # prepared in advance
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_glow"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022"
     in_data = ''  # no input needed, hard coded in source code
-    label_file = './step1.txt'
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022_funcs/labels.txt"
     config_file = './config.json'
 
     # (tmp files) generated during analysis

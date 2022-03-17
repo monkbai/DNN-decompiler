@@ -73,48 +73,48 @@ class SE_VGG(nn.Module):
 
         # block 1
         net.append(nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, padding=1, stride=1))  # 0
-        set_weights(net[-1], './0068.sub_406A50.weights_0.json')
-        set_biases(net[-1], './0055.sub_404C00.params_0.json')
+        set_weights(net[-1], './0046.sub_404F50.weights_0.json')
+        set_biases(net[-1], './0075.sub_408A70.params_0.json')
         net.append(nn.ReLU())  # 1
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 2
 
         # block 2
         net.append(nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1))  # 3
-        set_weights(net[-1], './0070.sub_406EC0.weights_0.json')
-        set_biases(net[-1], './0054.sub_404A90.params_0.json')
+        set_weights(net[-1], './0047.sub_405110.weights_0.json')
+        set_biases(net[-1], './0071.sub_408230.params_0.json')
         net.append(nn.ReLU())  # 4
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 5
 
         # block 3
         net.append(nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1, stride=1))  # 10
-        set_weights(net[-1], './0046.sub_4040F0.weights_0.json')
-        set_biases(net[-1], './0052.sub_4047B0.params_0.json')
+        set_weights(net[-1], './0039.sub_404860.weights_0.json')
+        set_biases(net[-1], './0055.sub_405C10.params_0.json')
         net.append(nn.ReLU())  # 11
         net.append(nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, stride=1))  # 12
-        set_weights(net[-1], './0057.sub_404EE0.weights_0.json')
-        set_biases(net[-1], './0052.sub_4047B0.params_1.json')
+        set_weights(net[-1], './0049.sub_4053B0.weights_0.json')
+        set_biases(net[-1], './0055.sub_405C10.params_1.json')
         net.append(nn.ReLU())  # 13
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 16
 
         # block 4
         net.append(nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1, stride=1))  # 17
-        set_weights(net[-1], './0081.sub_408650.weights_0.json')
-        set_biases(net[-1], './0066.sub_406630.params_0.json')
+        set_weights(net[-1], './0044.sub_404CB0.weights_0.json')
+        set_biases(net[-1], './0084.sub_409DB0.params_0.json')
         net.append(nn.ReLU())  # 18
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 19
-        set_weights(net[-1], './0051.sub_4045E0.weights_0.json')
-        set_biases(net[-1], './0066.sub_406630.params_1.json')
+        set_weights(net[-1], './0043.sub_404AE0.weights_0.json')
+        set_biases(net[-1], './0084.sub_409DB0.params_1.json')
         net.append(nn.ReLU())  # 20
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 23
 
         # block 5
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 24
-        set_weights(net[-1], './0044.sub_403ED0.weights_0.json')
-        set_biases(net[-1], './0056.sub_404D70.params_0.json')
+        set_weights(net[-1], './0069.sub_407DB0.weights_0.json')
+        set_biases(net[-1], './0053.sub_405930.params_0.json')
         net.append(nn.ReLU())  # 25
         net.append(nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, stride=1))  # 26
-        set_weights(net[-1], './0044.sub_403ED0.weights_1.json')
-        set_biases(net[-1], './0056.sub_404D70.params_1.json')
+        set_weights(net[-1], './0069.sub_407DB0.weights_1.json')
+        set_biases(net[-1], './0053.sub_405930.params_1.json')
         net.append(nn.ReLU())  # 27
         net.append(nn.MaxPool2d(kernel_size=2, stride=2))  # 30
 
@@ -125,21 +125,21 @@ class SE_VGG(nn.Module):
         # define an empty container for Linear operations
         classifier = []
         classifier.append(nn.Linear(in_features=512 * 7 * 7, out_features=4096))
-        set_weights(classifier[-1], './0050.sub_404590.params_0.json')
+        set_weights(classifier[-1], './0042.sub_404A90.params_0.json')
         #print(classifier[-1].weight.shape)
-        set_biases(classifier[-1], './0049.sub_404460.params_0.json')
+        set_biases(classifier[-1], './0058.sub_4062E0.params_0.json')
         classifier.append(nn.ReLU())
 
         classifier.append(nn.Linear(in_features=4096, out_features=4096))
-        set_weights(classifier[-1], './0045.sub_4040A0.params_0.json')
-        set_biases(classifier[-1], './0049.sub_404460.params_1.json')
+        set_weights(classifier[-1], './0040.sub_404A30.params_0.json')
+        set_biases(classifier[-1], './0058.sub_4062E0.params_1.json')
         classifier.append(nn.ReLU())
 
         classifier.append(nn.Linear(in_features=4096, out_features=self.num_classes))
         #print(classifier[-1].weight.shape)
-        set_weights(classifier[-1], './0043.sub_403E80.params_0.json')
+        set_weights(classifier[-1], './0038.sub_404810.params_0.json')
         #print(classifier[-1].weight.shape)
-        set_biases(classifier[-1], './0074.sub_407760.params_0.json')
+        set_biases(classifier[-1], './0052.sub_4057C0.params_0.json')
 
         # add classifier into class property
         self.classifier = nn.Sequential(*classifier)

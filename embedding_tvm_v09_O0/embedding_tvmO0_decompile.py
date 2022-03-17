@@ -9,12 +9,12 @@ import pin_tools
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_tvm_O0_funcs/"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_tvm_v09_O0_funcs/"
 
     # prepared in advance
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding/embedding_tvm_O0"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_tvm_v09_O0"
     in_data = ''  # no input needed
-    label_file = './step1.txt'
+    label_file = '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_tvm_v09_O0_funcs/labels.txt'
     config_file = './config.json'
 
     # (tmp files) generated during analysis
@@ -44,10 +44,10 @@ if __name__ == '__main__':
     # Recover other layers
     # ===============================
     func_data = {
-                 'embedding': '0037.sub_405A30.txt',  # take
-                 'avg_pool': '0025.sub_403330.txt',
-                 'matmul': '0031.sub_4046E0.txt',
-                 'add': '0019.sub_401D70.txt'
+                 'embedding': '0043.sub_405610.txt',  # take
+                 'avg_pool': '0028.tvmgen_default_fused_nn_avg_pool2d_compute_.txt',
+                 'matmul': '0030.tvmgen_default_fused_nn_dense_compute_.txt',
+                 'add': '0023.tvmgen_default_fused_add_1_compute_.txt'
                  }
 
     for func_type, func_name in func_data.items():
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                                         prog_path, in_data, func_type=func_type)
         print(shape)
         if 'embedding' in func_type:
-            embedding_start = int('0x41ec40', 16)  # get fomr topo_list
+            embedding_start = int('0x428340', 16)  # get from topo_list
             for param in param_list:
                 if param > embedding_start:
                     dict_size = (param - embedding_start)/4/shape
@@ -77,15 +77,15 @@ if __name__ == '__main__':
     
     list_to_json(topo_list, './topo_list.json')
     dict_to_json(func_meta_data, './meta_data.json')
-
+    
     # ===============================
     # Extract Parameters
     # ===============================
     # func_meta_data is collected from previous output
     func_meta_data = [
-                      ('0037.sub_405A30.txt', (25006, 100), '0x405a30', '0x41ec40', 'embedding'),
-                      ('0031.sub_4046E0.txt', (1, 100), '0x4046e0', '0xdacc40', 'matmul'),
-                      ('0019.sub_401D70.txt', (1, 1), '0x401d70', '0x415440', 'add'),
+                      ('0043.sub_405610.txt', (25006, 100), '0x405610', '0x428340', 'embedding'),
+                      ('0030.tvmgen_default_fused_nn_dense_compute_.txt', (1, 100), '0x402D80', '0xdb3340', 'matmul'),
+                      ('0023.tvmgen_default_fused_add_1_compute_.txt', (1, 1), '0x4021A0', '0x41bb40', 'add'),
                       ]
     for fun_data in func_meta_data:
         func_name = fun_data[0]

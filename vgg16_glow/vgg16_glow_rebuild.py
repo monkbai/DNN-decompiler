@@ -163,6 +163,7 @@ if __name__ == "__main__":
     print(max_index)
     # print(out)
     print(out.detach().numpy()[0, max_index])
+    exit(0)
 
     # Input to the model
     batch_size = 1

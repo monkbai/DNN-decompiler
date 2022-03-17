@@ -47,17 +47,20 @@ def get_early_stop(asm_path: str, compiler='glow', func_type='conv'):
 
 
 def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str, compiler='glow', func_type='conv'):
+    global timeout_flag
     asm_path = os.path.abspath(asm_path)
     early_stop, loop_count = get_early_stop(asm_path, compiler, func_type)
     start_addr, end_addr = utils.get_func_range(asm_path)
-    if len(early_stop) > 0 and compiler!='glow':  # for matmul/dense layer, no need to early stop
+    if len(early_stop) > 0 or compiler!='glow':  # for matmul/dense layer, no need to early stop
         end_addr = early_stop
 
     log_path = os.path.abspath(out_log_path)
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(in_data)
+
+    timeout_flag = False
     if not os.path.exists(log_path):
-        pin_tools.inst_trace_log(log_path, start_addr, end_addr, prog_path, data_path)
+        pin_tools.inst_trace_log(log_path, start_addr, end_addr, prog_path, data_path, timeout=timeout_flag)            
     else:
         print('{} already exists.'.format(log_path))
     return start_addr, end_addr
@@ -72,7 +75,8 @@ def reverse_trace(original_trace: str, new_trace: str):
         print('{} already exists.'.format(new_trace))
 
 
-def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str, compiler='glow', func_type='conv'):
+def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_log_path: str, compiler='glow', func_type='conv', func_info=[]):
+    global timeout_flag
     prog_path = os.path.abspath(prog_path)
     in_data = os.path.abspath(in_data)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
@@ -83,14 +87,24 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     if len(early_stop) != 0:
         end_addr = early_stop  # this only work on TVM
     
-    utils.mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, in_data)
+    utils.mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, in_data, timeout=timeout_flag)
     write_mem_regions = utils.memory_slices(mem_write_log_path)
-    if compiler == 'glow':
-        out_mem = explain.biggest_region(write_mem_regions)
-    elif compiler == 'tvm' and len(write_mem_regions) > 5:
-        out_mem = explain.smallest_region(write_mem_regions)
-    elif compiler == 'tvm' and len(write_mem_regions) <= 5:
-        out_mem = explain.biggest_last_region(write_mem_regions)
+    # print('debug (write_mem_regions):', write_mem_regions)
+    # print('debug (func_info):', func_info)
+    if len(func_info) != 0:
+        output_addr = int(func_info[4], 16)
+        out_mem = (0, 0)
+        for mem_blk in write_mem_regions:
+            if mem_blk[0] <= output_addr <= mem_blk[1]:
+                out_mem = mem_blk
+        assert out_mem[0] != 0, "failed to identify the output memory block. write_mem_regions: {}, func_info: {}.".format(write_mem_regions, func_info)
+    else:
+        if compiler == 'glow':
+            out_mem = explain.biggest_region(write_mem_regions)
+        elif compiler == 'tvm' and len(write_mem_regions) > 5:
+            out_mem = explain.smallest_region(write_mem_regions)
+        elif compiler == 'tvm' and len(write_mem_regions) <= 5:
+            out_mem = explain.biggest_last_region(write_mem_regions)
     '''
     # this optimization does not work
     if len(early_stop)!=0 and compiler == 'glow':
@@ -111,13 +125,13 @@ def pick_rand_addr(func_asm_path: str, prog_path: str, in_data: str, mem_write_l
     return rnd_addr, loop_size
 
 
-def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv'):
+def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv', func_info=[]):
     # Generate trace
     rev_log_path = log_path.replace('.log', '_rev.log')
     start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path, compiler, func_type)
     # Random pick a target address
     tmp_mem_write_log = './tmp_mem_write.log'
-    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler, func_type)
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler, func_type, func_info=func_info)
     # Reverse trace
     reverse_trace(log_path, rev_log_path)
     logger.debug('log_path: {}, reverse_log_path: {}'.format(log_path, rev_log_path))
@@ -131,6 +145,8 @@ def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, c
 # Reverse Taint Analysis (Trace Backward Slicing)
 #
 # ===============================================
+
+timeout_flag = False
 
 common_regs = {'ah', 'ch', 'dh', 'bh',
                'al', 'cl', 'dl', 'bl', 'spl', 'bpl', 'sil', 'dil',
@@ -263,7 +279,10 @@ def reverse_taint(re_trace_log: str, new_trace: str):
                 break
 
             if line.startswith('0x'):  # end of one inst, handle current inst
-                read_buf.insert(0, line)
+                # read_buf.insert(0, line)
+                read_buf.append(line)
+                rev_read_buf = copy.deepcopy(read_buf)
+                rev_read_buf.reverse()
                 idx += 1
                 # if idx % 1000000 == 0:  # debug, million
                 #     print(idx)
@@ -281,11 +300,13 @@ def reverse_taint(re_trace_log: str, new_trace: str):
                 #     '''
                 # TODO: handle the current instruction
                 # the core function of reverse taint
-                if handle_inst(read_buf):  # handle instructions
-                    final_bufs.insert(0, copy.deepcopy(read_buf))
+                if handle_inst(rev_read_buf):  # handle instructions
+                    # final_bufs.insert(0, copy.deepcopy(read_buf))  # insert is O(n), append is O(1)
+                    final_bufs.append(rev_read_buf)
                 read_buf.clear()
             else:
-                read_buf.insert(0, line)
+                # read_buf.insert(0, line)
+                read_buf.append(line)
         f.close()
 
     end_time = time.time()
@@ -293,6 +314,7 @@ def reverse_taint(re_trace_log: str, new_trace: str):
     logger.info("Taint Analysis - Elapsed Time: {}s".format(elapsed_time))
 
     # write final_bufs to file
+    final_bufs.reverse()
     with open(new_trace_log, 'w') as f:
         for r_buf in final_bufs:
             for line in r_buf:
@@ -638,6 +660,10 @@ def handle_xor(opcode: str, operands: list, mem_addr: str):
         if op1 in tainted_regs:
             unset_common_regs(op2)  # tainted_regs.remove(op1)
         return True
+    elif op2 == op1 and op2 in xmm_regs:  
+        if op1 in tainted_regs:
+            tainted_regs.remove(op1)
+        return True
     else:
         return handle_two_arith(opcode, operands, mem_addr)
 
@@ -654,7 +680,7 @@ def handle_not_implemented(opcode: str, operands: list):
 # Interface
 #
 # ===============================================
-def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv'):
+def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv', func_info=[]):
     clear_state()
 
     asm_path = os.path.abspath(asm_path)
@@ -667,10 +693,11 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
         print('{} already exists.'.format(slice_log))
         return slice_log, 'unknown', -1, 'unknown', 'unknown'
     while True:
-        rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type)
+        rev_log, rnd_addr, loop_size, start_addr, end_addr = before_taint(asm_path, prog_path, data_path, log_path, compiler, func_type, func_info=func_info)
         # rnd_addr = '0x230fd760'  # debug
         print('rnd addr {}, loop_size {}'.format(rnd_addr, loop_size))
 
+        clear_state()
         target_addr = rnd_addr
         mem_list = []
         addr_int = int(target_addr, 16)
@@ -682,7 +709,7 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
             m_addr = hex(addr_int + step)
             mem_list.append(m_addr)
         set_tainted(mem_list)
-        if not os.path.exists(slice_log):
+        if (not os.path.exists(slice_log)) or os.path.getsize(slice_log) > (1024 * 1):
             reverse_taint(rev_log, slice_log)
         else:
             print('{} already exists.'.format(slice_log))
@@ -723,6 +750,17 @@ def filt_trace(asm_path: str, prog_path: str, data_path: str, rev_log_path: str,
 
 
 if __name__ == '__main__':
+    mem_list = []
+    addr_int = int('0x1de77464', 16)
+    size = 64*4
+    for step in range(0, size, 4):  # the smallest unit is 4 bytes
+        m_addr = hex(addr_int + step)
+        mem_list.append(m_addr)
+    set_tainted(mem_list)
+    reverse_taint("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/vgg16_tvm_O0/0100_rev.log", "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/vgg16_tvm_O0/0100_slice.log")
+    exit(0)
+
+
     # test
     asm_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_glow_ida/0010.txt"
     prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_strip.out"

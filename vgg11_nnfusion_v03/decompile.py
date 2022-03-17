@@ -17,22 +17,22 @@ logger = logging.getLogger('decompiler.'+__name__)
 addr_dict = {
     #
     'base_addr': '0x0',  # recompiled with -no-pie
-    'kernel_entry_addr': '0x40BE00',
-    'MlasConvPrepare_addr': '0x415750',
-    'MlasConv_addr': '0x414F40',
-    'MlasGemm_addr': '0x413130',
-    'MlasPool_addr': '0x415C80',
-    'concurrency_addr': '0x4494d0',
+    'kernel_entry_addr': '0x40CD00',
+    'MlasConvPrepare_addr': '0x416650',
+    'MlasConv_addr': '0x415e40',
+    'MlasGemm_addr': '0x414030',
+    'MlasPool_addr': '0x416b80',
+    'concurrency_addr': '0x430100',  # concurrency::ThreadPool::ParallelFor
     #
-    'Broadcast': '0x410Fe0',
-    'Reshape': '0x40F530',
+    'Broadcast': '0x411ee0',  # cpu_reference_broadcast
+    'Reshape': '0x410430',  # cpu_reference_reshape
 }
 
-prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/vgg_nnfusion"
-data_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/cat.bin"
+prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg11_nnfusion_v03/vgg11_nnfusion_strip"
+data_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg11_nnfusion_v03/cat.bin"
 
 
-funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/vgg_nnfusion_strip_funcs/"
+funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg11_nnfusion_v03/vgg11_nnfusion_strip_funcs/"
 
 
 def runtime_addr(addr: str):
@@ -258,32 +258,39 @@ def get_func_trace(op_list: list):
 
 
 def extract_param(overall_list: list):
-    func_meta_data = [
-                      ('0068.sub_406A50.txt', (64, 3, 3, 3), '0x406A50', 'conv2d'),
-                      ('0055.sub_404C00.txt', (1, 64), '0x404C00', 'add'),
-                      ('0070.sub_406Ec0.txt', (128, 64, 3, 3), '0x406Ec0', 'conv2d'),
-                      ('0054.sub_404A90.txt', (1, 128), '0x404A90', 'add'),
-                      ('0046.sub_4040f0.txt', (256, 128, 3, 3), '0x4040f0', 'conv2d'),
-                      ('0052.sub_4047b0.txt', (1, 256), '0x4047b0', 'add'),
-                      ('0057.sub_404Ee0.txt', (256, 256, 3, 3), '0x404Ee0', 'conv2d'),
-                      # ('0052.sub_4047b0.txt', (1, 256), '0x4047b0', 'add'),
-                      ('0081.sub_408650.txt', (512, 256, 3, 3), '0x408650', 'conv2d'),
-                      ('0066.sub_406630.txt', (1, 512), '0x406630', 'add'),
-                      ('0051.sub_4045e0.txt', (512, 512, 3, 3), '0x4045e0', 'conv2d'),
-                      # ('0066.sub_406630.txt', (1, 512), '0x406630', 'add'),
-                      ('0044.sub_403Ed0.txt', (512, 512, 3, 3), '0x403Ed0', 'conv2d'),
-                      ('0056.sub_404D70.txt', (1, 512), '0x404D70', 'add'),
-                      # ('0044.sub_403Ed0.txt', (512, 512, 3, 3), '0x403Ed0', 'conv2d'),
-                      # ('0056.sub_404D70.txt', (1, 512), '0x404D70', 'add'),
-
-                      ('0050.sub_404590.txt', (25088, 4096), '0x404590', 'dense'),
-                      ('0049.sub_404460.txt', (1, 4096), '0x404460', 'add'),
-                      ('0045.sub_4040A0.txt', (4096, 4096), '0x4040a0', 'dense'),
-                      # ('0049.sub_404460.txt', (1, 4096), '0x404460', 'add'),
-                      ('0043.sub_403E80.txt', (4096, 1001), '0x403E80', 'dense'),
-                      ('0074.sub_407760.txt', (1, 1001), '0x407760', 'add'),
-
+    # human-in-the-loop PoC
+    func_meta_data = [['0046.sub_404F50.txt', ('64', '2', '3', '3'), '0x404f50', 'conv2d'], 
+                      ['0075.sub_408A70.txt', (1, '64'), '0x408a70', 'add'], 
+                      [], [], 
+                      ['0047.sub_405110.txt', ('128', '2', '3', '3'), '0x405110', 'conv2d'], 
+                      ['0071.sub_408230.txt', (1, '128'), '0x408230', 'add'], 
+                      [], [], 
+                      ['0039.sub_404860.txt', ('256', '2', '3', '3'), '0x404860', 'conv2d'], 
+                      ['0055.sub_405C10.txt', (1, '256'), '0x405c10', 'add'], 
+                      [], 
+                      ['0049.sub_4053B0.txt', ('256', '2', '3', '3'), '0x4053b0', 'conv2d'], 
+                      ['0055.sub_405C10.txt', (1, '256'), '0x405c10', 'add'], 
+                      [], [], 
+                      ['0044.sub_404CB0.txt', ('512', '2', '3', '3'), '0x404cb0', 'conv2d'], 
+                      ['0084.sub_409DB0.txt', (1, '512'), '0x409db0', 'add'], 
+                      [], 
+                      ['0043.sub_404AE0.txt', ('512', '2', '3', '3'), '0x404ae0', 'conv2d'], 
+                      ['0084.sub_409DB0.txt', (1, '512'), '0x409db0', 'add'], 
+                      [], [], 
+                      ['0069.sub_407DB0.txt', ('512', '2', '3', '3'), '0x407db0', 'conv2d'], 
+                      ['0053.sub_405930.txt', (1, '512'), '0x405930', 'add'], 
+                      [], 
+                      ['0069.sub_407DB0.txt', ('512', '2', '3', '3'), '0x407db0', 'conv2d'], 
+                      ['0053.sub_405930.txt', (1, '512'), '0x405930', 'add'], 
+                      [], [], 
+                      ['0042.sub_404A90.txt', ['25088', '4096'], '0x404a90', 'dense'], 
+                      ['0058.sub_4062E0.txt', (1, '4096'), '0x4062e0', 'add'], 
+                      ['0040.sub_404A30.txt', ['4096', '4096'], '0x404a30', 'dense'], 
+                      ['0058.sub_4062E0.txt', (1, '4096'), '0x4062e0', 'add'], 
+                      ['0038.sub_404810.txt', ['4096', '1001'], '0x404810', 'dense'], 
+                      ['0052.sub_4057C0.txt', (1, '1001'), '0x4057c0', 'add']
                       ]
+
     func_meta_data = [ [] for i in range(len(overall_list))]
     pool_idx = conv_idx = 0
     gemm_idx = len(gemm_list) - 1
@@ -332,59 +339,59 @@ def extract_param(overall_list: list):
                                           mem_dump_log_path, func_name, reg_num=1)  #rdi, 0->rsi, 1->rdx, 2->rcx
 
 
-def read_param():
-    mem_dump_log_path = './mem_dump.log'
-    constatn_folder = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/Constant/"
-    func_meta_data = [
-        ('Constant_17_0.bin', (64, 3, 3, 3), (3, 3, 3, 64), 'conv2d'),
-        ('Constant_16_0.bin', (1, 64), 'add'),
-        ('Constant_19_0.bin', (128, 64, 3, 3), (3, 3, 64, 128), 'conv2d'),
-        ('Constant_18_0.bin', (1, 128), 'add'),
-        ('Constant_21_0.bin', (256, 128, 3, 3), (3, 3, 128, 256), 'conv2d'),
-        ('Constant_20_0.bin', (1, 256), 'add'),
-        ('Constant_23_0.bin', (256, 256, 3, 3), (3, 3, 256, 256), 'conv2d'),
-        ('Constant_22_0.bin', (1, 256), 'add'),
-        ('Constant_25_0.bin', (512, 256, 3, 3), (3, 3, 256, 512), 'conv2d'),
-        ('Constant_24_0.bin', (1, 512), 'add'),
-        ('Constant_27_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
-        ('Constant_26_0.bin', (1, 512), 'add'),
-        ('Constant_29_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
-        ('Constant_28_0.bin', (1, 512),  'add'),
-        ('Constant_31_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
-        ('Constant_30_0.bin', (1, 512), 'add'),
+# def read_param():
+#     mem_dump_log_path = './mem_dump.log'
+#     constatn_folder = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/nnfusion/Constant/"
+#     func_meta_data = [
+#         ('Constant_17_0.bin', (64, 3, 3, 3), (3, 3, 3, 64), 'conv2d'),
+#         ('Constant_16_0.bin', (1, 64), 'add'),
+#         ('Constant_19_0.bin', (128, 64, 3, 3), (3, 3, 64, 128), 'conv2d'),
+#         ('Constant_18_0.bin', (1, 128), 'add'),
+#         ('Constant_21_0.bin', (256, 128, 3, 3), (3, 3, 128, 256), 'conv2d'),
+#         ('Constant_20_0.bin', (1, 256), 'add'),
+#         ('Constant_23_0.bin', (256, 256, 3, 3), (3, 3, 256, 256), 'conv2d'),
+#         ('Constant_22_0.bin', (1, 256), 'add'),
+#         ('Constant_25_0.bin', (512, 256, 3, 3), (3, 3, 256, 512), 'conv2d'),
+#         ('Constant_24_0.bin', (1, 512), 'add'),
+#         ('Constant_27_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
+#         ('Constant_26_0.bin', (1, 512), 'add'),
+#         ('Constant_29_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
+#         ('Constant_28_0.bin', (1, 512),  'add'),
+#         ('Constant_31_0.bin', (512, 512, 3, 3), (3, 3, 512, 512), 'conv2d'),
+#         ('Constant_30_0.bin', (1, 512), 'add'),
 
-        ('Constant_10_0.bin', (25088, 4096), '0x5420', 'dense'),
-        ('Constant_13_0.bin', (1, 4096), '0x52f0', 'add'),
-        ('Constant_11_0.bin', (4096, 4096), '0x4f30', 'dense'),
-        ('Constant_14_0.bin', (1, 4096), '0x52f0', 'add'),
-        ('Constant_12_0.bin', (4096, 1001), '0x4d10', 'dense'),
-        ('Constant_15_0.bin', (1, 1001), '0x85f0', 'add'),
+#         ('Constant_10_0.bin', (25088, 4096), '0x5420', 'dense'),
+#         ('Constant_13_0.bin', (1, 4096), '0x52f0', 'add'),
+#         ('Constant_11_0.bin', (4096, 4096), '0x4f30', 'dense'),
+#         ('Constant_14_0.bin', (1, 4096), '0x52f0', 'add'),
+#         ('Constant_12_0.bin', (4096, 1001), '0x4d10', 'dense'),
+#         ('Constant_15_0.bin', (1, 1001), '0x85f0', 'add'),
 
-    ]
-    for func in func_meta_data:
-        print(func[0])
-        constant_path = os.path.join(constatn_folder, func[0])
-        w_shape = func[1]
-        func_type = func[-1]
-        if func_type == 'conv2d':
-            org_shape = func[-2]
-        float_len = 1
-        for w_l in w_shape:
-            float_len *= w_l
-        json_path = constant_path[:-4] + '.json'
-        convert_constant_to_txt(constant_path, mem_dump_log_path, float_len)
-        float_array = convert_txt_to_float(mem_dump_log_path, float_len)
-        w = np.asarray(float_array)
-        if func_type == 'conv2d':
-            w = w.reshape(org_shape)
-            w = w.transpose(3, 2, 0, 1)
-        w = w.reshape(w_shape)
-        lists = w.tolist()
-        json_str = json.dumps(lists)
-        json_str = json_str.replace('],', '],\n')
-        with open(json_path, 'w') as wf:
-            wf.write(json_str)
-            wf.close()
+#     ]
+#     for func in func_meta_data:
+#         print(func[0])
+#         constant_path = os.path.join(constatn_folder, func[0])
+#         w_shape = func[1]
+#         func_type = func[-1]
+#         if func_type == 'conv2d':
+#             org_shape = func[-2]
+#         float_len = 1
+#         for w_l in w_shape:
+#             float_len *= w_l
+#         json_path = constant_path[:-4] + '.json'
+#         convert_constant_to_txt(constant_path, mem_dump_log_path, float_len)
+#         float_array = convert_txt_to_float(mem_dump_log_path, float_len)
+#         w = np.asarray(float_array)
+#         if func_type == 'conv2d':
+#             w = w.reshape(org_shape)
+#             w = w.transpose(3, 2, 0, 1)
+#         w = w.reshape(w_shape)
+#         lists = w.tolist()
+#         json_str = json.dumps(lists)
+#         json_str = json_str.replace('],', '],\n')
+#         with open(json_path, 'w') as wf:
+#             wf.write(json_str)
+#             wf.close()
 
 
 
@@ -412,6 +419,7 @@ def convert_txt_to_float(txt_path: str, float_len: int):
 
 
 if __name__ == '__main__':
+    #test
     # read_param()
     # exit(0)
     # ------------------
@@ -424,7 +432,7 @@ if __name__ == '__main__':
 
     # Step 2
     operator_list = get_all_operator()  # the list of operaotrs
-    # print(operator_list)
+    # print('operator_list: ', operator_list)
     get_func_trace(operator_list)  # log the tracec of operator
     # ------------------
 

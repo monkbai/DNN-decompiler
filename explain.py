@@ -797,7 +797,7 @@ def explain_tvm_dense_result(exp_log_path: str, mem_read_regions: list, mem_writ
     if len(name) == 0:
         name, exp = choose_one_16bytes(exp_log_path, mem_write_regions)
     if len(name) == 0:
-        print('explain: explain_tvm_dense_result(): failed to choose expression')
+        assert False, ('explain: explain_tvm_dense_result(): failed to choose expression')
         exit(-1)
     if len(func_info) > 0:
         input_start = func_info[3][0]
@@ -809,7 +809,7 @@ def explain_tvm_dense_result(exp_log_path: str, mem_read_regions: list, mem_writ
         input_size = int((input_mem[1] - input_mem[0]) / 4)
     else:
         input_size = exp.count('*')
-        if input_size == exp.count('16 *'):
+        if input_size == exp.count('16 *'):  # why use this heuristic?
             input_size *= 4
         elif input_size == exp.count('32 *'):
             input_size *= 8
@@ -859,7 +859,8 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
             exp1 = lines[idx]
             idx += 1
             if out_mem[0] <= int(name1.split(',')[0].strip(), 16) <= out_mem[1] and \
-                    int(math.sqrt(exp1.count('max')))**2 == exp1.count('max'):
+                    int(math.sqrt(exp1.count('max')))**2 == exp1.count('max') and \
+                        name1.split(',')[1] == lines[idx].split(',')[1]:  # ,4 and ,16 may appear at the same time
                 break
         name2 = lines[idx]
         idx += 1
@@ -936,7 +937,14 @@ def explain_tvm_avgpool_result(exp_log_path: str, mem_read_regions: list, mem_wr
             kernel_size = (h, len(offset_list)/h)  # TODO: check resnet
             break
     '''
-    kernel_size = (math.sqrt(kernel_size[0]), kernel_size[1])
+    dimension_flag = 1
+    for i in range(len(offset_list) - 1):
+        if offset_list[i+1] - offset_list[i] != stride_size:
+            dimension_flag = 2
+    if dimension_flag == 2:
+        kernel_size = (math.sqrt(kernel_size[0]), kernel_size[1])
+    else:
+        pass
     return kernel_size, 1
 
 
@@ -1036,7 +1044,15 @@ def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_
         addr = (addr - min_addr) / 4
         offset_list.append(addr)
     # TODO: is it possible that stride != kernel ?
-    return math.sqrt(len(offset_list)), 1
+    dimension_flag = 1
+    offset_step = offset_list[1] - offset_list[0]
+    for i in range(len(offset_list) - 1):
+        if offset_list[i+1] - offset_list[i] != offset_step:
+            dimension_flag = 2
+    if dimension_flag == 2:
+        return math.sqrt(len(offset_list)), 1
+    else:
+        return len(offset_list), 1
 
 
 if __name__ == '__main__':

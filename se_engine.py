@@ -340,11 +340,13 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             pass
         elif mnemonic.startswith('data16'):
             pass
+        elif mnemonic == 'mul':
+            pass
         else:
             if len(code_list) > 2 and ('[' in code_list[1] or '[' in code_list[2]):
-                print(log_line)
+                assert False, "Instruction not implemented:\n{}".format(log_line)
             else:
-                print(log_line)  # ret,
+                assert False, "Instruction not implemented:\n{}\ncode_list:{}".format(log_line, code_list)  # ret,
 
     # show the result
 
@@ -1422,7 +1424,12 @@ if __name__ == '__main__':
     # test()
     # test_glow_function()
     extern_functions = {'0x401120': 'memset'}
+<<<<<<< HEAD
     lightweight_SymEx("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_funcs/0060.txt",
                       "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/0060_slice.log",
+=======
+    lightweight_SymEx("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/vgg16_tvm_O3/vgg16_funcs/0070.txt",
+                      "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/vgg16_tvm_O3/0070_slice.log",
+>>>>>>> 10d20a5e6f7eae347254f68ac97092eb9079d9c4
                       "./mem_exp.log", max_inst_num=7000000)
     # explain.explain_tvm_conv2d_result('./mem_log.txt')

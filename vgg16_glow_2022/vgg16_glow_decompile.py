@@ -12,11 +12,11 @@ print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_glow_ida/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/vgg16_strip.out"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/step1.txt"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/vgg16_glow/vgg16_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/vgg16_glow/vgg16_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/vgg16_glow/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/vgg16_glow/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/vgg16_glow/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -48,9 +48,15 @@ if __name__ == '__main__':
             start_addr, _ = utils.get_func_range(asm_path)
             if start_addr in utils.addr2label.keys():
                 if 'matmul' in utils.addr2label[start_addr] or 'conv' in utils.addr2label[start_addr]:
+                    func_info = []
+                    if len(topo_list) > 0:
+                        for node in topo_list:
+                            if node[1] == asm_file:
+                                func_info = node
+                                break
                     trace_path = os.path.join(os.path.dirname(log_path), asm_file.replace('.txt', '.log'))
                     slice_log, rnd_addr, loop_size, start_addr, end_addr = \
-                        trace_filter.get_trace(asm_path, prog_path, in_data, trace_path, func_type=utils.addr2label[start_addr])
+                        trace_filter.get_trace(asm_path, prog_path, in_data, trace_path, func_type=utils.addr2label[start_addr], func_info=func_info)
                     func_trace_map[asm_file] = slice_log
                     func_rndaddr_map[asm_file] = (rnd_addr, loop_size, start_addr, end_addr)
     print(func_trace_map)
@@ -64,39 +70,12 @@ if __name__ == '__main__':
     # Step 2.2.0 Choose Another Random Target Address (if needed)
     #func_name = '0020.txt'
     #asm_path = os.path.join(utils.funcs_dir, func_name)
-    #slice_log, rnd_addr, loop_size = trace_filter.filt_trace(asm_path, prog_path, in_data, '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0020_rev.log')
+    #slice_log, rnd_addr, loop_size = trace_filter.filt_trace(asm_path, prog_path, in_data, '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/vgg16_glow/0020_rev.log')
     #print(' slice_log {}\n rnd_addr {}\n loop_size {}\n'.format(slice_log, rnd_addr, loop_size))
-    #utils.generate_symbolic_expression(func_name, '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0020_slice.log', exp_log_path, max_inst=5000000)
+    #utils.generate_symbolic_expression(func_name, '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/vgg16_glow/0020_slice.log', exp_log_path, max_inst=5000000)
     #exit(0)
 
     # Step 2.2.1 Conv and Matmul layers
-    
-    # func_trace_map = {'0013.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0013_slice.log', 
-    #                   '0016.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0016_slice.log', 
-    #                   '0020.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0020_slice.log', 
-    #                   '0017.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0017_slice.log', 
-    #                   '0022.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0022_slice.log', 
-    #                   '0019.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0019_slice.log', 
-    #                   '0014.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0014_slice.log', 
-    #                   '0011.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0011_slice.log', 
-    #                   '0010.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0010_slice.log',  # conv
-                      
-    #                   '0029.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0029_slice.log',  # matmul
-    #                   '0027.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0027_slice.log', 
-    #                   '0024.txt': '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/vgg16_glow/0024_slice.log'}
-    # func_rndaddr_map = {'0013.txt': ('0x218081c0', 128, '0x402990', '0x402FFB'), 
-    #                     '0016.txt': ('0x217689c0', 256, '0x403900', '0x40406B'), 
-    #                     '0020.txt': ('0x216ce5c0', 512, '0x405410', '0x405D8B'), 
-    #                     '0017.txt': ('0x219e55c0', 256, '0x404090', '0x4047FB'), 
-    #                     '0022.txt': ('0x2146a048', 512, '0x406000', '0x406982'), 
-    #                     '0019.txt': ('0x214b4dc0', 512, '0x404a70', '0x4053EB'), 
-    #                     '0014.txt': ('0x21f80dc0', 128, '0x403020', '0x40368B'), 
-    #                     '0011.txt': ('0x22156a5c', 64, '0x401ea0', '0x402641'), 
-    #                     '0010.txt': ('0x21511398', 64, '0x4017b0', '0x401E7A'), # conv
-                        
-    #                     '0029.txt': ('0x2146933c', 16, '0x407b50', '0x40817d'), # matmul 
-    #                     '0027.txt': ('0x21471824', 16, '0x407490', '0x407a83'), 
-    #                     '0024.txt': ('0x2146a994', 16, '0x406c00', '0x4071f6')}
 
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='glow')  # also all matmul
     print('all conv and matmul done.')
@@ -192,11 +171,12 @@ if __name__ == '__main__':
         elif 'matmul' in meta_data[3]:
             meta_data[6] = 1
             new_meta_data.append(meta_data)  # weights of dense
-        elif 'add' in meta_data[3]:
             meta_data = copy.deepcopy(meta_data)
-            meta_data[6] = 1
+            meta_data[6] = 2
             meta_data[5] = meta_data[4] = None
             meta_data[3] = 'add'
+            meta_data[1] = [1, int(meta_data[1][0])]
+            new_meta_data.append(meta_data)  # biases of conv
         else:
             new_meta_data.append(meta_data)
 
@@ -205,38 +185,12 @@ if __name__ == '__main__':
     for meta_data in func_meta_data:
         # manually fix the shape
         # the shape can be inferred from previous layer
-        if '0024.txt' in meta_data[0]:
+        if '0024.txt' in meta_data[0] and 'matmul' in meta_data[3]:
             meta_data[1] = (7, 7, 512, 4096)
         if meta_data[6]:  # has parameters to be extracted
             print(meta_data)
     dict_to_json(func_meta_data, './new_meta_data.json')
-    # meta data come from previous output
-    # func_meta_data = [('0010.txt', (64, 3, 3, 3), '0x4017b0', 'conv2d'),
-    #                   ('0010.txt', (1, 64), '0x4017b0', 'add'),  # bias_add
-    #                   ('0011.txt', (64, 64, 3, 3), '0x401ea0', 'conv2d'),
-    #                   ('0011.txt', (1, 64), '0x401ea0', 'add'),
-    #                   ('0013.txt', (128, 64, 3, 3), '0x402990', 'conv2d'),
-    #                   ('0013.txt', (1, 128), '0x402990', 'add'),
-    #                   ('0014.txt', (128, 128, 3, 3), '0x403020', 'conv2d'),
-    #                   ('0014.txt', (1, 128), '0x403020', 'add'),
-    #                   ('0016.txt', (256, 128, 3, 3), '0x403900', 'conv2d'),
-    #                   ('0016.txt', (1, 256), '0x403900', 'add'),
-    #                   ('0017.txt', (256, 256, 3, 3), '0x404090', 'conv2d'),
-    #                   ('0017.txt', (1, 256), '0x404090', 'add'),
-    #                   ('0019.txt', (512, 256, 3, 3), '0x404a70', 'conv2d'),
-    #                   ('0019.txt', (1, 512), '0x404a70', 'add'),
-    #                   ('0020.txt', (512, 512, 3, 3), '0x405410', 'conv2d'),
-    #                   ('0020.txt', (1, 512), '0x405410', 'add'),
-    #                   ('0022.txt', (512, 512, 3, 3), '0x406000', 'conv2d'),
-    #                   ('0022.txt', (1, 512), '0x406000', 'add'),
 
-    #                   ('0024.txt', (7, 7, 512, 4096), '0x406c00', 'matmul'),  # because output of previous layer is (512, 7, 7)
-    #                   ('0027.txt', (4096, 4096), '0x407490', 'matmul'),
-    #                   ('0029.txt', (4096, 1000), '0x407b50', 'matmul'),
-
-    #                   ('0025.txt', (1, 4096), '0x407200', 'batchedadd'),
-    #                   ('0030.txt', (1, 1000), '0x408180', 'batchedadd'),
-    #                   ]
     for fun_data in func_meta_data:
         func_name = fun_data[0]
         w_shape = fun_data[1]
