@@ -37,6 +37,14 @@ def biggest_region(mem_regions: list, target_addr=0):
         return target_mem
 
 
+def region_with_target(mem_regions: list, target_addr: int):
+    target_mem = (0, 0)
+    for mem_blk in mem_regions:
+        if mem_blk[0] <= target_addr <= mem_blk[1]:
+            target_mem = mem_blk
+    return target_mem
+
+
 def biggest_last_region(mem_regions: list, target_addr=0):
     big_mem = (0, 0)
     target_mem = (0, 0)
@@ -526,23 +534,25 @@ def is_ignore(mem_list: list, mem_read_regions: list, filter_shape: list):
     return ignore_flag
 
 
-def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
+def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0), weight_addr=False):
     times = value.count('*')
     if compiler == 'tvm':
         offset_list = get_addr_list(value, 'tvm', size)
         # (offset_list)  #debug
-    elif compiler == 'glow':
+    elif compiler == 'glow' and not weight_addr:
         offset_list = get_addr_list(value, 'glow', size, in_blk=in_blk)
+    elif compiler == 'glow' and weight_addr:
+        offset_list, weight_list = get_addr_list(value, 'glow', size, in_blk=in_blk, weight_addr=weight_addr)
     else:
         print('at get_offset_list')
         print('compiler not supported:', compiler)
-        exit(-1)
+        assert False, "Not implemented."
         return
     assert len(offset_list) != 0, ("the symbolic expression is not corectly genreated.\n"
                                    "It is verly likely due to the randome target address is not correctly picked.\n"
                                    "You may want to delete the corresponding *_slice.log file and try again.\n"
                                    "Hopefully, a new target address picked by trace_filter will solve this.\n"
-                                  )
+                                  )  # Glow
     start_addr = min(offset_list)
     for i in range(len(offset_list)):
         offset_list[i] = (offset_list[i] - start_addr) / 4
@@ -550,13 +560,16 @@ def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
         offset_list.reverse()  # offset_list.sort()
     elif size == 16 and offset_list[0] > offset_list[-1]:
         offset_list.reverse()
-    return offset_list
+    if weight_addr:
+        return offset_list, weight_list
+    else:
+        return offset_list
 
 
 input_on_the_left = True
 
 
-def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
+def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0), weight_addr=False):
     global input_on_the_left
     """
 
@@ -565,6 +578,7 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
     :return: list of used input addresses
     """
     addr_list = []
+    weight_addr_list = []
     if compiler == 'tvm' and size == 4:
         match = re.search(r'(0x[0-9a-f]+),4 \*', value)
         if match:
@@ -590,21 +604,28 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0)):
             addr_list.append(int(addr, 16))
         return addr_list
     elif compiler == 'glow':
-        reg_str = r'((0x[0-9a-f]+,{} \*)|(\* 0x[0-9a-f]+,{}))'.format(size, size)
-        # print(reg_str)  # debug
-        it = re.finditer(reg_str, value)
-        for match in it:
-            addr = match.group(1).strip()
-            if addr.startswith('0x'):
-                addr = addr.split(',')[0]
-            else:
-                addr = addr[addr.find('0x'):]
-                addr = addr.split(',')[0]
-            addr = int(addr, 16)
-            if in_blk[0] == 0 or in_blk[0] <= addr <= in_blk[1]:
-                addr_list.append(addr)
+        reg_str_list = [r'(0x[0-9a-f]+,{} \*)'.format(size), r'(\* 0x[0-9a-f]+,{})'.format(size), r'(\* 0x[0-9a-f]+,32)']
+        # reg_str = r'((0x[0-9a-f]+,{} \*)|(\* 0x[0-9a-f]+,{}))'.format(size, size)
+        for reg_str in reg_str_list:
+            # print(reg_str)  # debug
+            it = re.finditer(reg_str, value)
+            for match in it:
+                addr = match.group(1).strip()
+                if addr.startswith('0x'):
+                    addr = addr.split(',')[0]
+                else:
+                    addr = addr[addr.find('0x'):]
+                    addr = addr.split(',')[0]
+                addr = int(addr, 16)
+                if in_blk[0] == 0 or in_blk[0] <= addr <= in_blk[1]:
+                    addr_list.append(addr)
+                elif weight_addr:
+                    weight_addr_list.append(addr)
         addr_list.sort()
-        return addr_list
+        if weight_addr:
+            return addr_list, weight_addr_list
+        else:
+            return addr_list
 
 
 def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', size=4):
@@ -716,8 +737,10 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
         output_shape[2] = output_shape[3] = math.ceil(input_num/2)
     else:
         in_mem = biggest_region(mem_read_regions, target_addr=in_addr)
+        out_mem = biggest_region(mem_write_regions)
         # get the filter shape and input shape from first output
-        offset_list = get_offset_list(mem_list[0][1], compiler='glow', in_blk=in_mem)
+        offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='glow', in_blk=in_mem, weight_addr=True)
+        weights_mem = region_with_target(mem_read_regions, weight_list[0])
         stride = offset_list[1]-offset_list[0]
         index = 0
         while index < len(offset_list) - 1:
@@ -733,6 +756,16 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
                 input_shape[3] = input_shape[2]  # TODO assume
                 break
             index += 1
+
+        # add case: filter shape is [1 x 1]
+        if index == len(offset_list) - 1:
+            filter_shape[3] = filter_shape[2] = 1
+            input_shape[1] = filter_shape[1] = len(offset_list)
+            filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / filter_shape[1]
+            tmp_value = math.sqrt((out_mem[1] - out_mem[0]) / 4 / filter_shape[0])
+            input_shape[2] = input_shape[3] = output_shape[2] = output_shape[3] = math.ceil(tmp_value)
+
+            # input_shape[2] =
         # cannot get stride in the case of glow, because glow use NHWC
         # the output shape can be wrong, because of the implicit padding
         output_shape[2] = math.ceil((input_shape[2] + guess_padding*2 - filter_shape[2] + 1) / guess_stride)
@@ -1056,7 +1089,19 @@ def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_
 
 
 if __name__ == '__main__':
-    pass
+    value = "max(((0x1f8dafc,4 * 0x4343bc,4 + (0x1f8daf8,4 * 0x4343b8,4 + (0x1f8daf4,4 * 0x4343b4,4 + (0x1f8daf0,4 * 0x4343b0,4 + (0x1f8daec,4 * 0x4343ac,4 + (0x1f8dae8,4 * 0x4343a8,4 + (0x1f8dae4,4 * 0x4343a4,4 + (0x1f8dae0,4 * 0x4343a0,4 + (0x1f8dadc,4 * 0x43439c,4 + (0x1f8dad8,4 * 0x434398,4 + (0x1f8dad4,4 * 0x434394,4 + (0x1f8dad0,4 * 0x434390,4 + (0x1f8dacc,4 * 0x43438c,4 + (0x1f8dac8,4 * 0x434388,4 + (0x1f8dac4,4 * 0x434384,4 + (0x1f8dac0,4 * 0x434380,4 + (0x1f8dabc,4 * 0x43437c,4 + (0x1f8dab8,4 * 0x434378,4 + (0x1f8dab4,4 * 0x434374,4 + (0x1f8dab0,4 * 0x434370,4 + (0x1f8daac,4 * 0x43436c,4 + (0x1f8daa8,4 * 0x434368,4 + (0x1f8daa4,4 * 0x434364,4 + (0x1f8daa0,4 * 0x434360,4 + (0x1f8da9c,4 * 0x43435c,4 + (0x1f8da98,4 * 0x434358,4 + (0x1f8da94,4 * 0x434354,4 + (0x1f8da90,4 * 0x434350,4 + (0x1f8da8c,4 * 0x43434c,4 + (0x1f8da88,4 * 0x434348,4 + (0x1f8da84,4 * 0x434344,4 + (0x1f8da80,4 * 0x434340,4 + (0x1f8da7c,4 * 0x43433c,4 + (0x1f8da78,4 * 0x434338,4 + (0x1f8da74,4 * 0x434334,4 + (0x1f8da70,4 * 0x434330,4 + (0x1f8da6c,4 * 0x43432c,4 + (0x1f8da68,4 * 0x434328,4 + (0x1f8da64,4 * 0x434324,4 + (0x1f8da60,4 * 0x434320,4 + (0x1f8da5c,4 * 0x43431c,4 + (0x1f8da58,4 * 0x434318,4 + (0x1f8da54,4 * 0x434314,4 + (0x1f8da50,4 * 0x434310,4 + (0x1f8da4c,4 * 0x43430c,4 + (0x1f8da48,4 * 0x434308,4 + (0x1f8da44,4 * 0x434304,4 + (0x1f8da40,4 * 0x434300,4 + (0x1f8da3c,4 * 0x4342fc,4 + (0x1f8da38,4 * 0x4342f8,4 + (0x1f8da34,4 * 0x4342f4,4 + (0x1f8da30,4 * 0x4342f0,4 + (0x1f8da2c,4 * 0x4342ec,4 + (0x1f8da28,4 * 0x4342e8,4 + (0x1f8da24,4 * 0x4342e4,4 + (0x1f8da20,4 * 0x4342e0,4 + (0x1f8da1c,4 * 0x4342dc,4 + (0x1f8da18,4 * 0x4342d8,4 + (0x1f8da14,4 * 0x4342d4,4 + (0x1f8da10,4 * 0x4342d0,4 + (0x1f8da0c,4 * 0x4342cc,4 + (0x1f8da08,4 * 0x4342c8,4 + (0x1f8da04,4 * 0x4342c4,4 + (0x1f8da00,4 * 0x4342c0,4 + 0)))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))) + 0x204ab00,4), 0)"
+    # print(reg_str)  # debug
+    it = re.finditer(r'((0x[0-9a-f]+,4 \*)|(\* 0x[0-9a-f]+,4))', value)
+    for match in it:
+        addr = match.group(1).strip()
+        if addr.startswith('0x'):
+            addr = addr.split(',')[0]
+        else:
+            addr = addr[addr.find('0x'):]
+            addr = addr.split(',')[0]
+        addr = int(addr, 16)
+
+    exit(0)
     # explain_tvm_conv2d_result('./mem_log.txt')
     import pin_tools
     import mem_slices

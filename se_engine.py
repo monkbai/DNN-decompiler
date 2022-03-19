@@ -1424,12 +1424,7 @@ if __name__ == '__main__':
     # test()
     # test_glow_function()
     extern_functions = {'0x401120': 'memset'}
-<<<<<<< HEAD
-    lightweight_SymEx("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_funcs/0060.txt",
-                      "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/0060_slice.log",
-=======
     lightweight_SymEx("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/vgg16_tvm_O3/vgg16_funcs/0070.txt",
                       "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/vgg16_tvm_O3/0070_slice.log",
->>>>>>> 10d20a5e6f7eae347254f68ac97092eb9079d9c4
                       "./mem_exp.log", max_inst_num=7000000)
     # explain.explain_tvm_conv2d_result('./mem_log.txt')

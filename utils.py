@@ -504,6 +504,8 @@ def recover_shape(func_name: str, mem_exp_log: str,
         for stride in range(1, 4):
             for padding in range(0, 4):
                 # print('try with stride: {}, padding: {}'.format(stride, padding))
+                if '0078' in func_name:
+                    print('debug')
                 tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_with_relu = explain_glow_conv2d_result(
                     mem_exp_log,
                     read_mem_regions,
@@ -517,7 +519,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
                     output_shape = tmp_output_shape
                     with_relu = tmp_with_relu
                     if filter_shape[2] == filter_shape[3] == 1:
-                        print('stride: 2')
+                        # print('stride: 2')  # not always
                         return filter_shape, input_shape, output_shape, with_relu  # no need to guess padding/stride
         print(filter_shape)
         if filter_shape[0] == 0:

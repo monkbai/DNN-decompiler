@@ -46,12 +46,16 @@ def get_early_stop(asm_path: str, compiler='glow', func_type='conv'):
     return early_stop, loop_count
 
 
+all_trace_list = ['0021.txt']  # manually set to log the whole trace for these functions
+
+
 def log_trace(asm_path: str, prog_path: str, in_data: str, out_log_path: str, compiler='glow', func_type='conv'):
     global timeout_flag
     asm_path = os.path.abspath(asm_path)
+    func_name = os.path.basename(asm_path)
     early_stop, loop_count = get_early_stop(asm_path, compiler, func_type)
     start_addr, end_addr = utils.get_func_range(asm_path)
-    if len(early_stop) > 0 or compiler!='glow':  # for matmul/dense layer, no need to early stop
+    if func_name not in all_trace_list and (len(early_stop) > 0 or compiler != 'glow'):  # for matmul/dense layer, no need to early stop
         end_addr = early_stop
 
     log_path = os.path.abspath(out_log_path)

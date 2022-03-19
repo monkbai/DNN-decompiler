@@ -248,8 +248,10 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
     prog_path = os.path.abspath(prog_path)
     data_path = os.path.abspath(data_path)
     localtime = time.asctime( time.localtime(time.time()) )
-    print ("Trace Logging Start", localtime)
-    logger.info('Trace Logging Start - {}'.format(log_path))
+    base_name = os.path.basename(log_path)
+    print ("Trace Logging for {} Start - {}".format(base_name, localtime))
+    logger.info('Trace Logging for {} Start - {}'.format(base_name, localtime))
+    start_time = time.time()
     if not timeout:
         status, output = cmd(inst_trace_cmd.format(log_path, start_addr, end_addr, prog_path, data_path))
     else:
@@ -257,7 +259,9 @@ def inst_trace_log(log_path: str, start_addr: str, end_addr: str, prog_path: str
     if status != 0 and not timeout:
         print(output)
 
-    logger.info('Trace Logging Time - {}'.format(log_path))
+    end_time = time.time()
+    logger.info('Trace Logging Time - {}'.format(end_time - start_time))
+    print('Trace Logging Time - {}'.format(end_time - start_time))
     logger.info(output)
 
     project_dir = project_dir_backup
@@ -395,6 +399,7 @@ def tac_cmd(log_path: str, new_path: str):
     if status:
         pass  # TODO: error log
     logger.info('Reverse Trace Time - {}'.format(new_path))
+    print('Reverse Trace Time - {}'.format(new_path))
     logger.info(output)
 
 
