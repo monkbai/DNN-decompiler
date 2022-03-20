@@ -40,6 +40,7 @@ if __name__ == '__main__':
     # ==============================================================
 
     # Step 2.1 Generate and Filter Trace
+    # Warning: 0091.txt has paddings 2, may need to pick rand target addr several times, that's annoying
     trace_filter.all_trace_list = json_to_list('./all_trace_list.json')
     func_trace_map = {}
     func_rndaddr_map = {}
@@ -72,7 +73,7 @@ if __name__ == '__main__':
     #exit(0)
 
     # Step 2.2.1 Conv and Matmul layers
-
+    
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='glow') # also matmul layer
     print('all conv and matmul done.')
     for name, result in func_shape.items():
