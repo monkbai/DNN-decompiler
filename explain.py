@@ -338,6 +338,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     # filter_size = filter_shape[1] * filter_shape[2] * filter_shape[3]
     one_channel_size = output_shape[2] * output_shape[3]
     weights_region, output_channel = get_output_channel(mem_list[0][1], one_channel_size, mem_write_regions, compiler='tvm')
+    # TODO: fix it <get_output_channel>
     # XXX: Did I made it ?
 
     output_shape[1] = output_channel
@@ -478,6 +479,7 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
     # filter_size = filter_shape[1] * filter_shape[2] * filter_shape[3]
     one_channel_size = output_shape[2] * output_shape[3]
     weights_region, output_channel = get_output_channel(mem_list[0][1], one_channel_size, mem_write_regions, compiler='tvm', on_the_right=False)
+    # TODO: fix it <get_output_channel>
     output_shape[1] = output_channel
     filter_shape[0] = output_shape[1]
 
@@ -774,11 +776,11 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
     # get output shape
     output_channel = 0
     one_channel_size = output_shape[2] * output_shape[3]
-    weights_region, output_channel = get_output_channel(mem_list[0][1], one_channel_size, mem_write_regions,
-                                                        compiler='glow')
+    # weights_region, output_channel = get_output_channel(mem_list[0][1], one_channel_size, mem_write_regions, compiler='glow')
+    out_mem = biggest_region(mem_write_regions)
+    output_channel = ((out_mem[1] - out_mem[0]) / one_channel_size) / 4
 
-    output_shape[1] = output_channel
-    filter_shape[0] = output_shape[1]
+    filter_shape[0] = output_shape[1] = output_channel
 
     # since the stride and padding are guessed, we need to check if the shapes are reasonable
     # Maybe we should not use function <get_weights_addrs> anymore  # weights_addrs = get_weights_addrs(mem_list[0][1], size=element_size)
@@ -787,12 +789,19 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
     for mem_blk in mem_read_regions:
         if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
             weights_mem = mem_blk
+            break
 
     ignore_flag = True
     if int(filter_shape[0]) == filter_shape[0]:
         weights_size = filter_shape[0] * filter_shape[1] * filter_shape[2] * filter_shape[3] * 4  # float --> 4 bytes
         if weights_size == weights_mem[1] - weights_mem[0]:
             # then it is a possible shape
+            ignore_flag = False
+    else:  # add case: inception glow 2022 0091, but why this happens?
+        output_channel = ((out_mem[1] - out_mem[0]) / (one_channel_size + 1)) / 4  # why there is an additional line in output? caused by optimization?
+        filter_shape[0] = output_shape[1] = output_channel
+        filter_number = (weights_mem[1] - weights_mem[0]) / (filter_shape[1] * filter_shape[2] * filter_shape[3] * 4)
+        if int(filter_number) == filter_number and output_channel == filter_number:
             ignore_flag = False
 
     if not ignore_flag:

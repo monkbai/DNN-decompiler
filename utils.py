@@ -504,7 +504,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
         for stride in range(1, 4):
             for padding in range(0, 4):
                 # print('try with stride: {}, padding: {}'.format(stride, padding))
-                if '0078' in func_name:
+                if '0091' in func_name:
                     print('debug')
                 tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_with_relu = explain_glow_conv2d_result(
                     mem_exp_log,

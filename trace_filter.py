@@ -133,12 +133,13 @@ def before_taint(asm_path: str, prog_path: str, data_path: str, log_path: str, c
     # Generate trace
     rev_log_path = log_path.replace('.log', '_rev.log')
     start_addr, end_addr = log_trace(asm_path, prog_path, data_path, log_path, compiler, func_type)
-    # Random pick a target address
-    tmp_mem_write_log = './tmp_mem_write.log'
-    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler, func_type, func_info=func_info)
     # Reverse trace
     reverse_trace(log_path, rev_log_path)
     logger.debug('log_path: {}, reverse_log_path: {}'.format(log_path, rev_log_path))
+    # Random pick a target address
+    tmp_mem_write_log = './tmp_mem_write.log'
+    rnd_addr, loop_size = pick_rand_addr(asm_path, prog_path, data_path, tmp_mem_write_log, compiler, func_type, func_info=func_info)
+
     return rev_log_path, rnd_addr, loop_size, start_addr, end_addr
 
 
