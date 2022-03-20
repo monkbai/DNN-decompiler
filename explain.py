@@ -604,7 +604,7 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0), weight_addr=
             addr_list.append(int(addr, 16))
         return addr_list
     elif compiler == 'glow':
-        reg_str_list = [r'(0x[0-9a-f]+,{} \*)'.format(size), r'(\* 0x[0-9a-f]+,{})'.format(size), r'(\* 0x[0-9a-f]+,32)']
+        reg_str_list = [r'(0x[0-9a-f]+,{} \*)'.format(size), r'(\* 0x[0-9a-f]+,{})'.format(size), r'(\* 0x[0-9a-f]+,32)', r'(0x[0-9a-f]+,32 \*)']  # ,32 is used for extracting weights addr
         # reg_str = r'((0x[0-9a-f]+,{} \*)|(\* 0x[0-9a-f]+,{}))'.format(size, size)
         for reg_str in reg_str_list:
             # print(reg_str)  # debug
@@ -781,7 +781,8 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
     filter_shape[0] = output_shape[1]
 
     # since the stride and padding are guessed, we need to check if the shapes are reasonable
-    weights_addrs = get_weights_addrs(mem_list[0][1], size=element_size)
+    # Maybe we should not use function <get_weights_addrs> anymore  # weights_addrs = get_weights_addrs(mem_list[0][1], size=element_size)
+    _, weights_addrs = get_offset_list(mem_list[0][1], compiler='glow', in_blk=in_mem, weight_addr=True)
     weights_mem = (0, 0)
     for mem_blk in mem_read_regions:
         if mem_blk[0] <= weights_addrs[0] <= mem_blk[1]:
