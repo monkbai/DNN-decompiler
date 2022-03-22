@@ -4,6 +4,7 @@ import sys
 sys.path.append("../../")
 import utils
 import trace_filter
+import se_engine
 from utils import list_to_json, dict_to_json, json_to_list, json_to_dict
 import logging
 import math
@@ -12,12 +13,12 @@ print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/inception_funcs"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/inception_v1/inception_funcs"
 
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/inception_v1_strip.out"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/resnet18_glow/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/ground_truth.txt"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/inception_v1/inception_v1_strip.out"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/inception_v1/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/inception_v1/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/inception_v1/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -74,25 +75,26 @@ if __name__ == '__main__':
 
     # Step 2.2.1 Conv and Matmul layers
     
-    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='glow') # also matmul layer
-    print('all conv and matmul done.')
-    for name, result in func_shape.items():
-        print(name)
-        for i in range(len(func_meta_data)):
-            if func_meta_data[i][0] == name:
-                func_meta_data[i][1] = result
-                break
-        if len(result) == 4:
-            print('filter_shape', result[0])
-            print('input_shape', result[1])
-            print('output_shape', result[2])
-            print('with relu', result[3])
-        else:
-            print(result)
-    exit(0)
+    # func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='glow') # also matmul layer
+    # print('all conv and matmul done.')
+    # for name, result in func_shape.items():
+    #     print(name)
+    #     for i in range(len(func_meta_data)):
+    #         if func_meta_data[i][0] == name:
+    #             func_meta_data[i][1] = result
+    #             break
+    #     if len(result) == 4:
+    #         print('filter_shape', result[0])
+    #         print('input_shape', result[1])
+    #         print('output_shape', result[2])
+    #         print('with relu', result[3])
+    #     else:
+    #         print(result)
+    # exit(0)
     
 
     # Step 2.2.2 Other layers
+    se_engine.extern_functions = {'0x401040': 'expf', '0x401080':'powf'}
     results_dict = dict()
     asm_files = os.listdir(utils.funcs_dir)
     for asm_file in asm_files:
@@ -110,14 +112,21 @@ if __name__ == '__main__':
                             break
                 
                 if 'matmul' not in func_type and 'conv' not in func_type and \
-                   'trans' not in func_type and 'relu' not in func_type:  # transpose could be ignored, (add, relu) layer is known
+                   'trans' not in func_type and 'relu' not in func_type and \
+                   'softmax' not in func_type:  # transpose could be ignored, (add, relu) layer is known
                     # TODO: does softmax has parameter?
                     print('SE for {}, {}'.format(asm_file, func_type))
 
-                    # debug
-                    if func_type in ['local_response_normalization', 'insert_tensor', 'softmax']:
-                        print('debug')
-
+                    if 'insert_tensor' in func_type:  # there are two type of insert_tensor
+                        ins_ten_fixed_flag = utils.identify_fixed_insert_tensor(asm_path)
+                        if not ins_ten_fixed_flag:
+                            func_type += '_param'
+                            utils.addr2label[start_addr] = func_type
+                            for node in topo_list:
+                                if node[1] == asm_file:
+                                    node[2] = func_type
+                    if '0109.txt' not in asm_file:
+                        continue
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
                     # gnereate tmp trace file, it should be fast
                     utils.generate_inst_trace(asm_file, tmp_log_path, prog_path, in_data, timeout=True)
@@ -126,7 +135,7 @@ if __name__ == '__main__':
                     # --- try to interpret the filter shape from symbolic expression log
                     shape = utils.recover_shape(asm_file, exp_log_path,
                                                 mem_read_log_path, mem_write_log_path,
-                                                prog_path, in_data, func_type=func_type, func_info=func_info)
+                                                prog_path, in_data, func_type=func_type, func_info=func_info, is2d=True)
                     print('shape:', shape)
                     results_dict[asm_file] = shape
     for name, result in results_dict.items():
@@ -140,6 +149,9 @@ if __name__ == '__main__':
         print(name)
         print(result)
     #exit(0)
+
+    insert_tensor_list = utils.extract_inserttensor_offset_glow(prog_path, in_data, './inserttensor_param.log', topo_list)
+    print(insert_tensor_list)
 
     list_to_json(topo_list, './topo_list.json')
     dict_to_json(func_meta_data, './meta_data.json')
@@ -218,7 +230,7 @@ if __name__ == '__main__':
             w_shape = [int(w_shape[i]) for i in range(len(w_shape))]
             utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
                                       mem_dump_log_path, func_name, data_index, func_type)
-        else:
+        elif 'insert_tensor_param' in func_type:
             w_shape = [int(w_shape[i]) for i in range(len(w_shape))]
             utils.extract_params_glow(prog_path, in_data, w_shape, dump_point,
                                       mem_dump_log_path, func_name, data_index, func_type)

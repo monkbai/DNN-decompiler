@@ -6,6 +6,8 @@ import sys
 import json
 import numpy as np
 import warnings
+
+import pin_tools
 from pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_log
 from pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
 from pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
@@ -15,6 +17,7 @@ from explain import explain_tvm_conv2d_result, explain_tvm_dense_result
 from explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
 from explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
 from explain import explain_glow_avgpool_result, explain_tvm_embedding_result
+import explain
 
 
 def list_to_json(dict_obj: dict, output_path: str):
@@ -467,9 +470,36 @@ def generate_symbolic_expression(func_name: str, inst_log_path: str, exp_log_pat
 # ==============================================================
 
 
+def identify_fixed_insert_tensor(asm_path: str):
+    """
+        two patterns of insert tensor
+        the third parameter, rdx, is used or not
+        used: not fixed, return False
+        not used: fixed, return True
+    """
+    with open(asm_path, 'r') as f:
+        lines = f.readlines()
+        for l in lines:
+            l = l.strip()
+            if 'rdx' in l:
+                input = l.split(',')[1]
+                if 'rdx' not in input:
+                    return True
+                else:
+                    return False
+            elif 'edx' in l:
+                if 'xor' in l:
+                    return True
+                input = l.split(',')[1]
+                if 'edx' not in input:
+                    return True
+                else:
+                    return False
+
+
 def recover_shape(func_name: str, mem_exp_log: str,
                   mem_read_log_path: str, mem_write_log_path: str,
-                  prog_path: str, data_path: str, func_type='conv2d', func_info=[]):
+                  prog_path: str, data_path: str, func_type='conv2d', func_info=[], is2d=False):
     global addr2param
     addr2param = json_to_dict('./addr2param.json')
 
@@ -549,10 +579,20 @@ def recover_shape(func_name: str, mem_exp_log: str,
         return bias_length
     elif 'max_pool' in func_type:  # max_pool
         kernel_size, stride = explain_glow_maxpool_result(mem_exp_log, read_mem_regions, write_mem_regions)
-        return kernel_size, stride
+        return int(kernel_size), int(stride)
     elif 'avg_pool' in func_type:  # avg_pool
-        kernel_size, stride = explain_glow_avgpool_result(mem_exp_log, write_mem_regions, read_mem_regions)
+        kernel_size, stride = explain_glow_avgpool_result(mem_exp_log, write_mem_regions, read_mem_regions, is2d)
         return kernel_size, stride
+    elif 'insert_tensor_param' in func_type:
+        # each time insert_tensor_param is called with different offset
+        # maybe we can get the offsets during parameter extraction?
+        return None
+    elif 'insert_tensor' in func_type:
+        offset = explain.explain_glow_insert_tensor(mem_exp_log, write_mem_regions, read_mem_regions, func_info)
+        return offset
+    elif 'local_response_normalization' in func_type:
+        size = explain.explain_glow_lrn(mem_exp_log, write_mem_regions, read_mem_regions)
+        return size
 
 
 def recover_shape_tvm(func_name: str, mem_exp_log: str,
@@ -726,6 +766,39 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
                 wf.write(json_str)
                 wf.close()
     rm_log(log_path)
+
+
+def extract_inserttensor_offset_glow(prog_path: str, in_data: str, log_path: str, topo_list: list):
+    prog_path = os.path.abspath(prog_path)
+    in_data = os.path.abspath(in_data)
+    log_path = os.path.abspath(log_path)
+
+    # get all start addresses of insert_tensor operators
+    insert_tensor_list = []
+    addr_set = set()
+    for node in topo_list:
+        if 'insert_tensor_param' in node[2]:
+            func_name = node[1]
+            func_addr, _ = get_func_range(os.path.join(funcs_dir, func_name))
+            insert_tensor_list.append([func_name, func_addr, None])  # name, address, offset
+            addr_set.add(func_addr)
+
+    # Log
+    pin_tools.fun_call_rdx(prog_path, in_data, list(addr_set), log_path)
+
+    # Read the log file
+    with open(log_path, 'r') as f:
+        lines = f.readlines()
+        idx = 0
+        for l in lines:
+            func_addr, offfset = l.split(':')
+            offset = int(offset.split(',')[-1])
+            assert insert_tensor_list[idx][1] == func_addr and not insert_tensor_list[idx][2]
+            insert_tensor_list[idx][2] = offset
+
+    return insert_tensor_list
+
+
 
 
 def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point: str,

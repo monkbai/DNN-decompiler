@@ -50,6 +50,8 @@ mypintool_dir = config.pintool_dir
 
 fun_call_rdi_rsi_cmd = pin_home + "pin -t " + \
                        mypintool_dir + "obj-intel64/FunCallRdiRsi.so -o {} -addrs_file {} -- {} {}"
+fun_call_rdx_cmd = pin_home + "pin -t " + \
+                   mypintool_dir + "obj-intel64/FunCallRdx.so -o {} -addrs_file {} -- {} {}"
 fused_rdi_cmd = pin_home + "pin -t " + \
                 mypintool_dir + "obj-intel64/FusedRdi.so -o {} -addrs_file {} -- {} {}"
 func_call_cmd = pin_home + "pin -t " + \
@@ -90,7 +92,8 @@ nnfusion_trace_cmd = pin_home + "pin -t " + \
 compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
 tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemoryWrite",
               "MemoryDump", "MemoryDump_2", "MemoryDump_3", "FusedRdi", "FunCallRdiRsi",
-              "NNFusion_Conv", "NNFusion_Gemm", "NNFusion_Pool", "NNFusion_Trace", "LocateData"]
+              "NNFusion_Conv", "NNFusion_Gemm", "NNFusion_Pool", "NNFusion_Trace", "LocateData",
+              "FunCallRdx"]
 
 
 def compile_all_tools():
@@ -128,6 +131,33 @@ def fun_call_rdi_rsi(prog_path: str, input_data_path: str, addr_list: list, log_
         f.close()
 
     status, output = cmd(fun_call_rdi_rsi_cmd.format(log_path, addrs_file_path, prog_path, input_data_path))
+
+    status, output = cmd("rm {}".format(addrs_file_path))
+
+    # ------- end reset project_dir
+    project_dir = project_dir_backup
+
+
+# For Glow insert_tensor
+def fun_call_rdx(prog_path: str, input_data_path: str, addr_list: list, log_path: str):
+    global project_dir
+
+    prog_path = os.path.abspath(prog_path)
+    input_data_path = os.path.abspath(input_data_path)
+    log_path = os.path.abspath(log_path)
+
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+    # ------- set project_dir before instrumentation
+
+    addrs_file_path = './addrs_rdx.log'
+    addrs_file_path = os.path.abspath(addrs_file_path)
+    with open(addrs_file_path, 'w') as f:
+        for addr in addr_list:
+            f.write(addr + '\n')
+        f.close()
+
+    status, output = cmd(fun_call_rdx_cmd.format(log_path, addrs_file_path, prog_path, input_data_path))
 
     status, output = cmd("rm {}".format(addrs_file_path))
 
@@ -404,5 +434,5 @@ def tac_cmd(log_path: str, new_path: str):
 
 
 if __name__ == '__main__':
-    print('tmp')
+    print('Compiling all Pin tools...')
     compile_all_tools()

@@ -231,6 +231,8 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             handle_vaddss(code_list, mem_addr)
         elif mnemonic.startswith('vaddps'):
             handle_vaddss(code_list, mem_addr)  # TODO
+        elif mnemonic.startswith('vsubss'):
+            handle_vsubss(code_list, mem_addr)  # TODO
         elif mnemonic.startswith('vmaxss'):
             handle_vmaxss(code_list, mem_addr)
         elif mnemonic.startswith('vmaxps'):
@@ -273,7 +275,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         elif mnemonic.startswith('xorps'):
             handle_xorps(code_list, mem_addr)
         elif mnemonic.startswith('xorss'):
-            print('not implemented')
+            assert False, 'not implemented instruction: xorss'
         elif mnemonic.startswith('unpcklps'):
             handle_unpcklp(code_list, mem_addr)
         elif mnemonic.startswith('unpcklpd'):
@@ -307,6 +309,8 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
                     handle_memset(code_list, rax_value)  # how to handle the function call
                 elif 'expf' == extern_functions[code_list[1]]:
                     handle_expf(code_list, rax_value)
+                elif 'powf' == extern_functions[code_list[1]]:
+                    handle_powf(code_list, rax_value)
                 else:
                     logger.info('call not implemented: {}'.format(extern_functions[code_list[1]]))
                     #print('call not implemented: {}'.format(extern_functions[code_list[1]]))
@@ -788,6 +792,15 @@ def xmm_vadd_mem(xmm_1: str, xmm_2: str, mem_addr: str, size: int):
         xmm_regs[xmm_1] = '({} + {})'.format(xmm_regs[xmm_2], mem_key)
 
 
+def xmm_vsub_mem(xmm_1: str, xmm_2: str, mem_addr: str, size: int):
+    global xmm_regs, mem_state
+    mem_key = mem_addr + ',' + str(size)
+    if mem_key in mem_state.keys():
+        xmm_regs[xmm_1] = '({} - {})'.format(xmm_regs[xmm_2], mem_state[mem_key])
+    else:
+        xmm_regs[xmm_1] = '({} - {})'.format(xmm_regs[xmm_2], mem_key)
+
+
 def xmm_vmul_mem(xmm_write: str, xmm_read: str, mem_addr: str, size: int):
     global xmm_regs, mem_state
     mem_key = mem_addr + ',' + str(size)
@@ -854,7 +867,7 @@ def handle_movaps(code_list, mem_addr):
     elif op1 in xmm_regs.keys() and op2 in xmm_regs.keys():
         xmm2xmm(op1, op2)
     else:
-        print('not implemented: movaps')
+        assert False, 'not implemented: movaps'
         exit(-1)
 
 
@@ -866,7 +879,7 @@ def handle_movd(code_list, mem_addr):
         # reg --> xmm
         reg2xmm(op1, op2)
     else:
-        print('not implemented: movd')
+        assert False, 'not implemented: movd'
         exit(-1)
 
 
@@ -880,7 +893,7 @@ def handle_movq(code_list, mem_addr):
     elif op1 in reg_state.keys() and op2 in xmm_regs.keys():
         xmm2reg(op1, op2)
     else:
-        print('not implemented: movq')
+        assert False, 'not implemented: movq'
         exit(-1)
 
 
@@ -903,7 +916,7 @@ def handle_movss(code_list, mem_addr):
             size = 8
         xmm2mem(op2, mem_addr, size)
     else:
-        print('not implemented: movss')
+        assert False, 'not implemented: movss'
         exit(-1)
 
 
@@ -919,15 +932,17 @@ def handle_vfmadd_ss(code_list, mem_addr):
                 size = 4
             xmm_add_mem(op1, mem_addr, size)
         else:
-            print('not implemented: vfmadd213ss')
+            assert False, 'not implemented: vfmadd213ss'
             exit(-1)
     elif code_list[0] == 'vfmadd231ss':
         if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
             if 'dword' in op3:
                 size = 4
             vfmadd231_mem(op1, op2, mem_addr, size)
+        elif op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and op3 in xmm_regs.keys():
+            vfmadd231_reg(op1, op2, op3)
         else:
-            print('not implemented: vfmadd231ss')
+            assert False, 'not implemented: vfmadd231ss'
             exit(-1)
     elif code_list[0] == 'vfmadd132ss':
         if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
@@ -1015,6 +1030,24 @@ def handle_vaddss(code_list, mem_addr):
         exit(-1)
 
 
+def handle_vsubss(code_list, mem_addr):
+    assert len(code_list) == 4
+    op1 = code_list[1]
+    op2 = code_list[2]
+    op3 = code_list[3]
+    if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
+        if 'dword' in op3:
+            size = 4
+        elif 'ymmword ptr' in op3:
+            size = 32
+        else:
+            assert False, '{} undefined size'.format(op3)
+        xmm_vsub_mem(op1, op2, mem_addr, size)
+    else:
+        print('not implemented: vaddss')
+        exit(-1)
+
+
 def handle_vmaxss(code_list, mem_addr):
     assert len(code_list) == 4
     op1 = code_list[1]
@@ -1022,8 +1055,12 @@ def handle_vmaxss(code_list, mem_addr):
     op3 = code_list[3]
     if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and op3 in xmm_regs.keys():
         xmm_max_xmm(op1, op2, op3)
+    elif op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
+        if 'dword' in op3:
+            size = 4
+        xmm_max_mem(op1, mem_addr, size)
     else:
-        print('not implemented: vmaxss')
+        assert False, 'not implemented: vmaxss'
         exit(-1)
 
 
@@ -1365,6 +1402,13 @@ def handle_memset(code_list, rax_value):
 def handle_expf(code_list, rax_value):
     global xmm_regs
     xmm_regs['xmm0'] = 'expf({})'.format(xmm_regs['xmm0'])
+
+    handle_unknown_call(code_list, rax_value)
+
+
+def handle_powf(code_list, rax_value):
+    global xmm_regs
+    xmm_regs['xmm0'] = 'powf({})'.format(xmm_regs['xmm0'])
 
     handle_unknown_call(code_list, rax_value)
 

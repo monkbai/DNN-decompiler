@@ -376,6 +376,38 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         return filter_shape, input_shape, output_shape, (0, 0, 0, 0, 0, 0)
 
 
+def get_splited_in_mem(mem_read_regions: list):
+    target_size = dict()
+    for mem_blk in mem_read_regions:
+        mem_size = mem_blk[1] - mem_blk[0]
+        if mem_size in target_size:
+            target_size[mem_size] += 1
+        else:
+            target_size[mem_size] = 1
+
+    mem_start = 0x7f0000000000
+    mem_end = 0
+    target_list = list(target_size.items())
+    target_list = sorted(target_list, key=lambda x: x[1])
+    mem_size = target_list[-1][0]
+    tail_size = 0
+    for i in range(len(mem_read_regions)):
+        mem_blk = mem_read_regions[i]
+        if mem_blk[1] - mem_blk[0] == mem_size:
+            if mem_blk[0] < mem_start:
+                mem_start = mem_blk[0]
+            if mem_blk[1] > mem_end:
+                mem_end = mem_blk[1]
+
+            if tail_size == 0 and i < (len(mem_read_regions) - 3):
+                blk_2 = mem_read_regions[i+1]
+                blk_3 = mem_read_regions[i+2]
+                if (blk_2[1]-blk_2[0]) == (blk_3[1]-blk_3[0]) == mem_size:
+                    if blk_3[1] - blk_2[1] == blk_2[1] - mem_blk[1]:
+                        tail_size = blk_2[1] - mem_blk[1]
+    return mem_start, mem_end + tail_size
+
+
 def kernel_1_1(name, exp, mem_read_regions: list, mem_write_regions: list, compiler='tvm'):
     """ function to handle layer with 1*1 kernel """
     mem_start = 0x7f0000000000
@@ -1023,7 +1055,10 @@ def explain_glow_dense_result(exp_log_path: str, mem_write_regions: list):
 # ==============================================================
 def explain_glow_maxpool_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
     out_mem = biggest_region(mem_write_regions)
-    in_mem = biggest_region(mem_read_regions)
+    if len(mem_read_regions) > 10:
+        in_mem = get_splited_in_mem(mem_read_regions)
+    else:
+        in_mem = biggest_region(mem_read_regions)
 
     name, exp = choose_one_max(exp_log_path, out_mem, )
     """
@@ -1067,7 +1102,7 @@ def explain_glow_maxpool_result(exp_log_path: str, mem_read_regions: list, mem_w
         return kernel_size, stride
 
 
-def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_read_regions: list, vector_size=0):
+def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_read_regions: list, is2d=False):
     name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4)
     block_size = 4
     if len(name) == 0:
@@ -1092,10 +1127,43 @@ def explain_glow_avgpool_result(exp_log_path: str, mem_write_regions: list, mem_
     for i in range(len(offset_list) - 1):
         if offset_list[i+1] - offset_list[i] != offset_step:
             dimension_flag = 2
-    if dimension_flag == 2:
+    if dimension_flag == 2 or is2d:
         return math.sqrt(len(offset_list)), 1
     else:
         return len(offset_list), 1
+
+
+def explain_glow_insert_tensor(exp_log_path: str, mem_write_regions: list, mem_read_regions: list, func_info: list):
+    offset = 0
+    output_addr = func_info[3][0]
+    output_addr = int(output_addr, 16)
+    min_addr = int('0xffffffff', 16)
+    with open(exp_log_path, 'r') as f:
+        lines = f.readlines()
+        for i in range(0, len(lines), 2):
+            addr = lines[i].split(',')[0]
+            addr = int(addr, 16)
+            min_addr = min(min_addr, addr)
+    offset = (min_addr - output_addr) / 4
+    return offset
+
+
+def explain_glow_lrn(exp_log_path: str, mem_write_regions: list, mem_read_regions: list):
+    """
+    For local response normalization.
+    Get thet amount of neighbouring channels used for normalization.
+    :param exp_log_path:
+    :param mem_write_regions:
+    :param mem_read_regions:
+    :return:
+    """
+    name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4)
+    block_size = 4
+    if len(name) == 0:
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=32)
+        block_size = 32
+    size = exp.count('*')
+    return size
 
 
 if __name__ == '__main__':
