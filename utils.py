@@ -791,11 +791,13 @@ def extract_inserttensor_offset_glow(prog_path: str, in_data: str, log_path: str
         lines = f.readlines()
         idx = 0
         for l in lines:
-            func_addr, offfset = l.split(':')
+            if l.startswith('#eof'):
+                break
+            func_addr, offset = l.split(':')
             offset = int(offset.split(',')[-1])
             assert insert_tensor_list[idx][1] == func_addr and not insert_tensor_list[idx][2]
             insert_tensor_list[idx][2] = offset
-
+            idx += 1
     return insert_tensor_list
 
 
