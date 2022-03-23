@@ -82,10 +82,10 @@ class Block(nn.Module):
         out2 = self.block2(self.relu2_1(self.block2_1(x)))
         out3 = self.block3(self.relu3_1(self.block3_1(x)))
         out4 = self.block4(self.block4_1(x))
-        print(out1.shape, out2.shape, out3.shape, out4.shape)
+        # print(out1.shape, out2.shape, out3.shape, out4.shape)  # debug
         out = torch.cat([out1, out2, out3, out4], dim=1)
         out = self.relu(out)
-        print(out.shape)
+        # print(out.shape)  # debug
         return out
 
 
@@ -132,6 +132,7 @@ class InceptionV1(nn.Module):
 
         self.blockA = nn.Sequential(
             nn.Conv2d(in_channels=3,out_channels=64,kernel_size=7,stride=2,padding=3),
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=3,stride=2, padding=0),
             nn.LocalResponseNorm(5),
 
@@ -141,14 +142,16 @@ class InceptionV1(nn.Module):
         
         self.blockB = nn.Sequential(
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=1, stride=1),
+            nn.ReLU(),
             nn.Conv2d(in_channels=64, out_channels=192, kernel_size=3, stride=1, padding=1),
-            nn.LocalResponseNorm(7),
+            nn.ReLU(),
+            nn.LocalResponseNorm(5),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=0),
         )
         set_weights(self.blockB[0], './0013.weights_0.json')
         set_biases(self.blockB[0], '0013.biases_0.json')
-        set_weights(self.blockB[1], './0014.weights_0.json')
-        set_biases(self.blockB[1], '0014.biases_0.json')
+        set_weights(self.blockB[2], './0014.weights_0.json')
+        set_biases(self.blockB[2], '0014.biases_0.json')
 
         self.blockC = nn.Sequential(
             Block(in_channels=192,out_chanel_1=64, out_channel_3_reduce=96, out_channel_3=128,
@@ -199,14 +202,14 @@ class InceptionV1(nn.Module):
                   '0053.weights_0.json', '0053.biases_0.json',
                   '0054.weights_0.json', '0054.biases_0.json',
                   '0056.weights_0.json', '0056.biases_0.json')
-        set_block(self.blockD_2[0],  
+        set_block(self.blockD_2[1],  
                   '0063.weights_0.json', '0063.biases_0.json', 
                   '0064.weights_0.json', '0064.biases_0.json', 
                   '0065.weights_0.json', '0065.biases_0.json',
                   '0053.weights_1.json', '0053.biases_1.json',
                   '0054.weights_1.json', '0054.biases_1.json',
                   '0056.weights_1.json', '0056.biases_1.json')
-        set_block(self.blockD_2[0],  
+        set_block(self.blockD_2[2],  
                   '0071.weights_0.json', '0071.biases_0.json', 
                   '0072.weights_0.json', '0072.biases_0.json', 
                   '0073.weights_0.json', '0073.biases_0.json',
@@ -263,12 +266,13 @@ class InceptionV1(nn.Module):
         x = self.blockA(x)
         x = self.blockB(x)
         x = self.blockC(x)
-        # Classifiction1 = x = self.blockD_1(x)
-        # Classifiction2 = x = self.blockD_2(x)
+        Classifiction1 = x = self.blockD_1(x)
+        Classifiction2 = x = self.blockD_2(x)
         x = self.blockD_3(x)
+        # print(x[0])  # debug
         out = self.blockE(x)
         out = self.avgpool(out)
-        out = self.dropout(out)
+        # out = self.dropout(out)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         if self.stage == 'train':
