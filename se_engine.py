@@ -915,6 +915,9 @@ def handle_movss(code_list, mem_addr):
         elif 'qword' in op2:
             size = 8
         xmm2mem(op2, mem_addr, size)
+    elif op1 in xmm_regs.keys() and op2 in xmm_regs.keys():
+        # xmm reg --> xmm reg
+        set_xmm(op1, xmm_regs[op2])
     else:
         assert False, 'not implemented: movss'
         exit(-1)
