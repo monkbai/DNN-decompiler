@@ -650,6 +650,9 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
     elif 'embedding' in func_type:
         vector_size = explain_tvm_embedding_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return vector_size
+    elif 'lrn' in func_type:
+        size = explain.explain_tvm_lrn_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        return size
 
 
 # ==============================================================
@@ -670,7 +673,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and '0200' in name:
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0163' in name or '0153' in name):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()
@@ -707,6 +710,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
                                        mem_read_log_path, mem_write_log_path,
                                        prog_path, in_data, func_type=func_types[func_name])
         func_shape[func_name] = all_shapes  # filter_shape, input_shape, output_shape, layout_shape
+        print(all_shapes)  # for debug
     return func_shape
 
 

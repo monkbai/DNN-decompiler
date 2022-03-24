@@ -280,10 +280,14 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     else:
         # get the filter shape and input shape from first output
         if exp.startswith('sub'):
-            offset_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=input_region)
+            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=input_region, weight_addr=True)
         else:
-            offset_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=input_region)  # analyze the first expression (with the smallest address)
+            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=input_region, weight_addr=True)  # analyze the first expression (with the smallest address)
         # print('debug input offset_list', offset_list)  # debug
+        out_mem = biggest_region(mem_write_regions)
+        # get the filter shape and input shape from first output
+        #offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='glow', in_blk=in_mem, weight_addr=True)
+        weights_mem = region_with_target(mem_read_regions, weight_list[0])
         
         stride = offset_list[1] - offset_list[0]  # not the real stride
         index = 0
@@ -308,27 +312,35 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
                 input_shape[2] = input_shape[3] = get_input_shape(name, exp, mem_read_regions, input_shape[1], 4)
                 break
             index += 1
-        """
-        addr_list_0 = get_addr_list(mem_list[0][1], 'tvm', 4)
-        if addr_list_0[0] > addr_list_0[-1]:
-            addr_list_0.reverse()  # addr_list_0.sort()
-        addr_list_1 = get_addr_list(mem_list[1][1], 'tvm', 4)
-        if addr_list_1[0] > addr_list_1[-1]:
-            addr_list_1.reverse()  # addr_list_1.sort()
-        addr_1 = addr_list_1[0]
-        # idx_0 = addr_list_0.index(addr_1)
-        idx_0 = 0
-        while idx_0 < len(addr_list_0):
-            if addr_list_0[idx_0] >= addr_1:
-                break
-            idx_0 += 1
-        if idx_0 == 1:
-            stride = 1
-        elif idx_0 <= 3:
-            stride = idx_0  # / filter_shape[1]  # TODO: calculate the stride, can be wrong
-        else:
-            stride = idx_0 / filter_shape[1]
-        """
+
+        # add case: filter shape is [1 x 1]
+        tmp1 = offset_list[index + 1]
+        the_threshold = 144  # do not know how to describe it  # is it reasonable?
+        # if filter_shape[3] > 9 and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and tmp1 >= the_threshold:
+        if filter_shape[3] > 9 and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and index < 4:  # index == 3
+            tmp1 = offset_list[index + 1]
+            tmp2 = tmp1 / (index+1)   # input[2] * input[3]
+            input_shape[2] = input_shape[3] = math.sqrt(tmp2)
+            filter_shape[2] = filter_shape[3] = 1
+            input_shape[1] = filter_shape[1] = len(offset_list)
+
+            filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / filter_shape[1]
+            # tmp_value = math.sqrt((out_mem[1] - out_mem[0]) / 4 / filter_shape[0])
+            # input_shape[2] = input_shape[3] = output_shape[2] = output_shape[3] = math.ceil(tmp_value)
+            blk_size = 1
+        # case [3 x 3], [5 x 5], ...
+        # elif filter_shape[3] > 9 and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and tmp1 < the_threshold:
+        elif filter_shape[3] > 9 and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and index >= 4:
+            tmp1 = offset_list[index + 1]
+            tmp2 = tmp1 / 4  # input[2] or input[3]
+            input_shape[2] = input_shape[3] = tmp2
+            filter_shape[2] = filter_shape[3] = (index+1) / 4
+            input_shape[1] = filter_shape[1] = len(offset_list) / filter_shape[2] / filter_shape[3]
+
+            filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / (filter_shape[1] * filter_shape[2] * filter_shape[3])
+            # tmp_value = math.sqrt((out_mem[1] - out_mem[0]) / 4 / filter_shape[0])
+            # input_shape[2] = input_shape[3] = output_shape[2] = output_shape[3] = math.ceil(tmp_value)
+
         stride = guess_stride  # if we cannot get accurate stride, guess one
 
         output_shape[2] = math.ceil((input_shape[2] - filter_shape[2] + 1)/stride)
@@ -570,8 +582,11 @@ def is_ignore(mem_list: list, mem_read_regions: list, filter_shape: list):
 
 def get_offset_list(value: str, compiler: str, size=4, in_blk=(0, 0), weight_addr=False):
     times = value.count('*')
-    if compiler == 'tvm':
+    if compiler == 'tvm' and not weight_addr:
         offset_list = get_addr_list(value, 'tvm', size)
+        # (offset_list)  #debug
+    elif compiler == 'tvm' and weight_addr:
+        offset_list, weight_list = get_addr_list(value, 'tvm', size, weight_addr=weight_addr)
         # (offset_list)  #debug
     elif compiler == 'glow' and not weight_addr:
         offset_list = get_addr_list(value, 'glow', size, in_blk=in_blk)
@@ -617,26 +632,42 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0), weight_addr=
         match = re.search(r'(0x[0-9a-f]+),4 \*', value)
         if match:
             it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+            weight_it = re.finditer(r' \* (0x[0-9a-f]+),[0-9]+', value)
             input_on_the_left = True
         else:
             it = re.finditer(r'\* (0x[0-9a-f]+),4', value)
+            weight_it = re.finditer(r'(0x[0-9a-f]+),[0-9]+ \*', value)
             input_on_the_left = False
         for match in it:
             addr = match.group(1)
             addr_list.append(int(addr, 16))
-        return addr_list
+        for match in weight_it:
+            addr = match.group(1)
+            weight_addr_list.append(int(addr, 16))
+        if weight_addr:
+            return addr_list, weight_addr_list
+        else:
+            return addr_list
     if compiler == 'tvm' and size == 16:
         match = re.search(r'\* (0x[0-9a-f]+),4', value)
         if match:
             it = re.finditer(r'\* (0x[0-9a-f]+),4', value)
+            weight_it = re.finditer(r'(0x[0-9a-f]+),[0-9]+ \*', value)
             input_on_the_left = False
         else:
             it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+            weight_it = re.finditer(r'\* (0x[0-9a-f]+),[0-9]+', value)
             input_on_the_left = True
         for match in it:
             addr = match.group(1)
             addr_list.append(int(addr, 16))
-        return addr_list
+        for match in weight_it:
+            addr = match.group(1)
+            weight_addr_list.append(int(addr, 16))
+        if weight_addr:
+            return addr_list, weight_addr_list
+        else:
+            return addr_list
     elif compiler == 'glow':
         reg_str_list = [r'(0x[0-9a-f]+,{} \*)'.format(size), r'(\* 0x[0-9a-f]+,{})'.format(size), r'(\* 0x[0-9a-f]+,32)', r'(0x[0-9a-f]+,32 \*)']  # ,32 is used for extracting weights addr
         # reg_str = r'((0x[0-9a-f]+,{} \*)|(\* 0x[0-9a-f]+,{}))'.format(size, size)
@@ -1030,6 +1061,34 @@ def explain_tvm_embedding_result(exp_log_path: str, mem_read_regions: list, mem_
     one_vec = biggest_region(mem_read_regions)
     vec_size = (one_vec[1] - one_vec[0]) / 4
     return vec_size
+
+
+def explain_tvm_lrn_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+    """
+    For local response normalization.
+    Get thet amount of neighbouring channels used for normalization.
+    :param exp_log_path:
+    :param mem_write_regions:
+    :param mem_read_regions:
+    :return:
+    """
+    name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4, num=-1)  # num=-1 --> find the first one, no need in the out_mem
+    block_size = 4
+    if len(name) == 0:
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=16, num=-1)
+        block_size = 16
+    if len(name) == 0:
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=32, num=-1)
+        block_size = 32
+    it = re.finditer(r'(0x[0-9a-f]+,[0-9]+) \* (0x[0-9a-f]+,[0-9]+)', exp)
+    addr_set = set()
+    for match in it:
+        addr1 = match.group(1)
+        addr2 = match.group(2)
+        if addr1 == addr2:
+            addr_set.add(addr1)
+    size = len(addr_set)
+    return size
 
 
 # ==============================================================

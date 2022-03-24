@@ -8,18 +8,16 @@ import trace_filter
 import utils
 import se_engine
 import logging
-from fused_trace import fuse_batchnorm
 print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/inceptionv1_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/ground_truth.txt"
-    # label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/step1.txt"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O0/inceptionv1_funcs/"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O0/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O0/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O0/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -75,29 +73,27 @@ if __name__ == '__main__':
     # This can be done automatically, but we do it manually for simplicity
     se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf', '0x401190': 'powf'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
-    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', topo_list=topo_list)
-    print('all conv and dense done.')
-    for name, result in func_shape.items():
-        print(name)
-        for i in range(len(func_meta_data)):
-            if func_meta_data[i][0] == name:
-                func_meta_data[i][1] = result
-                break
-        if len(result) == 4:
-            print('filter_shape', result[0])
-            print('input_shape', result[1])
-            print('output_shape', result[2])
-            # for O0 binary we do not need layout shape
-        else:
-            print(result)
-    exit(0)
+
+    # func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', topo_list=topo_list)
+    # print('all conv and dense done.')
+    # for name, result in func_shape.items():
+    #     print(name)
+    #     for i in range(len(func_meta_data)):
+    #         if func_meta_data[i][0] == name:
+    #             func_meta_data[i][1] = result
+    #             break
+    #     if len(result) == 4:
+    #         print('filter_shape', result[0])
+    #         print('input_shape', result[1])
+    #         print('output_shape', result[2])
+    #         # for O0 binary we do not need layout shape
+    #     else:
+    #         print(result)
+    # exit(0)
     
     # ==============================================================
     
     # Step 2.2.2 Other layers
-    # the BatchNorm2d is implemented with a special sequence
-    # [add, sqrt, divide, multiply, multiply, negative, multiply, add, add]
-    # For this special sequence, we try to merge it back into BatchNorm in fused_trace.py
     
     asm_files = os.listdir(utils.funcs_dir)
     se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf', '0x401190': 'powf'}  # address in .plt, name
@@ -108,9 +104,9 @@ if __name__ == '__main__':
             start_addr, _ = utils.get_func_range(asm_path)
             if start_addr in utils.addr2label.keys():
                 func_type = utils.addr2label[start_addr]
-                if 'pool' in func_type or 'bias_add' in func_type or 'add' in func_type:
-                    # transpose, expand_dims and relu could be ignored, batchnormalization always follow after a conv layer
-                    print('SE for {}, {}'.format(asm_file, func_type))
+                if func_type in ['lrn', 'max_pool2d', 'bias_add', 'add', 'avg_pool2d', ]:
+
+                    print('\nSE for {}, {}'.format(asm_file, func_type))
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
                     # gnereate tmp trace file, it should be fast
                     utils.generate_inst_trace(asm_file, tmp_log_path, prog_path, in_data, timeout=True)
@@ -132,12 +128,11 @@ if __name__ == '__main__':
                 break
         print(name)
         print(result)
-    #exit(0)
+    exit(0)
     
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================
-    func_meta_data = fuse_batchnorm(topo_list, func_meta_data)
     new_meta_data = []
     logged_func = []
     for i in range(len(func_meta_data)):

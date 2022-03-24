@@ -346,6 +346,8 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             pass
         elif mnemonic == 'mul':
             pass
+        elif mnemonic == 'ret':
+            pass
         else:
             if len(code_list) > 2 and ('[' in code_list[1] or '[' in code_list[2]):
                 assert False, "Instruction not implemented:\n{}".format(log_line)
@@ -1241,7 +1243,7 @@ def handle_unpcklp(code_list, mem_addr):
         elif code_list[0] == 'unpcklps':
             xmm_unpcklps_xmm(op1, op2)
         else:
-            print('not implemented unpcklp')
+            assert False, 'not implemented unpcklp: {}'.format(code_list)
             exit(-1)
         # xmm_unpck_xmm(op1, op2)
     elif op1 in xmm_regs.keys() and '[' in op2:
@@ -1257,8 +1259,10 @@ def handle_unpcklp(code_list, mem_addr):
             xmm_unpcklps_mem(op1, mem_addr, size)
         elif code_list[0] == 'unpcklps':
             xmm_unpcklps_mem(op1, mem_addr, size)
+        elif code_list[0] == 'unpcklpd':
+            xmm_unpcklpd_mem(op1, mem_addr, size)
         else:
-            print('not implemented unpcklp')
+            assert False, 'not implemented unpcklp: {}'.format(code_list)
             exit(-1)
         # xmm_unpck_mem(op1, mem_addr, size)
     else:
