@@ -597,7 +597,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
 
 def recover_shape_tvm(func_name: str, mem_exp_log: str,
                       mem_read_log_path: str, mem_write_log_path: str,
-                      prog_path: str, data_path: str, func_type='conv2d', optimized=False, func_info=[]):
+                      prog_path: str, data_path: str, func_type='conv2d', optimized=False, func_info=[], is2d=False):
     mem_read_log_path = os.path.abspath(mem_read_log_path)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
     prog_path = os.path.abspath(prog_path)
@@ -645,7 +645,7 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
         kernel_size, stride = explain_tvm_maxpool_result(mem_exp_log, write_mem_regions)
         return kernel_size, stride
     elif 'avg' in func_type:
-        kernel_size, stride = explain_tvm_avgpool_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        kernel_size, stride = explain_tvm_avgpool_result(mem_exp_log, read_mem_regions, write_mem_regions, is2d=is2d)
         return kernel_size, stride
     elif 'embedding' in func_type:
         vector_size = explain_tvm_embedding_result(mem_exp_log, read_mem_regions, write_mem_regions)

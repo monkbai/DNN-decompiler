@@ -1011,7 +1011,7 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
 # ==============================================================
 # Heuristics used to recover shape for TVM avg_pool2d layer
 # ==============================================================
-def explain_tvm_avgpool_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+def explain_tvm_avgpool_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list, is2d=False):
     item_size = 4
     name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=item_size)
     if len(name) == 0:
@@ -1047,7 +1047,7 @@ def explain_tvm_avgpool_result(exp_log_path: str, mem_read_regions: list, mem_wr
     for i in range(len(offset_list) - 1):
         if offset_list[i+1] - offset_list[i] != stride_size:
             dimension_flag = 2
-    if dimension_flag == 2:
+    if dimension_flag == 2 or is2d:
         kernel_size = (math.sqrt(kernel_size[0]), kernel_size[1])
     else:
         pass
