@@ -12,7 +12,7 @@ from pin_tools import func_call_trace, inst_trace_log, mem_read_log, mem_write_l
 from pin_tools import dump_dwords, dump_dwords_2, dump_dwords_3
 from pin_tools import convert_dwords2float, rm_log, fun_call_rdi_rsi, compile_all_tools, fused_rdi
 from se_engine import lightweight_SymEx
-from mem_slices import memory_slices
+from mem_slices import memory_slices, filter_mem_regions
 from explain import explain_tvm_conv2d_result, explain_tvm_dense_result
 from explain import explain_tvm_add_result, explain_tvm_maxpool_result, explain_tvm_avgpool_result
 from explain import explain_glow_conv2d_result, explain_glow_dense_result, explain_glow_maxpool_result
@@ -525,6 +525,8 @@ def recover_shape(func_name: str, mem_exp_log: str,
     mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
     read_mem_regions = memory_slices(mem_read_log_path)
     write_mem_regions = memory_slices(mem_write_log_path)
+    # need to refine read_mem_regions, to filter write_mem_regions
+    read_mem_regions = filter_mem_regions(read_mem_regions, write_mem_regions)
     if 'conv' in func_type:
         # try with different stride
         filter_shape = (0, 0, 0, 0)
@@ -534,8 +536,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
         for stride in range(1, 4):
             for padding in range(0, 4):
                 # print('try with stride: {}, padding: {}'.format(stride, padding))
-                if '0091' in func_name:
-                    print('debug')
+
                 tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_with_relu = explain_glow_conv2d_result(
                     mem_exp_log,
                     read_mem_regions,
@@ -590,6 +591,16 @@ def recover_shape(func_name: str, mem_exp_log: str,
     elif 'insert_tensor' in func_type:
         offset = explain.explain_glow_insert_tensor(mem_exp_log, write_mem_regions, read_mem_regions, func_info)
         return offset
+    elif 'extract_tensor' in func_type:
+        in_mem, out_mem = explain.explain_glow_extract_tensor(mem_exp_log, write_mem_regions, read_mem_regions, func_info)
+        in_mem = (hex(in_mem[0]), hex(in_mem[1]), in_mem[1] - in_mem[0])
+        out_mem = (hex(out_mem[0]), hex(out_mem[1]), out_mem[1] - out_mem[0])
+        return in_mem, out_mem
+    elif 'transpose' in func_type:
+        in_mem, out_mem = explain.explain_glow_transpose(mem_exp_log, write_mem_regions, read_mem_regions, func_info)
+        in_mem = (hex(in_mem[0]), hex(in_mem[1]), in_mem[1]-in_mem[0])
+        out_mem = (hex(out_mem[0]), hex(out_mem[1]), out_mem[1]-out_mem[0])
+        return in_mem, out_mem
     elif 'local_response_normalization' in func_type:
         size = explain.explain_glow_lrn(mem_exp_log, write_mem_regions, read_mem_regions)
         return size
@@ -673,7 +684,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0163' in name or '0153' in name):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0029' in name):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()

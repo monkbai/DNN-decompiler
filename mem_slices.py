@@ -105,6 +105,23 @@ def memory_slices(mem_read_trace: str):
     return new_mem_objs
 
 
+def filter_mem_regions(mem_read_regions: list, mem_write_regions: list):
+    new_read_mem_regions = []
+    for i in range(len(mem_read_regions)):
+        for j in range(len(mem_write_regions)):
+            in_mem = mem_read_regions[i]
+            out_mem = mem_write_regions[j]
+            if in_mem[1] == out_mem[1]:
+                if in_mem[0] < out_mem[0] < in_mem[1]:
+                    in_mem = (in_mem[0], out_mem[0])
+                    new_read_mem_regions.append(in_mem)
+                elif in_mem[0] >= out_mem[0]:
+                    pass  # overlapped by out mem
+            else:
+                new_read_mem_regions.append(in_mem)
+    return new_read_mem_regions
+
+
 if __name__ == '__main__':
     # memory_slices("/home/lifter/pin-3.14-98223-gb010a12c6-gcc-linux/source/tools/MyPinTool/tmp.log")
     memory_slices("../mem_write.log")

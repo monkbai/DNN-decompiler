@@ -822,15 +822,20 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
                 break
             index += 1
 
-        # add case: filter shape is [1 x 1]
+        # add case: filter shape is [1 x 1]  # inception
         if index == len(offset_list) - 1:
             filter_shape[3] = filter_shape[2] = 1
             input_shape[1] = filter_shape[1] = len(offset_list)
             filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / filter_shape[1]
             tmp_value = math.sqrt((out_mem[1] - out_mem[0]) / 4 / filter_shape[0])
             input_shape[2] = input_shape[3] = output_shape[2] = output_shape[3] = math.ceil(tmp_value)
-
-            # input_shape[2] =
+        # add case: group conv  # exists in shufflenet
+        elif (index+1)**2 == len(offset_list):
+            filter_shape[1] = 1
+            filter_shape[2] = filter_shape[3] = index+1
+            filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / (filter_shape[2]*filter_shape[3])
+            input_shape[1] = filter_shape[0]
+            input_shape[2] = input_shape[3] = math.sqrt((in_mem[1]-in_mem[0])/4/input_shape[1])
         # cannot get stride in the case of glow, because glow use NHWC
         # the output shape can be wrong, because of the implicit padding
         output_shape[2] = math.ceil((input_shape[2] + guess_padding*2 - filter_shape[2] + 1) / guess_stride)
@@ -1205,6 +1210,35 @@ def explain_glow_insert_tensor(exp_log_path: str, mem_write_regions: list, mem_r
             min_addr = min(min_addr, addr)
     offset = (min_addr - output_addr) / 4
     return offset
+
+
+def explain_glow_extract_tensor(exp_log_path: str, mem_write_regions: list, mem_read_regions: list, func_info: list):
+    offset = 0
+    input_addr = func_info[3][0]
+    input_addr = int(input_addr, 16)
+    output_addr = func_info[4]
+    output_addr = int(output_addr, 16)
+
+    min_addr = int('0xffffffff', 16)
+    with open(exp_log_path, 'r') as f:
+        lines = f.readlines()
+        for i in range(0, len(lines), 2):
+            addr = lines[i].split(',')[0]
+            addr = int(addr, 16)
+            min_addr = min(min_addr, addr)
+    # it is strange that min_addr is lower than output_addr
+    # I suppose it caused by confusing design in Glow
+    offset = (min_addr - output_addr) / 4
+
+    in_mem = biggest_region(mem_read_regions)
+    out_mem = biggest_region(mem_write_regions)
+    return in_mem, out_mem
+
+
+def explain_glow_transpose(exp_log_path: str, mem_write_regions: list, mem_read_regions: list, func_info: list):
+    in_mem = biggest_region(mem_read_regions)
+    out_mem = biggest_region(mem_write_regions)
+    return in_mem, out_mem
 
 
 def explain_glow_lrn(exp_log_path: str, mem_write_regions: list, mem_read_regions: list):

@@ -241,6 +241,10 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             handle_xorps(code_list, mem_addr)
         elif mnemonic.startswith('vbroadcastss'):
             handle_vbroadcastss(code_list, mem_addr)
+        elif mnemonic.startswith('vunpckhps'):
+            handle_vunpckhp(code_list, mem_addr)
+        elif mnemonic.startswith('vunpcklps'):
+            handle_vunpcklp(code_list, mem_addr)
         elif mnemonic.startswith('vzeroupper'):
             pass
         # xmm register related instructions
@@ -682,6 +686,18 @@ def xmm_unpcklps_xmm(xmm1: str, xmm2: str):
         xmm_regs[xmm1] = 'lps({}):lps({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
 
 
+def xmm_vunpcklps_xmm(xmm1: str, xmm2: str, xmm3: str):
+    global xmm_regs, mem_state
+    if xmm_regs[xmm3] == xmm_regs[xmm2] == '0':
+        xmm_regs[xmm1] = '0'
+
+    if xmm_regs[xmm1].endswith('4') and xmm_regs[xmm2].endswith('4'):
+        # xmm_regs[xmm1] = '({}:{}),8'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+        xmm_regs[xmm1] = neighbor_mem_merge(xmm_regs[xmm3], xmm_regs[xmm2], 4, 4)
+    else:
+        xmm_regs[xmm1] = 'lps({}):lps({})'.format(xmm_regs[xmm2], xmm_regs[xmm3])
+
+
 def xmm_unpckhpd_xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
     xmm_regs[xmm1] = 'hpd({}):hpd({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
@@ -690,6 +706,14 @@ def xmm_unpckhpd_xmm(xmm1: str, xmm2: str):
 def xmm_unpckhps_xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
     xmm_regs[xmm1] = 'hps({}):hps({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+
+
+def xmm_vunpckhps_xmm(xmm1: str, xmm2: str, xmm3: str):
+    global xmm_regs, mem_state
+    if xmm_regs[xmm2] == xmm_regs[xmm3] == '0':
+        xmm_regs[xmm1] = '0'
+    else:
+        xmm_regs[xmm1] = 'hps({}):hps({})'.format(xmm_regs[xmm2], xmm_regs[xmm3])
 
 
 def xmm_punpckhdq_xmm(xmm1: str, xmm2: str):
@@ -1270,6 +1294,22 @@ def handle_unpcklp(code_list, mem_addr):
         exit(-1)
 
 
+def handle_vunpcklp(code_list, mem_addr):
+    op1 = code_list[1]
+    op2 = code_list[2]
+    op3 = code_list[3]
+    assert op1 in xmm_regs.keys()
+    if op1 in xmm_regs.keys() and op2 in xmm_regs.keys():
+        if code_list[0] == 'vunpcklps':
+            xmm_vunpcklps_xmm(op1, op2, op3)
+        else:
+            assert False, 'not implemented vunpcklp: {}'.format(code_list)
+            exit(-1)
+    else:
+        assert False, 'not implemented: vunpcklp: {}'.format(code_list)
+        exit(-1)
+
+
 def handle_unpckhp(code_list, mem_addr):
     op1 = code_list[1]
     op2 = code_list[2]
@@ -1298,6 +1338,22 @@ def handle_unpckhp(code_list, mem_addr):
             exit(-1)
     else:
         print('not implemented: unpckhpd, unpckhps')
+        exit(-1)
+
+
+def handle_vunpckhp(code_list, mem_addr):
+    op1 = code_list[1]
+    op2 = code_list[2]
+    op3 = code_list[3]
+    assert op1 in xmm_regs.keys()
+    if op1 in xmm_regs.keys() and op2 in xmm_regs.keys():
+        if code_list[0] == 'vunpckhps':
+            xmm_vunpckhps_xmm(op1, op2, op3)
+        else:
+            assert False, 'not implemented: handle_vunpckhp'
+            exit(-1)
+    else:
+        assert False, 'not implemented: vunpckhpd, vunpckhps'
         exit(-1)
 
 
