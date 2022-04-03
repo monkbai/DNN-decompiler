@@ -650,6 +650,12 @@ def neighbor_mem_merge(mem1: str, mem2: str, mem1_size: int, mem2_size: int):
         mem2_addr = int(mem2.split(',')[0], 16)
         if mem1_addr + mem1_size == mem2_addr:
             return mem1.split(',')[0] + ',' + str(mem1_size + mem2_size)
+
+    # This is not correct, actually I cannot understand why this will happen
+    # But we only want to extract some patterns from symbolic expressions, so, it is fine
+    min_addr = min(mem1_addr, mem2_addr)
+    return '{},16'.format(hex(min_addr))
+
     return '({}:{}),16'.format(mem2, mem1)  # cannot merge
 
 
@@ -682,6 +688,8 @@ def xmm_unpcklps_xmm(xmm1: str, xmm2: str):
     if xmm_regs[xmm1].endswith('4') and xmm_regs[xmm2].endswith('4'):
         # xmm_regs[xmm1] = '({}:{}),8'.format(xmm_regs[xmm2], xmm_regs[xmm1])
         xmm_regs[xmm1] = neighbor_mem_merge(xmm_regs[xmm1], xmm_regs[xmm2], 4, 4)
+    elif xmm_regs[xmm2] == xmm_regs[xmm1]:  # according to optimized model in function: neighbor_mem_merge
+        xmm_regs[xmm1] = xmm_regs[xmm2]
     else:
         xmm_regs[xmm1] = 'lps({}):lps({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
 
@@ -694,6 +702,8 @@ def xmm_vunpcklps_xmm(xmm1: str, xmm2: str, xmm3: str):
     if xmm_regs[xmm1].endswith('4') and xmm_regs[xmm2].endswith('4'):
         # xmm_regs[xmm1] = '({}:{}),8'.format(xmm_regs[xmm2], xmm_regs[xmm1])
         xmm_regs[xmm1] = neighbor_mem_merge(xmm_regs[xmm3], xmm_regs[xmm2], 4, 4)
+    elif xmm_regs[xmm2] == xmm_regs[xmm3]:  # according to optimized model in function: neighbor_mem_merge
+        xmm_regs[xmm1] = xmm_regs[xmm2]
     else:
         xmm_regs[xmm1] = 'lps({}):lps({})'.format(xmm_regs[xmm2], xmm_regs[xmm3])
 
@@ -739,6 +749,8 @@ def xmm_unpcklps_mem(xmm_name: str, mem_addr: str, size: int):
     if mem_state[mem_key].endswith('4') and xmm_regs[xmm_name].endswith('4'):
         # xmm_regs[xmm_name] = '({}:{}),8'.format(mem_state[mem_key], xmm_regs[xmm_name])
         xmm_regs[xmm_name] = neighbor_mem_merge(xmm_regs[xmm_name], mem_state[mem_key], 4, 4)
+    elif mem_state[mem_key] == xmm_regs[xmm_name]:  # according to optimized model in function: neighbor_mem_merge
+        pass  # xmm_regs[xmm_name] = xmm_regs[xmm_name]
     else:
         xmm_regs[xmm_name] = 'lps({}):lps({})'.format(mem_state[mem_key], xmm_regs[xmm_name])
 

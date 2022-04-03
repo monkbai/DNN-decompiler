@@ -57,6 +57,10 @@ func2param = dict()
 
 funcs_dir = './vgg16_glow_funcs/'
 
+in_data_path = ""
+dl_prog_path = ""
+cur_fun_name = ""
+
 
 # ==============================================================
 # Generate the function call trace
@@ -133,6 +137,7 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
     addr2label = json_to_dict('./addr2label.json')  # type: dict
     addr2funcs = json_to_dict('./addr2funcs.json')  # type: dict
     func2param = dict()
+    addr2param = dict()
     if len(config_path) > 0:
         config_path = os.path.abspath(config_path)
         func2param = json_to_dict(config_path)  # type: dict
@@ -152,6 +157,7 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
                 #    print('{}: {}'.format(addr, addr2label[addr]))
     else:
         with open(trace_log_path, 'r') as f:
+            node_id = 0
             trace_txt = f.read()
             lines = trace_txt.split('\n')
             for line in lines:
@@ -172,10 +178,15 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
                     if key in label:
                         param_labels = labels_list
                         break
-                # print the func parameters 
+
+                input_list = []
+                output_list = []
+                # print the func parameters
                 with_label = True
                 if len(params) != len(param_labels):
                     with_label = False
+                    input_list = params[:-1]
+                    output_list = params[-1:]
 
                 for i in range(len(params)):
                     if i != len(params) - 1:
@@ -188,18 +199,32 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
                             print('{} {}'.format(param_labels[i], params[i]))
                         else:
                             print('{}'.format(params[i]))
+                    if with_label and 'in' in param_labels[i]:
+                        input_list.append(params[i])
+                    elif with_label and 'out' in param_labels[i]:
+                        output_list.append(params[i])
+                    elif with_label:
+                        input_list.append(params[i])
 
                 for i in range(len(params)):
                     params[i] = int(params[i].strip(), 16)
                 param_list += params
+
+                addr2param[node_id] = [addr, addr2funcs[addr], (input_list, output_list)]
+                node_id += 1
     param_list.sort()
-    return param_list
+    dict_to_json(addr2param, './addr2param.json')
+    return param_list, addr2param
 
 
-def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict()):
+def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict(), config_path=''):
     global addr2label, addr2funcs  # , addr2param
     addr2label = json_to_dict('./addr2label.json')  # type: dict
     addr2funcs = json_to_dict('./addr2funcs.json')  # type: dict
+    func2param = dict()
+    if len(config_path) > 0:
+        config_path = os.path.abspath(config_path)
+        func2param = json_to_dict(config_path)  # type: dict
 
     trace_log_path = os.path.abspath(trace_log_path)
 
@@ -217,7 +242,7 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict()):
                 params = line.split(':')[1].strip(' ,')
                 params = params.split(',')
                 inputs = params[:-1]
-                output = params[-1]
+                output = params[-1:]
 
                 addr_list = list(addr2label.keys())  # type: list
                 addr_list.sort()
@@ -227,6 +252,19 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict()):
                 id2addr[id] = (addr_list[idx], addr)
 
                 if 'add add' not in label:
+                    param_labels = []
+                    for key, labels_list in func2param.items():
+                        if key in label:
+                            param_labels = labels_list
+                            break
+                    if len(param_labels) > 0:  # refine the inputs and output with config
+                        inputs = []
+                        output = []
+                        for i in range(len(params)):
+                            if 'out' in param_labels[i]:
+                                output.append(params[i])
+                            else:
+                                inputs.append(params[i])
                     params_list.append((id, label, inputs, output))
                     id += 1
                 # if 'add add' not in label:  # TODO: why it looks like this?
@@ -235,14 +273,14 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict()):
                 #     if 'relu' in label:
                 #         params_list.append((id, 'relu', [output], output))
                 #         id += 1
-                else:
+                else:  # TODO: merge this special case
                     conv2d_label = label.replace('add ', '', 1)
                     params_list.append((id, conv2d_label, inputs[1:], output))
                     id += 1
-                    params_list.append((id, 'add', [inputs[0], output], output))
+                    params_list.append((id, 'add', [inputs[0], output[0]], output))
                     id += 1
                     if 'relu' in label:
-                        params_list.append((id, 'relu', [output], output))
+                        params_list.append((id, 'relu', output, output))
                         id += 1
     elif compiler == 'glow':
         assert len(addr2param) > 0, 'addr2param not provided.'
@@ -275,7 +313,10 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict()):
             j = i - 1
             while j >= 0:
                 params = params_list[j]
-                if params[3] == input_addr:
+                if isinstance(params[3], str) and params[3] == input_addr:
+                    input_id.append(j)
+                    break
+                elif isinstance(params[3], list) and input_addr in params[3]:
                     input_id.append(j)
                     break
                 j -= 1
@@ -606,9 +647,30 @@ def recover_shape(func_name: str, mem_exp_log: str,
         return size
 
 
+def previous_read_mem_regions():
+    # This function is only used for TVM binary
+    func_name = cur_fun_name
+    func_num = int(func_name.split('.')[0])
+    prev_func = "{:0>4d}.txt".format(func_num - 2)
+
+    func_asm_path = os.path.join(funcs_dir, prev_func)
+    func_asm_path = os.path.abspath(func_asm_path)
+    start_addr, end_addr = get_func_range(func_asm_path)
+
+    mem_read_log_path = './tmp_prev_mem_read.log'
+    mem_read_log(mem_read_log_path, start_addr, end_addr, dl_prog_path, in_data_path)
+    read_mem_regions = memory_slices(mem_read_log_path)
+    return read_mem_regions
+
+
 def recover_shape_tvm(func_name: str, mem_exp_log: str,
                       mem_read_log_path: str, mem_write_log_path: str,
-                      prog_path: str, data_path: str, func_type='conv2d', optimized=False, func_info=[], is2d=False):
+                      prog_path: str, data_path: str, func_type='conv2d', optimized=False, func_info=[], is2d=True):
+    global in_data_path, dl_prog_path, cur_fun_name
+    in_data_path = data_path
+    dl_prog_path = prog_path
+    cur_fun_name = func_name
+
     mem_read_log_path = os.path.abspath(mem_read_log_path)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
     prog_path = os.path.abspath(prog_path)
@@ -620,6 +682,11 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
 
     mem_read_log(mem_read_log_path, start_addr, end_addr, prog_path, data_path)
     read_mem_regions = memory_slices(mem_read_log_path)
+    # In some case, the weights are temporally stored on stack
+    # We cannot get the weight_mem from current function
+    # So, we try to get the weights_mem from previous function
+    # prev_regions = previous_read_mem_regions()  # for debug
+
     mem_write_log(mem_write_log_path, start_addr, end_addr, prog_path, data_path)
     write_mem_regions = memory_slices(mem_write_log_path)
     if 'conv2d' in func_type:
@@ -684,7 +751,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0029' in name):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0217' in name):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()
