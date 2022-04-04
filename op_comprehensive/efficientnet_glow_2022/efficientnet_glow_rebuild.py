@@ -95,7 +95,7 @@ def drop_connect(x, drop_connect_rate, training):
 
 
 class MBConvBlock(nn.Module):
-    def __init__(self, inp, final_oup, k, s, expand_ratio, se_ratio, has_se=False):
+    def __init__(self, inp, final_oup, k, s, expand_ratio):
         super(MBConvBlock, self).__init__()
 
         self._momentum = 0.01
@@ -104,7 +104,6 @@ class MBConvBlock(nn.Module):
         self.output_filters = final_oup
         self.stride = s
         self.expand_ratio = expand_ratio
-        self.has_se = has_se
         self.id_skip = True  # skip connection and drop connect
 
         # Expansion phase
@@ -119,18 +118,12 @@ class MBConvBlock(nn.Module):
             kernel_size=k, padding=(k - 1) // 2, stride=s, bias=False)
         self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._momentum, eps=self._epsilon)
 
-        # Squeeze and Excitation layer, if desired
-        if self.has_se:
-            num_squeezed_channels = max(1, int(inp * se_ratio))
-            self._se_reduce = nn.Conv2d(in_channels=oup, out_channels=num_squeezed_channels, kernel_size=1)
-            self._se_expand = nn.Conv2d(in_channels=num_squeezed_channels, out_channels=oup, kernel_size=1)
-
         # Output phase
         self._project_conv = nn.Conv2d(in_channels=oup, out_channels=final_oup, kernel_size=1, bias=False)
         self._bn2 = nn.BatchNorm2d(num_features=final_oup, momentum=self._momentum, eps=self._epsilon)
         self._relu = nn.ReLU6(inplace=True)
 
-    def forward(self, x, drop_connect_rate=None):
+    def forward(self, x):
         """
         :param x: input tensor
         :param drop_connect_rate: drop connect rate (float, between 0 and 1)
@@ -143,30 +136,21 @@ class MBConvBlock(nn.Module):
             x = self._relu(self._bn0(self._expand_conv(x)))
         x = self._relu(self._bn1(self._depthwise_conv(x)))
 
-        # Squeeze and Excitation
-        if self.has_se:
-            x_squeezed = F.adaptive_avg_pool2d(x, 1)
-            x_squeezed = self._se_expand(self._relu(self._se_reduce(x_squeezed)))
-            x = torch.sigmoid(x_squeezed) * x
-
         x = self._bn2(self._project_conv(x))
 
         # Skip connection and drop connect
         if self.id_skip and self.stride == 1 and self.input_filters == self.output_filters:
-            if drop_connect_rate:
-                x = drop_connect(x, drop_connect_rate, training=self.training)
             x += identity  # skip connection
         return x
 
 
 class EfficientNetLite(nn.Module):
-    def __init__(self, widthi_multiplier, depth_multiplier, num_classes, drop_connect_rate, dropout_rate):
+    def __init__(self, widthi_multiplier, depth_multiplier, num_classes):
         super(EfficientNetLite, self).__init__()
 
         # Batch norm parameters
         momentum = 0.01
         epsilon = 1e-3
-        self.drop_connect_rate = drop_connect_rate
 
         mb_block_settings = [
             # repeat|kernal_size|stride|expand|input|output|se_ratio
@@ -200,13 +184,12 @@ class EfficientNetLite(nn.Module):
 
             # The first block needs to take care of stride and filter size increase.
             stage.append(
-                MBConvBlock(input_filters, output_filters, kernal_size, stride, expand_ratio, se_ratio, has_se=False))
+                MBConvBlock(input_filters, output_filters, kernal_size, stride, expand_ratio))
             if num_repeat > 1:
                 input_filters = output_filters
                 stride = 1
             for _ in range(num_repeat - 1):
-                stage.append(MBConvBlock(input_filters, output_filters, kernal_size, stride, expand_ratio, se_ratio,
-                                         has_se=False))
+                stage.append(MBConvBlock(input_filters, output_filters, kernal_size, stride, expand_ratio))
 
             self.blocks.append(stage)
 
@@ -221,23 +204,16 @@ class EfficientNetLite(nn.Module):
 
         self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
 
-        if dropout_rate > 0:
-            self.dropout = nn.Dropout(dropout_rate)
-        else:
-            self.dropout = None
         self.fc = torch.nn.Linear(out_channels, num_classes)
 
-        self._initialize_weights()
+        # self._initialize_weights()
 
     def forward(self, x):
         x = self.stem(x)
         idx = 0
         for stage in self.blocks:
             for block in stage:
-                drop_connect_rate = self.drop_connect_rate
-                if drop_connect_rate:
-                    drop_connect_rate *= float(idx) / len(self.blocks)
-                x = block(x, drop_connect_rate)
+                x = block(x)
                 idx += 1
         x = self.head(x)
         x = self.avgpool(x)
@@ -248,33 +224,34 @@ class EfficientNetLite(nn.Module):
 
         return x
 
-    def _initialize_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                n = m.weight.size(1)
-                m.weight.data.normal_(0, 1.0 / float(n))
-                m.bias.data.zero_()
-
-    def load_pretrain(self, path):
-        state_dict = torch.load(path)
-        self.load_state_dict(state_dict, strict=True)
+    # def _initialize_weights(self):
+    #     for m in self.modules():
+    #         if isinstance(m, nn.Conv2d):
+    #             n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+    #             m.weight.data.normal_(0, math.sqrt(2. / n))
+    #             if m.bias is not None:
+    #                 m.bias.data.zero_()
+    #         elif isinstance(m, nn.BatchNorm2d):
+    #             m.weight.data.fill_(1)
+    #             m.bias.data.zero_()
+    #         elif isinstance(m, nn.Linear):
+    #             n = m.weight.size(1)
+    #             m.weight.data.normal_(0, 1.0 / float(n))
+    #             m.bias.data.zero_()
+    #
+    # def load_pretrain(self, path):
+    #     state_dict = torch.load(path)
+    #     self.load_state_dict(state_dict, strict=True)
 
 
 if __name__ == '__main__':
-    model_name = 'efficientnet_lite0'
+    model_name = 'efficientnet_lite4'
     width_coefficient, depth_coefficient, image_size, dropout_rate = 1.4, 1.8, 300, 0.3
     num_classes = 1000
-    model = EfficientNetLite(width_coefficient, depth_coefficient, num_classes, 0.2, dropout_rate)
+    model = EfficientNetLite(width_coefficient, depth_coefficient, num_classes)
     model.eval()
-    # print(model)
+    print(model)
+    exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
     with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/cat.bin", 'br') as f:
