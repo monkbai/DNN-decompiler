@@ -871,6 +871,14 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
         # print('without relu')
         with_relu = False
 
+    with_max_value = False
+    max_value = None
+    if 'min(' in exp:
+        with_max_value = True
+        max_value_addr = get_max_value_addr(exp)
+        max_value = get_max_value(max_value_addr)
+
+
     # TODO: here assume width==height
     input_shape = [1, 1, 1, 1]
     filter_shape = [1, 1, 1, 1]
@@ -961,11 +969,13 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
         print('filter shape', filter_shape)
         print('output shape', output_shape)
         print('with_relu', with_relu)
+        if max_value:
+            print('with max value: {}'.format(max_value))
         print('stride {}, padding {}'.format(guess_stride, guess_padding))
-        return filter_shape, input_shape, output_shape, with_relu
+        return filter_shape, input_shape, output_shape, with_relu, max_value
     else:
         # print('not a reasonable guess, ignored')
-        return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), False
+        return (0, 0, 0, 0), (0, 0, 0, 0), (0, 0, 0, 0), False, None
 
 
 def get_weights_addrs(exp: str, size=4, on_the_right=True):
@@ -980,6 +990,18 @@ def get_weights_addrs(exp: str, size=4, on_the_right=True):
     # print('one weights addr', hex(addr_list[0]))
     return addr_list
 
+
+def get_max_value_addr(exp: str):
+    mat = re.search('min\(.*, 0x([0-9a-f]+),4\)', exp)
+    if mat:
+        return int(mat.group(1), 16)
+
+
+def get_max_value(dump_addr: int):
+    dump_addr = hex(dump_addr)
+    log_path = 'tmp_dump.log'
+    max_value = utils.extract_single_dword(log_path, dump_addr)
+    return max_value
 
 # ==============================================================
 # Heuristics used to recover shape for TVM dense/fully-connected layer

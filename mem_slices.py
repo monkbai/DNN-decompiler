@@ -117,6 +117,12 @@ def filter_mem_regions(mem_read_regions: list, mem_write_regions: list):
                     new_read_mem_regions.append(in_mem)
                 elif in_mem[0] >= out_mem[0]:
                     pass  # overlapped by out mem
+            elif in_mem[0] == out_mem[0]:
+                if in_mem[0] < out_mem[1] < in_mem[1]:
+                    in_mem = (out_mem[1], in_mem[1])
+                    new_read_mem_regions.append(in_mem)
+                elif in_mem[1] <= out_mem[1]:
+                    pass  # overlapped by out mem
             else:
                 new_read_mem_regions.append(in_mem)
     return new_read_mem_regions

@@ -541,8 +541,12 @@ def identify_fixed_insert_tensor(asm_path: str):
 def recover_shape(func_name: str, mem_exp_log: str,
                   mem_read_log_path: str, mem_write_log_path: str,
                   prog_path: str, data_path: str, func_type='conv2d', func_info=[], is2d=False):
-    global addr2param
+    global addr2param, in_data_path, dl_prog_path, cur_fun_name
     addr2param = json_to_dict('./addr2param.json')
+
+    in_data_path = data_path
+    dl_prog_path = prog_path
+    cur_fun_name = func_name
 
     mem_read_log_path = os.path.abspath(mem_read_log_path)
     mem_write_log_path = os.path.abspath(mem_write_log_path)
@@ -574,11 +578,12 @@ def recover_shape(func_name: str, mem_exp_log: str,
         input_shape = (0, 0, 0, 0)
         output_shape = (0, 0, 0, 0)
         with_relu = False
+        max_value = None
         for stride in range(1, 4):
             for padding in range(0, 4):
                 # print('try with stride: {}, padding: {}'.format(stride, padding))
 
-                tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_with_relu = explain_glow_conv2d_result(
+                tmp_filter_shape, tmp_input_shape, tmp_output_shape, tmp_with_relu, tmp_max_value = explain_glow_conv2d_result(
                     mem_exp_log,
                     read_mem_regions,
                     write_mem_regions,
@@ -590,9 +595,10 @@ def recover_shape(func_name: str, mem_exp_log: str,
                     input_shape = tmp_input_shape
                     output_shape = tmp_output_shape
                     with_relu = tmp_with_relu
+                    max_value = tmp_max_value
                     if filter_shape[2] == filter_shape[3] == 1:
                         # print('stride: 2')  # not always
-                        return filter_shape, input_shape, output_shape, with_relu  # no need to guess padding/stride
+                        return filter_shape, input_shape, output_shape, with_relu, max_value  # no need to guess padding/stride
         print(filter_shape)
         if filter_shape[0] == 0:
             assert False, ("failed to predict the filter shape. \n"
@@ -600,7 +606,7 @@ def recover_shape(func_name: str, mem_exp_log: str,
                            "In such case, you may delete the slice log file corresponding to current function, and try again.\n"
                            "the trace_filter will randomly pick an address again."
                            )
-        return filter_shape, input_shape, output_shape, with_relu
+        return filter_shape, input_shape, output_shape, with_relu, max_value
     elif 'matmul' in func_type:  # dense in tvm
         input_size, output_size = explain_glow_dense_result(mem_exp_log, write_mem_regions)
         return output_size, input_size
@@ -751,7 +757,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0217' in name):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0010' in name):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()
@@ -848,6 +854,35 @@ def extract_params_tvm(prog_path: str, in_data: str, w_shape: tuple, dump_point:
                 wf.write(json_str)
                 wf.close()
     rm_log(log_path)
+
+
+def extract_single_dword(log_path: str, dump_addr: str):
+    prog_path = os.path.abspath(dl_prog_path)
+    in_data = os.path.abspath(in_data_path)
+    log_path = os.path.abspath(log_path)
+    dwords_len = 1
+    func_name = cur_fun_name
+    func_name = os.path.join(funcs_dir, func_name)
+    dump_point, _ = get_func_range(func_name)
+
+    if os.path.exists(log_path):
+        rm_log(log_path)
+    pin_tools.dump_single_dword(prog_path, in_data, dump_point, dwords_len, log_path, dump_addr)
+
+    # then convert dwords to floats
+    with open(log_path, 'r') as f:
+        dw_txt = f.read()
+        f.close()
+        end_count = dw_txt.count('end')
+        dw_segs = dw_txt.split('end')[:end_count]
+        for i in range(end_count):
+            dw_txt = dw_segs[i].strip()
+            dw_txt = dw_txt[dw_txt.find('\n') + 1:]
+            float_array = convert_dwords2float(dw_txt, dwords_len)
+
+            return_val = float_array[0]
+    rm_log(log_path)
+    return return_val
 
 
 def extract_inserttensor_offset_glow(prog_path: str, in_data: str, log_path: str, topo_list: list):

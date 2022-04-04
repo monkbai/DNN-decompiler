@@ -237,6 +237,8 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             handle_vmaxss(code_list, mem_addr)
         elif mnemonic.startswith('vmaxps'):
             handle_vmaxss(code_list, mem_addr)
+        elif mnemonic.startswith('vminss'):
+            handle_vminss(code_list, mem_addr)
         elif mnemonic.startswith('vxorps'):
             handle_xorps(code_list, mem_addr)
         elif mnemonic.startswith('vbroadcastss'):
@@ -821,6 +823,23 @@ def xmm_max_mem(xmm_name: str, mem_addr: str, size: int):
         xmm_regs[xmm_name] = 'max({}, {})'.format(xmm_regs[xmm_name], mem_key)
 
 
+def xmm_min_xmm(xmm1: str, xmm2: str, xmm3=''):
+    global xmm_regs, mem_state
+    if len(xmm3) == 0:
+        xmm_regs[xmm1] = 'min({}, {})'.format(xmm_regs[xmm1], xmm_regs[xmm2])
+    else:
+        xmm_regs[xmm1] = 'min({}, {})'.format(xmm_regs[xmm2], xmm_regs[xmm3])
+
+
+def xmm_min_mem(xmm_name: str, mem_addr: str, size: int):
+    global xmm_regs, mem_state
+    mem_key = mem_addr + ',' + str(size)
+    if mem_key in mem_state.keys():
+        xmm_regs[xmm_name] = 'min({}, {})'.format(xmm_regs[xmm_name], mem_state[mem_key])
+    else:
+        xmm_regs[xmm_name] = 'min({}, {})'.format(xmm_regs[xmm_name], mem_key)
+
+
 def xmm_vadd_mem(xmm_1: str, xmm_2: str, mem_addr: str, size: int):
     global xmm_regs, mem_state
     mem_key = mem_addr + ',' + str(size)
@@ -1102,6 +1121,22 @@ def handle_vmaxss(code_list, mem_addr):
         xmm_max_mem(op1, mem_addr, size)
     else:
         assert False, 'not implemented: vmaxss'
+        exit(-1)
+
+
+def handle_vminss(code_list, mem_addr):
+    assert len(code_list) == 4
+    op1 = code_list[1]
+    op2 = code_list[2]
+    op3 = code_list[3]
+    if op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and op3 in xmm_regs.keys():
+        xmm_min_xmm(op1, op2, op3)
+    elif op1 in xmm_regs.keys() and op2 in xmm_regs.keys() and '[' in op3:
+        if 'dword' in op3:
+            size = 4
+        xmm_min_mem(op1, mem_addr, size)
+    else:
+        assert False, 'not implemented: vminss'
         exit(-1)
 
 
