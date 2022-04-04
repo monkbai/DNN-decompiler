@@ -313,10 +313,10 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict(), confi
             j = i - 1
             while j >= 0:
                 params = params_list[j]
-                if isinstance(params[3], str) and params[3] == input_addr:
+                if isinstance(params[3], str) and params[3] == input_addr:  # glow
                     input_id.append(j)
                     break
-                elif isinstance(params[3], list) and input_addr in params[3]:
+                elif isinstance(params[3], list) and input_addr in params[3]:  # tvm
                     input_id.append(j)
                     break
                 j -= 1
