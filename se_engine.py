@@ -278,6 +278,10 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             handle_maxps(code_list, mem_addr)
         elif mnemonic.startswith('maxss'):
             handle_maxss(code_list, mem_addr)
+        elif mnemonic.startswith('minps'):
+            handle_minps(code_list, mem_addr)
+        elif mnemonic.startswith('minss'):
+            handle_minss(code_list, mem_addr)
         elif mnemonic.startswith('xorps'):
             handle_xorps(code_list, mem_addr)
         elif mnemonic.startswith('xorss'):
@@ -1273,6 +1277,43 @@ def handle_maxss(code_list, mem_addr):
         xmm_max_mem(op1, mem_addr, size)
     else:
         print('not implemented: maxss')
+        exit(-1)
+
+
+def handle_minps(code_list, mem_addr):
+    assert len(code_list) == 3
+    op1 = code_list[1]
+    op2 = code_list[2]
+    assert op1 in xmm_regs.keys()
+    if op1 in xmm_regs.keys() and op2 in xmm_regs.keys():
+        xmm_min_xmm(op1, op2)
+    elif op1 in xmm_regs.keys() and '[' in op2:
+        if 'dword' in op2:
+            size = 4
+        elif 'qword' in op2:
+            size = 8
+        elif 'xmmword' in op2:
+            size = 8
+        xmm_min_mem(op1, mem_addr, size)
+    else:
+        assert False, ('not implemented: minps\n{}'.format(code_list))
+        exit(-1)
+
+
+def handle_minss(code_list, mem_addr):
+    assert len(code_list) == 3
+    op1 = code_list[1]
+    op2 = code_list[2]
+    assert op1 in xmm_regs.keys()
+    if op1 in xmm_regs.keys() and op2 in xmm_regs.keys():
+        # TODO not correct
+        xmm_min_xmm(op1, op2)
+    elif op1 in xmm_regs.keys() and '[' in op2:
+        if 'dword' in op2:
+            size = 4
+        xmm_min_mem(op1, mem_addr, size)
+    else:
+        assert False, ('not implemented: maxss\n{}'.format(code_list))
         exit(-1)
 
 

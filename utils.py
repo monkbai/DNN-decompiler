@@ -740,6 +740,9 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
     elif 'lrn' in func_type:
         size = explain.explain_tvm_lrn_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return size
+    elif 'clip' in func_type:
+        max_value = explain.explain_tvm_clip_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        return max_value
 
 
 # ==============================================================
@@ -760,7 +763,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0052' in name):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0426' in name):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()

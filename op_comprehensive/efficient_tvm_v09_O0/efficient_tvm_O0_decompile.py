@@ -8,16 +8,17 @@ import trace_filter
 import utils
 import se_engine
 import logging
+from fused_trace import fuse_batchnorm
 print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/efficientnet_tvm_O0/efficientnet_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/efficientnet_tvm_O0/efficientnet_lite4_tvm_O0_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/efficientnet_tvm_O0/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/efficientnet_tvm_O0/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/efficientnet_tvm_O0/ground_truth.txt"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/efficientnet_funcs/"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/efficientnet_lite4_tvm_O0_strip"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -89,7 +90,7 @@ if __name__ == '__main__':
             # for O0 binary we do not need layout shape
         else:
             print(result)
-    exit(0)
+    # exit(0)
     
     # ==============================================================
     
@@ -104,7 +105,10 @@ if __name__ == '__main__':
             start_addr, _ = utils.get_func_range(asm_path)
             if start_addr in utils.addr2label.keys():
                 func_type = utils.addr2label[start_addr]
-                if func_type in ['lrn', 'max_pool2d', 'bias_add', 'add', 'avg_pool2d', ]:
+                if func_type in ['clip', 'bias_add', 'add', 'avg_pool2d', ]:
+
+                    if 'clip' in func_type:
+                        print('debug')
 
                     print('\nSE for {}, {}'.format(asm_file, func_type))
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
@@ -133,6 +137,7 @@ if __name__ == '__main__':
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================
+    func_meta_data = fuse_batchnorm(topo_list, func_meta_data)
     new_meta_data = []
     logged_func = []
     for i in range(len(func_meta_data)):
@@ -144,10 +149,13 @@ if __name__ == '__main__':
         if meta_data[3] == 'conv2d':
             meta_data[6] = 1
             meta_data[5] = int(meta_data[1][1][3] / meta_data[1][2][3])
-            meta_data[4] = math.ceil((meta_data[1][1][3] - meta_data[1][2][3]*meta_data[5]) / 2)
+            meta_data[4] = math.ceil((meta_data[1][1][3] - meta_data[1][2][3] * meta_data[5]) / 2)
             new_meta_data.append(meta_data)
-        elif meta_data[3] == 'dense' or meta_data[3] == 'bias_add' or meta_data[3] == 'add':
+        elif meta_data[3] == 'dense' or meta_data[3] == 'bias_add' or meta_data[3] == 'gamma' or meta_data[3] == 'beta':
             meta_data[6] = 1
+            new_meta_data.append(meta_data)
+        elif meta_data[3] == 'mean' or meta_data[3] == 'var':
+            meta_data[6] = 0
             new_meta_data.append(meta_data)
         
     func_meta_data = new_meta_data
