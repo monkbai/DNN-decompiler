@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 import json
+import math
+import torch.functional as F
 
 
 def read_json(json_path: str):
@@ -50,257 +52,221 @@ def set_var(module: nn.modules, json_path: str):
     #module.running_var = w
 
 
-# Inception module
-class Block(nn.Module):
-    def __init__(self, in_channels, out_chanel_1, out_channel_3_reduce, out_channel_3,
-                 out_channel_5_reduce, out_channel_5, out_channel_pool):
-        super(Block, self).__init__()
-
-        block = []
-        self.block1 = nn.Conv2d(in_channels=in_channels, out_channels=out_chanel_1, kernel_size=1)
-        block.append(self.block1)
-        
-        self.block2_1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channel_3_reduce, kernel_size=1)
-        self.relu2_1 = nn.ReLU()
-        self.block2 = nn.Conv2d(in_channels=out_channel_3_reduce, out_channels=out_channel_3, kernel_size=3, padding=1)
-        block.append(self.block2)
-        
-        self.block3_1 = nn.Conv2d(in_channels=in_channels, out_channels=out_channel_5_reduce, kernel_size=1)
-        self.relu3_1 = nn.ReLU()
-        self.block3 = nn.Conv2d(in_channels=out_channel_5_reduce, out_channels=out_channel_5, kernel_size=3, padding=2, stride=1)
-        block.append(self.block3)
-        
-        self.block4_1 = nn.MaxPool2d(kernel_size=3,stride=1,padding=1)
-        self.block4 = nn.Conv2d(in_channels=in_channels, out_channels=out_channel_pool, kernel_size=1)
-        block.append(self.block4)
-
-        self.relu = nn.ReLU()
-        # self.incep = nn.Sequential(*block)
-
-    def forward(self, x):
-        out1 = self.block1(x)
-        out2 = self.block2(self.relu2_1(self.block2_1(x)))
-        out3 = self.block3(self.relu3_1(self.block3_1(x)))
-        out4 = self.block4(self.block4_1(x))
-        # print(out1.shape, out2.shape, out3.shape, out4.shape)  # debug
-        out = torch.cat([out1, out2, out3, out4], dim=1)
-        out = self.relu(out)
-        # print(out.shape)  # debug
-        return out
+efficientnet_lite_params = {
+    # width_coefficient, depth_coefficient, image_size, dropout_rate
+    'efficientnet_lite0': [1.0, 1.0, 224, 0.2],
+    'efficientnet_lite1': [1.0, 1.1, 240, 0.2],
+    'efficientnet_lite2': [1.1, 1.2, 260, 0.3],
+    'efficientnet_lite3': [1.2, 1.4, 280, 0.3],
+    'efficientnet_lite4': [1.4, 1.8, 300, 0.3],
+}
 
 
-def set_block(blk: Block, w1: str, b1: str, w2_1: str, b2_1: str, w2: str, b2: str, w3_1: str, b3_1: str, w3: str, b3: str, w4: str, b4: str):
-    set_weights(blk.block1, w1)
-    set_biases(blk.block1, b1)
-
-    set_weights(blk.block2_1, w2_1)
-    set_biases(blk.block2_1, b2_1)
-    set_weights(blk.block2, w2)
-    set_biases(blk.block2, b2)
-
-    set_weights(blk.block3_1, w3_1)
-    set_biases(blk.block3_1, b3_1)
-    set_weights(blk.block3, w3)
-    set_biases(blk.block3, b3)
-
-    set_weights(blk.block4, w4)
-    set_biases(blk.block4, b4)
+def round_filters(filters, multiplier, divisor=8, min_width=None):
+    """Calculate and round number of filters based on width multiplier."""
+    if not multiplier:
+        return filters
+    filters *= multiplier
+    min_width = min_width or divisor
+    new_filters = max(min_width, int(filters + divisor / 2) // divisor * divisor)
+    # Make sure that round down does not go down by more than 10%.
+    if new_filters < 0.9 * filters:
+        new_filters += divisor
+    return int(new_filters)
 
 
-# class InceptionClassifiction(nn.Module):
-#     def __init__(self, in_channels,out_channels):
-#         super(InceptionClassifiction, self).__init__()
+def round_repeats(repeats, multiplier):
+    """Round number of filters based on depth multiplier."""
+    if not multiplier:
+        return repeats
+    return int(math.ceil(multiplier * repeats))
 
-#         self.avgpool = nn.AvgPool2d(kernel_size=5, stride=3)
-#         self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=128, kernel_size=1)
-#         self.linear1 = nn.Linear(in_features=128 * 4 * 4, out_features=1024)
-#         self.relu = nn.ReLU(inplace=True)
-#         self.dropout = nn.Dropout(p=0.7)
-#         self.linear2 = nn.Linear(in_features=1024, out_features=out_channels)
 
-#     def forward(self, x):
-#         x = self.conv1(self.avgpool(x))
-#         x = x.view(x.size(0), -1)
-#         x= self.relu(self.linear1(x))
-#         out = self.linear2(self.dropout(x))
-#         return out
+def drop_connect(x, drop_connect_rate, training):
+    if not training:
+        return x
+    keep_prob = 1.0 - drop_connect_rate
+    batch_size = x.shape[0]
+    random_tensor = keep_prob
+    random_tensor += torch.rand([batch_size, 1, 1, 1], dtype=x.dtype, device=x.device)
+    binary_mask = torch.floor(random_tensor)
+    x = (x / keep_prob) * binary_mask
+    return x
 
-class InceptionV1(nn.Module):
-    def __init__(self, num_classes=1000, stage='train'):
-        super(InceptionV1, self).__init__()
-        self.stage = stage
 
-        self.blockA = nn.Sequential(
-            nn.Conv2d(in_channels=3,out_channels=64,kernel_size=7,stride=2,padding=3),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=3,stride=2, padding=0),
-            nn.LocalResponseNorm(5),
+class MBConvBlock(nn.Module):
+    def __init__(self, inp, final_oup, k, s, expand_ratio):
+        super(MBConvBlock, self).__init__()
 
-        )
-        set_weights(self.blockA[0], './0010.weights_0.json')
-        set_biases(self.blockA[0], '0010.biases_0.json')
-        
-        self.blockB = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=1, stride=1),
-            nn.ReLU(),
-            nn.Conv2d(in_channels=64, out_channels=192, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.LocalResponseNorm(5),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=0),
-        )
-        set_weights(self.blockB[0], './0013.weights_0.json')
-        set_biases(self.blockB[0], '0013.biases_0.json')
-        set_weights(self.blockB[2], './0014.weights_0.json')
-        set_biases(self.blockB[2], '0014.biases_0.json')
+        self._momentum = 0.01
+        self._epsilon = 1e-3
+        self.input_filters = inp
+        self.output_filters = final_oup
+        self.stride = s
+        self.expand_ratio = expand_ratio
+        self.id_skip = True  # skip connection and drop connect
 
-        self.blockC = nn.Sequential(
-            Block(in_channels=192,out_chanel_1=64, out_channel_3_reduce=96, out_channel_3=128,
-                  out_channel_5_reduce = 16, out_channel_5=32, out_channel_pool=32), 
-            Block(in_channels=256, out_chanel_1=128, out_channel_3_reduce=128, out_channel_3=192,
-                  out_channel_5_reduce=32, out_channel_5=96, out_channel_pool=64),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=0),
-        )
-        set_block(self.blockC[0], 
-                  '0021.weights_0.json', '0021.biases_0.json', 
-                  '0022.weights_0.json', '0022.biases_0.json', 
-                  '0023.weights_0.json', '0023.biases_0.json', 
-                  '0017.weights_0.json', '0017.biases_0.json',
-                  '0018.weights_0.json', '0018.biases_0.json',
-                  '0020.weights_0.json', '0020.biases_0.json')
-        set_block(self.blockC[1],  
-                  '0032.weights_0.json', '0032.biases_0.json', 
-                  '0033.weights_0.json', '0033.biases_0.json', 
-                  '0034.weights_0.json', '0034.biases_0.json',
-                  '0030.weights_0.json', '0030.biases_0.json',
-                  '0031.weights_0.json', '0031.biases_0.json',
-                  '0029.weights_0.json', '0029.biases_0.json')
+        # Expansion phase
+        oup = inp * expand_ratio  # number of output channels
+        if expand_ratio != 1:
+            self._expand_conv = nn.Conv2d(in_channels=inp, out_channels=oup, kernel_size=1, bias=False)
+            self._bn0 = nn.BatchNorm2d(num_features=oup, momentum=self._momentum, eps=self._epsilon)
 
-        self.blockD_1 = Block(in_channels=480, out_chanel_1=192, out_channel_3_reduce=96, out_channel_3=208,
-                              out_channel_5_reduce=16, out_channel_5=48, out_channel_pool=64)
-        set_block(self.blockD_1,  
-                  '0045.weights_0.json', '0045.biases_0.json', 
-                  '0046.weights_0.json', '0046.biases_0.json', 
-                  '0047.weights_0.json', '0047.biases_0.json',
-                  '0041.weights_0.json', '0041.biases_0.json',
-                  '0042.weights_0.json', '0042.biases_0.json',
-                  '0044.weights_0.json', '0044.biases_0.json')
-        # if self.stage == 'train':
-        #     self.Classifiction_logits1 = InceptionClassifiction(in_channels=512,out_channels=num_classes)
+        # Depthwise convolution phase
+        self._depthwise_conv = nn.Conv2d(
+            in_channels=oup, out_channels=oup, groups=oup,  # groups makes it depthwise
+            kernel_size=k, padding=(k - 1) // 2, stride=s, bias=False)
+        self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._momentum, eps=self._epsilon)
 
-        self.blockD_2 = nn.Sequential(
-            Block(in_channels=512, out_chanel_1=160, out_channel_3_reduce=112, out_channel_3=224,
-                              out_channel_5_reduce=24, out_channel_5=64, out_channel_pool=64),
-            Block(in_channels=512, out_chanel_1=128, out_channel_3_reduce=128, out_channel_3=256,
-                              out_channel_5_reduce=24, out_channel_5=64, out_channel_pool=64),
-            Block(in_channels=512, out_chanel_1=112, out_channel_3_reduce=144, out_channel_3=288,
-                              out_channel_5_reduce=32, out_channel_5=64, out_channel_pool=64),
-        )
-        set_block(self.blockD_2[0],  
-                  '0057.weights_0.json', '0057.biases_0.json', 
-                  '0058.weights_0.json', '0058.biases_0.json', 
-                  '0059.weights_0.json', '0059.biases_0.json',
-                  '0053.weights_0.json', '0053.biases_0.json',
-                  '0054.weights_0.json', '0054.biases_0.json',
-                  '0056.weights_0.json', '0056.biases_0.json')
-        set_block(self.blockD_2[1],  
-                  '0063.weights_0.json', '0063.biases_0.json', 
-                  '0064.weights_0.json', '0064.biases_0.json', 
-                  '0065.weights_0.json', '0065.biases_0.json',
-                  '0053.weights_1.json', '0053.biases_1.json',
-                  '0054.weights_1.json', '0054.biases_1.json',
-                  '0056.weights_1.json', '0056.biases_1.json')
-        set_block(self.blockD_2[2],  
-                  '0071.weights_0.json', '0071.biases_0.json', 
-                  '0072.weights_0.json', '0072.biases_0.json', 
-                  '0073.weights_0.json', '0073.biases_0.json',
-                  '0069.weights_0.json', '0069.biases_0.json',
-                  '0070.weights_0.json', '0070.biases_0.json',
-                  '0056.weights_2.json', '0056.biases_2.json')
-
-        # if self.stage == 'train':
-        #     self.Classifiction_logits2 = InceptionClassifiction(in_channels=528,out_channels=num_classes)
-
-        self.blockD_3 = nn.Sequential(
-            Block(in_channels=528, out_chanel_1=256, out_channel_3_reduce=160, out_channel_3=320,
-                              out_channel_5_reduce=32, out_channel_5=128, out_channel_pool=128),
-            nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
-        )
-        set_block(self.blockD_3[0],  
-                  '0082.weights_0.json', '0082.biases_0.json', 
-                  '0083.weights_0.json', '0083.biases_0.json', 
-                  '0084.weights_0.json', '0084.biases_0.json',
-                  '0078.weights_0.json', '0078.biases_0.json',
-                  '0079.weights_0.json', '0079.biases_0.json',
-                  '0081.weights_0.json', '0081.biases_0.json')
-
-        self.blockE = nn.Sequential(
-            Block(in_channels=832, out_chanel_1=256, out_channel_3_reduce=160, out_channel_3=320,
-                  out_channel_5_reduce=32, out_channel_5=128, out_channel_pool=128),
-            Block(in_channels=832, out_chanel_1=384, out_channel_3_reduce=192, out_channel_3=384,
-                  out_channel_5_reduce=48, out_channel_5=128, out_channel_pool=128),
-        )
-        set_block(self.blockE[0],  
-                  '0094.weights_0.json', '0094.biases_0.json', 
-                  '0095.weights_0.json', '0095.biases_0.json', 
-                  '0096.weights_0.json', '0096.biases_0.json',
-                  '0090.weights_0.json', '0090.biases_0.json',
-                  '0091.weights_0.json', '0091.biases_0.json',
-                  '0093.weights_0.json', '0093.biases_0.json')
-        set_block(self.blockE[1],  
-                  '0103.weights_0.json', '0103.biases_0.json', 
-                  '0104.weights_0.json', '0104.biases_0.json', 
-                  '0105.weights_0.json', '0105.biases_0.json',
-                  '0101.weights_0.json', '0101.biases_0.json',
-                  '0102.weights_0.json', '0102.biases_0.json',
-                  '0093.weights_1.json', '0093.biases_1.json')
-
-        self.avgpool = nn.AvgPool2d(kernel_size=7,stride=1)
-        # self.dropout = nn.Dropout(p=0.4)
-        self.linear = nn.Linear(in_features=1024,out_features=num_classes)
-        set_weights(self.linear, './0110.params_0.json')
-        set_biases(self.linear, './0110.biases_0.json')
-        
-        self.softmax = nn.Softmax()
+        # Output phase
+        self._project_conv = nn.Conv2d(in_channels=oup, out_channels=final_oup, kernel_size=1, bias=False)
+        self._bn2 = nn.BatchNorm2d(num_features=final_oup, momentum=self._momentum, eps=self._epsilon)
+        self._relu = nn.ReLU6(inplace=True)
 
     def forward(self, x):
-        x = self.blockA(x)
-        x = self.blockB(x)
-        x = self.blockC(x)
-        Classifiction1 = x = self.blockD_1(x)
-        Classifiction2 = x = self.blockD_2(x)
-        x = self.blockD_3(x)
-        # print(x[0])  # debug
-        out = self.blockE(x)
-        out = self.avgpool(out)
-        # out = self.dropout(out)
-        out = out.view(out.size(0), -1)
-        out = self.linear(out)
-        if self.stage == 'train':
-            # Classifiction1 = self.Classifiction_logits1(Classifiction1)
-            # Classifiction2 = self.Classifiction_logits2(Classifiction2)
-            # return Classifiction1, Classifiction2, out
-            return out
-        else:
-            return self.softmax(out)
+        """
+        :param x: input tensor
+        :param drop_connect_rate: drop connect rate (float, between 0 and 1)
+        :return: output of block
+        """
+
+        # Expansion and Depthwise Convolution
+        identity = x
+        if self.expand_ratio != 1:
+            x = self._relu(self._bn0(self._expand_conv(x)))
+        x = self._relu(self._bn1(self._depthwise_conv(x)))
+
+        x = self._bn2(self._project_conv(x))
+
+        # Skip connection and drop connect
+        if self.id_skip and self.stride == 1 and self.input_filters == self.output_filters:
+            x += identity  # skip connection
+        return x
 
 
-model = InceptionV1(num_classes=1000, stage='test')
-# print(model)
+class EfficientNetLite(nn.Module):
+    def __init__(self, widthi_multiplier, depth_multiplier, num_classes):
+        super(EfficientNetLite, self).__init__()
 
-# input = torch.randn(1, 3, 224, 224)
-with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/cat.bin", 'br') as f:
-        bin_data = f.read()
-        np_arr = np.frombuffer(bin_data, dtype=np.float32)
-        print(np_arr.shape)
-        np_arr = np_arr.reshape(3, 224, 224)
-        np_arr = np_arr.reshape((1, 3, 224, 224))
-        x = torch.Tensor(np_arr)
-        print(x.shape)
-input = x
-out = model(input)
+        # Batch norm parameters
+        momentum = 0.01
+        epsilon = 1e-3
 
-max_index = np.argmax(out.detach().numpy())
-print(max_index)
-# print(out)
-print(out.detach().numpy()[0, max_index])
-exit(0)
+        mb_block_settings = [
+            # repeat|kernal_size|stride|expand|input|output|se_ratio
+            [1, 3, 1, 1, 32, 16, 0.25],
+            [2, 3, 2, 6, 16, 24, 0.25],
+            [2, 5, 2, 6, 24, 40, 0.25],
+            [3, 3, 2, 6, 40, 80, 0.25],
+            [3, 5, 1, 6, 80, 112, 0.25],
+            [4, 5, 2, 6, 112, 192, 0.25],
+            [1, 3, 1, 6, 192, 320, 0.25]
+        ]
+
+        # Stem
+        out_channels = 32
+        self.stem = nn.Sequential(
+            nn.Conv2d(3, out_channels, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(num_features=out_channels, momentum=momentum, eps=epsilon),
+            nn.ReLU6(inplace=True),
+        )
+
+        # Build blocks
+        self.blocks = nn.ModuleList([])
+        for i, stage_setting in enumerate(mb_block_settings):
+            stage = nn.ModuleList([])
+            num_repeat, kernal_size, stride, expand_ratio, input_filters, output_filters, se_ratio = stage_setting
+            # Update block input and output filters based on width multiplier.
+            input_filters = input_filters if i == 0 else round_filters(input_filters, widthi_multiplier)
+            output_filters = round_filters(output_filters, widthi_multiplier)
+            num_repeat = num_repeat if i == 0 or i == len(mb_block_settings) - 1 else round_repeats(num_repeat,
+                                                                                                    depth_multiplier)
+
+            # The first block needs to take care of stride and filter size increase.
+            stage.append(
+                MBConvBlock(input_filters, output_filters, kernal_size, stride, expand_ratio))
+            if num_repeat > 1:
+                input_filters = output_filters
+                stride = 1
+            for _ in range(num_repeat - 1):
+                stage.append(MBConvBlock(input_filters, output_filters, kernal_size, stride, expand_ratio))
+
+            self.blocks.append(stage)
+
+        # Head
+        in_channels = round_filters(mb_block_settings[-1][5], widthi_multiplier)
+        out_channels = 1280
+        self.head = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False),
+            nn.BatchNorm2d(num_features=out_channels, momentum=momentum, eps=epsilon),
+            nn.ReLU6(inplace=True),
+        )
+
+        self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
+
+        self.fc = torch.nn.Linear(out_channels, num_classes)
+
+        # self._initialize_weights()
+
+    def forward(self, x):
+        x = self.stem(x)
+        idx = 0
+        for stage in self.blocks:
+            for block in stage:
+                x = block(x)
+                idx += 1
+        x = self.head(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        if self.dropout is not None:
+            x = self.dropout(x)
+        x = self.fc(x)
+
+        return x
+
+    # def _initialize_weights(self):
+    #     for m in self.modules():
+    #         if isinstance(m, nn.Conv2d):
+    #             n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+    #             m.weight.data.normal_(0, math.sqrt(2. / n))
+    #             if m.bias is not None:
+    #                 m.bias.data.zero_()
+    #         elif isinstance(m, nn.BatchNorm2d):
+    #             m.weight.data.fill_(1)
+    #             m.bias.data.zero_()
+    #         elif isinstance(m, nn.Linear):
+    #             n = m.weight.size(1)
+    #             m.weight.data.normal_(0, 1.0 / float(n))
+    #             m.bias.data.zero_()
+    #
+    # def load_pretrain(self, path):
+    #     state_dict = torch.load(path)
+    #     self.load_state_dict(state_dict, strict=True)
+
+
+if __name__ == '__main__':
+    model_name = 'efficientnet_lite4'
+    width_coefficient, depth_coefficient, image_size, dropout_rate = 1.4, 1.8, 300, 0.3
+    num_classes = 1000
+    model = EfficientNetLite(width_coefficient, depth_coefficient, num_classes)
+    model.eval()
+    print(model)
+    exit(0)
+
+    # input = torch.randn(1, 3, 224, 224)
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/cat.bin", 'br') as f:
+            bin_data = f.read()
+            np_arr = np.frombuffer(bin_data, dtype=np.float32)
+            print(np_arr.shape)
+            np_arr = np_arr.reshape(3, 224, 224)
+            np_arr = np_arr.reshape((1, 3, 224, 224))
+            x = torch.Tensor(np_arr)
+            print(x.shape)
+    input = x
+    out = model(input)
+
+    max_index = np.argmax(out.detach().numpy())
+    print(max_index)
+    # print(out)
+    print(out.detach().numpy()[0, max_index])
+    exit(0)

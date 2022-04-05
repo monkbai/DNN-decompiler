@@ -75,6 +75,8 @@ mem_dump_2_log_cmd = "time " + pin_home + "pin -t " + \
                      mypintool_dir + "obj-intel64/MemoryDump_2.so -o {} -length {} -dump_point {} -data_index {} -- {} {}"
 mem_dump_3_log_cmd = pin_home + "pin -t " + \
                      mypintool_dir + "obj-intel64/MemoryDump_3.so -o {} -length {} -dump_point {} -dump_addr {} -- {} {}"
+single_dump_cmd = pin_home + "pin -t " + \
+                  mypintool_dir + "obj-intel64/GetFloat.so -o {} -length {} -dump_point {} -dump_addr {} -- {} {}"
 
 nnfusion_conv_cmd = pin_home + "pin -t " + \
                     mypintool_dir + "obj-intel64/NNFusion_Conv.so" \
@@ -93,7 +95,7 @@ compile_tool_cmd = "make obj-intel64/{}.so TARGET=intel64"
 tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemoryWrite",
               "MemoryDump", "MemoryDump_2", "MemoryDump_3", "FusedRdi", "FunCallRdiRsi",
               "NNFusion_Conv", "NNFusion_Gemm", "NNFusion_Pool", "NNFusion_Trace", "LocateData",
-              "FunCallRdx"]
+              "FunCallRdx", "GetFloat"]
 
 
 def compile_all_tools():
@@ -348,6 +350,21 @@ def dump_dwords_3(prog_path: str, input_data_path: str, inst_addr: str, dwords_l
 
     status, output = cmd(
         mem_dump_3_log_cmd.format(log_path, dwords_len, inst_addr, dump_addr, prog_path, input_data_path))
+    # print(output)
+    if status != 0:
+        print(output)
+
+    project_dir = project_dir_backup
+
+
+def dump_single_dword(prog_path: str, input_data_path: str, inst_addr: str, dwords_len: int, log_path: str, dump_addr: str):
+    global project_dir
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+
+    # -o {} -length {} -dump_point {} -dump_addr {} -- {} {}
+    status, output = cmd(
+        single_dump_cmd.format(log_path, dwords_len, inst_addr, dump_addr, prog_path, input_data_path))
     # print(output)
     if status != 0:
         print(output)
