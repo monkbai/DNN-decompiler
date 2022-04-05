@@ -65,14 +65,6 @@ if __name__ == '__main__':
 
     # Step 2.2 Recover Shape with Symbolic Execution
 
-    # Step 2.2.0 Choose Another Random Target Address (if needed)
-    #func_name = '0030.txt'
-    #asm_path = os.path.join(utils.funcs_dir, func_name)
-    #slice_log, rnd_addr, loop_size = trace_filter.filt_trace(asm_path, prog_path, in_data, '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/0030_rev.log')
-    #print(' slice_log {}\n rnd_addr {}\n loop_size {}\n'.format(slice_log, rnd_addr, loop_size))
-    #utils.generate_symbolic_expression(func_name, '/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/0030_slice.log', exp_log_path, max_inst=5000000)
-    #exit(0)
-
     # Step 2.2.1 Conv and Matmul layers
     se_engine.extern_functions = {}  # no external library function used
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='glow') # also matmul layer
@@ -115,14 +107,6 @@ if __name__ == '__main__':
                    'trans' not in func_type and 'relu' not in func_type and \
                    'softmax' not in func_type:  # transpose could be ignored, (add, relu) layer is known
                     # softmax has no parameter
-                    if 'insert_tensor' in func_type:  # there are two type of insert_tensor
-                        ins_ten_fixed_flag = utils.identify_fixed_insert_tensor(asm_path)
-                        if not ins_ten_fixed_flag:
-                            func_type += '_param'
-                            utils.addr2label[start_addr] = func_type
-                            for node in topo_list:
-                                if node[1] == asm_file:
-                                    node[2] = func_type
                     print('SE for {}, {}'.format(asm_file, func_type))
 
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
@@ -147,9 +131,6 @@ if __name__ == '__main__':
         print(name)
         print(result)
     #exit(0)
-
-    insert_tensor_list = utils.extract_inserttensor_offset_glow(prog_path, in_data, './inserttensor_param.log', topo_list)
-    print(insert_tensor_list)
 
     list_to_json(topo_list, './topo_list.json')
     dict_to_json(func_meta_data, './meta_data.json')

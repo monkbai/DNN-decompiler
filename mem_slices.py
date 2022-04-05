@@ -105,7 +105,7 @@ def memory_slices(mem_read_trace: str):
     return new_mem_objs
 
 
-def filter_mem_regions(mem_read_regions: list, mem_write_regions: list):
+def filter_mem_regions(mem_read_regions: list, mem_write_regions: list, keep_overlap=False):
     new_read_mem_regions = []
     for i in range(len(mem_read_regions)):
         for j in range(len(mem_write_regions)):
@@ -115,13 +115,21 @@ def filter_mem_regions(mem_read_regions: list, mem_write_regions: list):
                 if in_mem[0] < out_mem[0] < in_mem[1]:
                     in_mem = (in_mem[0], out_mem[0])
                     new_read_mem_regions.append(in_mem)
+                    if keep_overlap:
+                        new_read_mem_regions.append(out_mem)
                 elif in_mem[0] >= out_mem[0]:
+                    if keep_overlap:
+                        new_read_mem_regions.append(in_mem)
                     pass  # overlapped by out mem
             elif in_mem[0] == out_mem[0]:
                 if in_mem[0] < out_mem[1] < in_mem[1]:
                     in_mem = (out_mem[1], in_mem[1])
                     new_read_mem_regions.append(in_mem)
+                    if keep_overlap:
+                        new_read_mem_regions.append(out_mem)
                 elif in_mem[1] <= out_mem[1]:
+                    if keep_overlap:
+                        new_read_mem_regions.append(in_mem)
                     pass  # overlapped by out mem
             else:
                 new_read_mem_regions.append(in_mem)
