@@ -52,50 +52,8 @@ def set_var(module: nn.modules, json_path: str):
     #module.running_var = w
 
 
-efficientnet_lite_params = {
-    # width_coefficient, depth_coefficient, image_size, dropout_rate
-    'efficientnet_lite0': [1.0, 1.0, 224, 0.2],
-    'efficientnet_lite1': [1.0, 1.1, 240, 0.2],
-    'efficientnet_lite2': [1.1, 1.2, 260, 0.3],
-    'efficientnet_lite3': [1.2, 1.4, 280, 0.3],
-    'efficientnet_lite4': [1.4, 1.8, 300, 0.3],
-}
-
-
-def round_filters(filters, multiplier, divisor=8, min_width=None):
-    """Calculate and round number of filters based on width multiplier."""
-    if not multiplier:
-        return filters
-    filters *= multiplier
-    min_width = min_width or divisor
-    new_filters = max(min_width, int(filters + divisor / 2) // divisor * divisor)
-    # Make sure that round down does not go down by more than 10%.
-    if new_filters < 0.9 * filters:
-        new_filters += divisor
-    return int(new_filters)
-
-
-def round_repeats(repeats, multiplier):
-    """Round number of filters based on depth multiplier."""
-    if not multiplier:
-        return repeats
-    return int(math.ceil(multiplier * repeats))
-
-
-def drop_connect(x, drop_connect_rate, training):
-    if not training:
-        return x
-    keep_prob = 1.0 - drop_connect_rate
-    batch_size = x.shape[0]
-    random_tensor = keep_prob
-    random_tensor += torch.rand([batch_size, 1, 1, 1], dtype=x.dtype, device=x.device)
-    binary_mask = torch.floor(random_tensor)
-    x = (x / keep_prob) * binary_mask
-    return x
-
-
 class MBConvBlock(nn.Module):
-    def __init__(self, inp, final_oup, k, s, expand_ratio):
+    def __init__(self, inp, final_oup, k, s, expand_ratio, weights_path_list: list, bias_path_list: list):
         super(MBConvBlock, self).__init__()
 
         self._momentum = 0.01
@@ -109,34 +67,44 @@ class MBConvBlock(nn.Module):
         # Expansion phase
         oup = inp * expand_ratio  # number of output channels
         if expand_ratio != 1:
-            self._expand_conv = nn.Conv2d(in_channels=inp, out_channels=oup, kernel_size=1, bias=False)
-            self._bn0 = nn.BatchNorm2d(num_features=oup, momentum=self._momentum, eps=self._epsilon)
+            self._expand_conv = nn.Conv2d(in_channels=inp, out_channels=oup, kernel_size=1, bias=True)
+            # self._bn0 = nn.BatchNorm2d(num_features=oup, momentum=self._momentum, eps=self._epsilon)
 
         # Depthwise convolution phase
         self._depthwise_conv = nn.Conv2d(
             in_channels=oup, out_channels=oup, groups=oup,  # groups makes it depthwise
-            kernel_size=k, padding=(k - 1) // 2, stride=s, bias=False)
-        self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._momentum, eps=self._epsilon)
+            kernel_size=k, padding=(k - 1) // 2, stride=s, bias=True)
+        # self._bn1 = nn.BatchNorm2d(num_features=oup, momentum=self._momentum, eps=self._epsilon)
 
         # Output phase
-        self._project_conv = nn.Conv2d(in_channels=oup, out_channels=final_oup, kernel_size=1, bias=False)
-        self._bn2 = nn.BatchNorm2d(num_features=final_oup, momentum=self._momentum, eps=self._epsilon)
+        self._project_conv = nn.Conv2d(in_channels=oup, out_channels=final_oup, kernel_size=1, bias=True)
+        # self._bn2 = nn.BatchNorm2d(num_features=final_oup, momentum=self._momentum, eps=self._epsilon)
         self._relu = nn.ReLU6(inplace=True)
 
-    def forward(self, x):
-        """
-        :param x: input tensor
-        :param drop_connect_rate: drop connect rate (float, between 0 and 1)
-        :return: output of block
-        """
+        index = 0
+        if self.expand_ratio != 1:
+            set_weights(self._expand_conv, weights_path_list[index])
+            set_biases(self._expand_conv, bias_path_list[index])
+            index += 1
+        set_weights(self._depthwise_conv, weights_path_list[index])
+        set_biases(self._depthwise_conv, bias_path_list[index])
+        index += 1
+        set_weights(self._project_conv, weights_path_list[index])
+        set_biases(self._project_conv, bias_path_list[index])
+        index += 1
+        assert index == len(weights_path_list) == len(bias_path_list)
 
+    def forward(self, x):
         # Expansion and Depthwise Convolution
         identity = x
         if self.expand_ratio != 1:
-            x = self._relu(self._bn0(self._expand_conv(x)))
-        x = self._relu(self._bn1(self._depthwise_conv(x)))
+            # x = self._relu(self._bn0(self._expand_conv(x)))
+            x = self._relu(self._expand_conv(x))
+        # x = self._relu(self._bn1(self._depthwise_conv(x)))
+        x = self._relu(self._depthwise_conv(x))
 
-        x = self._bn2(self._project_conv(x))
+        # x = self._bn2(self._project_conv(x))
+        x = self._project_conv(x)
 
         # Skip connection and drop connect
         if self.id_skip and self.stride == 1 and self.input_filters == self.output_filters:
@@ -166,46 +134,92 @@ class EfficientNetLite(nn.Module):
         # Stem
         out_channels = 32
         self.stem = nn.Sequential(
-            nn.Conv2d(3, out_channels, kernel_size=3, stride=2, padding=1, bias=False),
-            nn.BatchNorm2d(num_features=out_channels, momentum=momentum, eps=epsilon),
+            nn.Conv2d(3, out_channels, kernel_size=3, stride=2, padding=1, bias=True),
+            # nn.BatchNorm2d(num_features=out_channels, momentum=momentum, eps=epsilon),
             nn.ReLU6(inplace=True),
         )
+        set_weights(self.stem[0], '0009.weights_0.json')
+        set_biases(self.stem[0], '0009.biases_0.json')
 
         # Build blocks
         self.blocks = nn.ModuleList([])
-        for i, stage_setting in enumerate(mb_block_settings):
-            stage = nn.ModuleList([])
-            num_repeat, kernal_size, stride, expand_ratio, input_filters, output_filters, se_ratio = stage_setting
-            # Update block input and output filters based on width multiplier.
-            input_filters = input_filters if i == 0 else round_filters(input_filters, widthi_multiplier)
-            output_filters = round_filters(output_filters, widthi_multiplier)
-            num_repeat = num_repeat if i == 0 or i == len(mb_block_settings) - 1 else round_repeats(num_repeat,
-                                                                                                    depth_multiplier)
 
-            # The first block needs to take care of stride and filter size increase.
-            stage.append(
-                MBConvBlock(input_filters, output_filters, kernal_size, stride, expand_ratio))
-            if num_repeat > 1:
-                input_filters = output_filters
-                stride = 1
-            for _ in range(num_repeat - 1):
-                stage.append(MBConvBlock(input_filters, output_filters, kernal_size, stride, expand_ratio))
+        # 0
+        self.blocks.append(nn.ModuleList([
+            MBConvBlock(32, 24, 3, 1, 1, ['0010.weights_0.json', '0011.weights_0.json'], ['0010.biases_0.json', '0011.biases_0.json'])
+        ]))
 
-            self.blocks.append(stage)
+        # 1
+        self.blocks.append(nn.ModuleList([
+            MBConvBlock(24, 32, 3, 2, 6, ['0012.weights_0.json', '0013.weights_0.json', '0014.weights_0.json'], ['0012.biases_0.json', '0013.biases_0.json', '0014.biases_0.json']),
+            MBConvBlock(32, 32, 3, 1, 6, ['0015.weights_0.json', '0016.weights_0.json', '0017.weights_0.json'], ['0015.biases_0.json', '0016.biases_0.json', '0017.biases_0.json']),
+            MBConvBlock(32, 32, 3, 1, 6, ['0015.weights_1.json', '0016.weights_1.json', '0017.weights_1.json'], ['0015.biases_1.json', '0016.biases_1.json', '0017.biases_1.json']),
+            MBConvBlock(32, 32, 3, 1, 6, ['0015.weights_2.json', '0016.weights_2.json', '0017.weights_2.json'], ['0015.biases_2.json', '0016.biases_2.json', '0017.biases_2.json'])
+        ]))
+
+        # 2
+        self.blocks.append(nn.ModuleList([
+            MBConvBlock(32, 56, 5, 2, 6, ['0015.weights_3.json', '0021.weights_0.json', '0022.weights_0.json'], ['0015.biases_3.json', '0021.biases_0.json', '0022.biases_0.json']),
+            MBConvBlock(56, 56, 5, 1, 6, ['0023.weights_0.json', '0024.weights_0.json', '0025.weights_0.json'], ['0023.biases_0.json', '0024.biases_0.json', '0025.biases_0.json']),
+            MBConvBlock(56, 56, 5, 1, 6, ['0023.weights_1.json', '0024.weights_1.json', '0025.weights_1.json'], ['0023.biases_1.json', '0024.biases_1.json', '0025.biases_1.json']),
+            MBConvBlock(56, 56, 5, 1, 6, ['0023.weights_2.json', '0024.weights_2.json', '0025.weights_2.json'], ['0023.biases_2.json', '0024.biases_2.json', '0025.biases_2.json'])
+        ]))
+
+        # 3
+        self.blocks.append(nn.ModuleList([
+            MBConvBlock(56, 112, 3, 2, 6, ['0023.weights_3.json', '0029.weights_0.json', '0030.weights_0.json'], ['0023.biases_3.json', '0029.biases_0.json', '0030.biases_0.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0031.weights_0.json', '0032.weights_0.json', '0033.weights_0.json'], ['0031.biases_0.json', '0032.biases_0.json', '0033.biases_0.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0031.weights_1.json', '0032.weights_1.json', '0033.weights_1.json'], ['0031.biases_1.json', '0032.biases_1.json', '0033.biases_1.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0031.weights_2.json', '0032.weights_2.json', '0033.weights_2.json'], ['0031.biases_2.json', '0032.biases_2.json', '0033.biases_2.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0031.weights_3.json', '0032.weights_3.json', '0033.weights_3.json'], ['0031.biases_3.json', '0032.biases_3.json', '0033.biases_3.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0031.weights_4.json', '0032.weights_4.json', '0033.weights_4.json'], ['0031.biases_4.json', '0032.biases_4.json', '0033.biases_4.json']),
+        ]))
+
+        # 4
+        self.blocks.append(nn.ModuleList([
+            MBConvBlock(112, 160, 5, 1, 6, ['0031.weights_5.json', '0039.weights_0.json', '0040.weights_0.json'], ['0031.biases_5.json', '0039.biases_0.json', '0040.biases_0.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0041.weights_0.json', '0042.weights_0.json', '0043.weights_0.json'], ['0041.biases_0.json', '0042.biases_0.json', '0043.biases_0.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0041.weights_1.json', '0042.weights_1.json', '0043.weights_1.json'], ['0041.biases_1.json', '0042.biases_1.json', '0043.biases_1.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0041.weights_2.json', '0042.weights_2.json', '0043.weights_2.json'], ['0041.biases_2.json', '0042.biases_2.json', '0043.biases_2.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0041.weights_3.json', '0042.weights_3.json', '0043.weights_3.json'], ['0041.biases_3.json', '0042.biases_3.json', '0043.biases_3.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0041.weights_4.json', '0042.weights_4.json', '0043.weights_4.json'], ['0041.biases_4.json', '0042.biases_4.json', '0043.biases_4.json'])
+        ]))
+
+        # 5
+        self.blocks.append(nn.ModuleList([
+            MBConvBlock(160, 272, 5, 2, 6, ['0041.weights_5.json', '0049.weights_0.json', '0050.weights_0.json'], ['0041.biases_5.json', '0049.biases_0.json', '0050.biases_0.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0051.weights_0.json', '0052.weights_0.json', '0053.weights_0.json'], ['0051.biases_0.json', '0052.biases_0.json', '0053.biases_0.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0051.weights_1.json', '0052.weights_1.json', '0053.weights_1.json'], ['0051.biases_1.json', '0052.biases_1.json', '0053.biases_1.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0051.weights_2.json', '0052.weights_2.json', '0053.weights_2.json'], ['0051.biases_2.json', '0052.biases_2.json', '0053.biases_2.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0051.weights_3.json', '0052.weights_3.json', '0053.weights_3.json'], ['0051.biases_3.json', '0052.biases_3.json', '0053.biases_3.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0051.weights_4.json', '0052.weights_4.json', '0053.weights_4.json'], ['0051.biases_4.json', '0052.biases_4.json', '0053.biases_4.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0051.weights_5.json', '0052.weights_5.json', '0053.weights_5.json'], ['0051.biases_5.json', '0052.biases_5.json', '0053.biases_5.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0051.weights_6.json', '0052.weights_6.json', '0053.weights_6.json'], ['0051.biases_6.json', '0052.biases_6.json', '0053.biases_6.json'])
+        ]))
+
+        # 6
+        self.blocks.append(nn.ModuleList([
+            MBConvBlock(272, 448, 3, 1, 6, ['0051.weights_7.json', '0061.weights_0.json', '0062.weights_0.json'], ['0051.biases_7.json', '0061.biases_0.json', '0062.biases_0.json'])
+        ]))
 
         # Head
-        in_channels = round_filters(mb_block_settings[-1][5], widthi_multiplier)
+        in_channels = 448
         out_channels = 1280
         self.head = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=False),
-            nn.BatchNorm2d(num_features=out_channels, momentum=momentum, eps=epsilon),
+            nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=True),
+            # nn.BatchNorm2d(num_features=out_channels, momentum=momentum, eps=epsilon),
             nn.ReLU6(inplace=True),
         )
+        set_weights(self.head[0], '0063.weights_0.json')
+        set_biases(self.head[0], '0063.biases_0.json')
 
         self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
 
-        self.fc = torch.nn.Linear(out_channels, num_classes)
+        self.fc = nn.Linear(out_channels, num_classes)
+        set_weights(self.fc, '0065.params_0.json')
+        set_biases(self.fc, '0065.biases_0.json')
 
+        self.softmax = nn.Softmax()
         # self._initialize_weights()
 
     def forward(self, x):
@@ -218,11 +232,10 @@ class EfficientNetLite(nn.Module):
         x = self.head(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        if self.dropout is not None:
-            x = self.dropout(x)
+
         x = self.fc(x)
 
-        return x
+        return self.softmax(x)
 
     # def _initialize_weights(self):
     #     for m in self.modules():
@@ -250,16 +263,22 @@ if __name__ == '__main__':
     num_classes = 1000
     model = EfficientNetLite(width_coefficient, depth_coefficient, num_classes)
     model.eval()
-    print(model)
-    exit(0)
+    # print(model)
+    # exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
-    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/cat.bin", 'br') as f:
+    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/efficientnet/cat.bin", 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
             print(np_arr.shape)
             np_arr = np_arr.reshape(3, 224, 224)
             np_arr = np_arr.reshape((1, 3, 224, 224))
+
+            new_np_arr = np.transpose(np_arr, (0, 2, 3, 1))
+            print(new_np_arr.shape)
+            with open("/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/efficientnet/cat_transpose.bin", "wb") as fp:
+                fp.write(new_np_arr.astype(np.float32).tobytes())
+
             x = torch.Tensor(np_arr)
             print(x.shape)
     input = x

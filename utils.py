@@ -571,7 +571,10 @@ def recover_shape(func_name: str, mem_exp_log: str,
     read_mem_regions = memory_slices(mem_read_log_path)
     write_mem_regions = memory_slices(mem_write_log_path)
     # need to refine read_mem_regions, to filter write_mem_regions
-    read_mem_regions = filter_mem_regions(read_mem_regions, write_mem_regions)
+    if 'conv' in func_type:
+        read_mem_regions = filter_mem_regions(read_mem_regions, write_mem_regions, keep_overlap=False)
+    else:
+        read_mem_regions = filter_mem_regions(read_mem_regions, write_mem_regions, keep_overlap=True)
     if 'conv' in func_type:
         # try with different stride
         filter_shape = (0, 0, 0, 0)
@@ -757,7 +760,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0010' in name):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0052' in name):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()
@@ -916,8 +919,6 @@ def extract_inserttensor_offset_glow(prog_path: str, in_data: str, log_path: str
             insert_tensor_list[idx][2] = offset
             idx += 1
     return insert_tensor_list
-
-
 
 
 def extract_params_glow(prog_path: str, in_data: str, w_shape: tuple, dump_point: str,
