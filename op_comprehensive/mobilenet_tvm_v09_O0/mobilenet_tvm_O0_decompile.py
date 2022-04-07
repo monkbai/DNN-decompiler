@@ -107,9 +107,6 @@ if __name__ == '__main__':
                 func_type = utils.addr2label[start_addr]
                 if func_type in ['clip', 'bias_add', 'add', 'global_avg_pool2d', ]:
 
-                    if 'clip' in func_type:
-                        print('debug')
-
                     print('\nSE for {}, {}'.format(asm_file, func_type))
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
                     # gnereate tmp trace file, it should be fast
