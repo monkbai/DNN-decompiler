@@ -14,11 +14,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/efficientnet_funcs/"
-    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/efficientnet_lite4_tvm_O0_strip"
-    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/cat.bin"
-    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/ground_truth.txt"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/mobilenetv2_tvm_O0/mobilenet_funcs/"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/mobilenetv2_tvm_O0/mobilenetv2_7_tvm_O0_strip"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/mobilenetv2_tvm_O0/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/mobilenetv2_tvm_O0/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/mobilenetv2_tvm_O0/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
     # We have to pass the external function address to SE engine
     # This can be done automatically, but we do it manually for simplicity
-    se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf'}  # address in .plt, name
+    se_engine.extern_functions = {'0x401120': 'memset'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
 
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', topo_list=topo_list)
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     # Step 2.2.2 Other layers
     
     asm_files = os.listdir(utils.funcs_dir)
-    se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf'}  # address in .plt, name
+    se_engine.extern_functions = {'0x401120': 'memset'}  # address in .plt, name
     results_dict = dict()
     for asm_file in asm_files:
         if 'labels' not in asm_file and asm_file.endswith('.txt'):
@@ -105,10 +105,7 @@ if __name__ == '__main__':
             start_addr, _ = utils.get_func_range(asm_path)
             if start_addr in utils.addr2label.keys():
                 func_type = utils.addr2label[start_addr]
-                if func_type in ['clip', 'bias_add', 'add', 'avg_pool2d', ]:
-
-                    if 'clip' in func_type:
-                        print('debug')
+                if func_type in ['clip', 'bias_add', 'add', 'global_avg_pool2d', ]:
 
                     print('\nSE for {}, {}'.format(asm_file, func_type))
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
