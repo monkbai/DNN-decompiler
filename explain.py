@@ -596,7 +596,7 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
                 break
             index += 1
 
-        if filter_shape[1] == 0 and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and index < 4:  # index == 3
+        if (input_shape[3] > 225 or filter_shape[1] == 0 or filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and index < 4:  # index == 3
             tmp1 = offset_list[index + 1]
             tmp2 = tmp1 / (index+1)   # input[2] * input[3]
             input_shape[2] = input_shape[3] = math.sqrt(tmp2)
