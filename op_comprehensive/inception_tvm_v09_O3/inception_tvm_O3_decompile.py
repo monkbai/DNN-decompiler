@@ -13,11 +13,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/inceptionv1_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O0/ground_truth.txt"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/inceptionv1_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/inceptionv1_tvm_O3_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf', '0x401190': 'powf'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
 
-    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', topo_list=topo_list)
+    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True, topo_list=topo_list)
     print('all conv and dense done.')
     for name, result in func_shape.items():
         print(name)
@@ -89,7 +89,7 @@ if __name__ == '__main__':
             # for O0 binary we do not need layout shape
         else:
             print(result)
-    # exit(0)
+    exit(0)
     
     # ==============================================================
     
