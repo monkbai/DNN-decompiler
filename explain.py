@@ -1138,14 +1138,25 @@ def explain_tvm_maxpool_result(exp_log_path: str, mem_write_regions: list):
     if name1.endswith(',4') and name2.endswith(',4'):
         kernel_size = math.sqrt(exp1.count('max'))
         match = re.search(r', 0x([0-9a-f]+),4\)', exp1[exp1.find(')'):])
+        match_list = re.findall(r', 0x([0-9a-f]+),4\)', exp1[exp1.find(')'):])
         if not match:
             match = re.search(r'\(0x([0-9a-f]+),4, ', exp1)
+            match_list = re.findall(r'\(0x([0-9a-f]+),4, ', exp1)
         addr1 = int(match.group(1), 16)
+        addr1_list = [x.replace(', ', '').strip('()') for x in match_list]
+
         match = re.search(r', 0x([0-9a-f]+),4\)', exp2[exp2.find(')'):])
+        match_list = re.findall(r', 0x([0-9a-f]+),4\)', exp2[exp2.find(')'):])
         if not match:
             match = re.search(r'\(0x([0-9a-f]+),4, ', exp2)
+            match_list = re.findall(r'\(0x([0-9a-f]+),4, ', exp2)
         addr2 = int(match.group(1), 16)
+        addr2_list = [x.replace(', ', '').strip('()') for x in match_list]
         stride = (addr2 - addr1) / 4
+        index = 1
+        while stride == 0:
+            stride = (int(addr2_list[index], 16) - int(addr1_list[index], 16)) / 4
+            index += 1
         return kernel_size, stride
     elif name1.endswith(',16') and name2.endswith(',16'):
         kernel_size = math.sqrt(exp1.count('max'))
