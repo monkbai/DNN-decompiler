@@ -333,6 +333,9 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         input_shape[2] = input_shape[3] = input_num
         output_shape[2] = output_shape[3] = math.ceil(input_num/2)
         # print('special case: stride 2')
+        weights_mem = (0, 0)  # will be identified in function
+        weight_list = []
+        special_flag = False
     else:
         # get the filter shape and input shape from first output
         if exp.startswith('sub'):
@@ -349,7 +352,8 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             weights_mem = smallest_region(prev_read_regions)
         else:
             weights_mem = region_with_target(mem_read_regions, weight_list[0])
-        
+
+        special_flag = False
         stride = offset_list[1] - offset_list[0]  # not the real stride
         index = 0
         while index < len(offset_list) - 1:
@@ -388,7 +392,8 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / filter_shape[1]
             # tmp_value = math.sqrt((out_mem[1] - out_mem[0]) / 4 / filter_shape[0])
             # input_shape[2] = input_shape[3] = output_shape[2] = output_shape[3] = math.ceil(tmp_value)
-            blk_size = 1
+            # blk_size = 1  # TODO: do we still need this flag for the special case?
+            special_flag = True
         # case [3 x 3], [5 x 5], ...
         # elif filter_shape[3] > 9 and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and tmp1 < the_threshold:
         elif (not is_integer_num(filter_shape[1]) or filter_shape[3] > 9) and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and index >= 4:
@@ -401,6 +406,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / (filter_shape[1] * filter_shape[2] * filter_shape[3])
             # tmp_value = math.sqrt((out_mem[1] - out_mem[0]) / 4 / filter_shape[0])
             # input_shape[2] = input_shape[3] = output_shape[2] = output_shape[3] = math.ceil(tmp_value)
+            special_flag = True
         # add case: group conv  # exists in shufflenet
         elif (index + 1) ** 2 == len(offset_list):
             filter_shape[1] = 1
@@ -408,6 +414,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / (filter_shape[2] * filter_shape[3])
             input_shape[1] = filter_shape[0]
             input_shape[2] = input_shape[3] = math.sqrt((in_mem[1] - in_mem[0]) / 4 / input_shape[1])
+            special_flag = True
 
         stride = guess_stride  # if we cannot get accurate stride, guess one
 
@@ -429,23 +436,31 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
 
     if not ignore_flag:
         # try to get the weights layout indicators
-        ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions, weights_mem=weights_mem, weights_offset_list=weight_list)
+        ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions, weights_mem=weights_mem,
+                                                       weights_offset_list=weight_list, special_flag=special_flag)
         # print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
         # final shape, for debugging
         # print('input shape', input_shape)
         # print('filter shape', filter_shape)
         # print('output shape', output_shape)
         # print('layout indicators: {}, {}'.format(ind_a, ind_b))
-        if optimized:
+        if optimized and not special_flag:
             if blk_size:  # kernel --> 1, 1
                 ind_a = blk_size
                 layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
             elif not smooth:
                 layout_shape = [filter_shape[0]/ind_b, filter_shape[1]/ind_a, filter_shape[2], filter_shape[3], ind_a, ind_b]
-            elif filter_shape[1] > ind_a:
+            elif filter_shape[1] > ind_a and (filter_shape[1] % ind_a) == 0:
                 layout_shape = [filter_shape[0]/ind_b, ind_a, filter_shape[2], filter_shape[3], filter_shape[1]/ind_a, ind_b]
-            elif filter_shape[1] <= ind_a:
+            elif filter_shape[1] <= ind_a or (filter_shape[1] % ind_a) != 0:
                 layout_shape = [filter_shape[0]/ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
+        elif optimized and special_flag:
+            if filter_shape[0] > ind_a and (filter_shape[0] % ind_a) == 0:
+                layout_shape = [ind_a, filter_shape[1] / ind_b, filter_shape[2], filter_shape[3], filter_shape[0]/ind_a, ind_b]
+            elif filter_shape[0] <= ind_a or (filter_shape[0] % ind_a) != 0:
+                layout_shape = [1, filter_shape[1] / ind_b, filter_shape[2], filter_shape[3], filter_shape[0], ind_b]
+            else:
+                assert False, 'currently not implemented.'
         else:
             layout_shape = filter_shape
         # print('layout shape', layout_shape)
@@ -802,7 +817,8 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0), weight_addr=
             return addr_list
 
 
-def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', size=4, weights_mem=(0, 0), weights_offset_list=[]):
+def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', size=4, weights_mem=(0, 0),
+                            weights_offset_list=[], special_flag=False):
     if weights_mem[0] == 0:
         weights_addrs = get_weights_addrs(value, size=16)
         if len(weights_addrs) == 0:
@@ -852,7 +868,11 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
     if a == 0:
         smooth = True
         a = (weights_mem[1] - weights_mem[0]) / (max(offset_list) - min(offset_list) + ab)
-        return a, ab, smooth
+        a2 = ((weights_mem[1] - weights_mem[0]) / 4 ) / (max(offset_list) - min(offset_list) + ab)
+        if special_flag:
+            return a2, ab, smooth
+        else:
+            return a, ab, smooth
     smooth = False
     return a, b, smooth
 

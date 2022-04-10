@@ -6,18 +6,20 @@ import math
 sys.path.append("../..")
 import trace_filter
 import utils
+from utils import list_to_json, dict_to_json, json_to_list, json_to_dict
 import se_engine
 import logging
+import copy
 print('get logger: {}'.format('decompiler.'+__name__))
 logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/inceptionv1_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/inceptionv1_tvm_O3_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/inceptionv1_tvm_O3/ground_truth.txt"
+    utils.funcs_dir = "//home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O3/inceptionv1_funcs/"
+    prog_path = "//home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O3/inceptionv1_tvm_O3_strip"
+    in_data = "//home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O3/cat.bin"
+    log_path = "//home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O3/func_call.log"
+    label_file = "//home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O3/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -74,22 +76,22 @@ if __name__ == '__main__':
     se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf', '0x401190': 'powf'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
 
-    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True, topo_list=topo_list)
-    print('all conv and dense done.')
-    for name, result in func_shape.items():
-        print(name)
-        for i in range(len(func_meta_data)):
-            if func_meta_data[i][0] == name:
-                func_meta_data[i][1] = result
-                break
-        if len(result) == 4:
-            print('filter_shape', result[0])
-            print('input_shape', result[1])
-            print('output_shape', result[2])
-            # for O0 binary we do not need layout shape
-        else:
-            print(result)
-    exit(0)
+    # func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True, topo_list=topo_list)
+    # print('all conv and dense done.')
+    # for name, result in func_shape.items():
+    #     print(name)
+    #     for i in range(len(func_meta_data)):
+    #         if func_meta_data[i][0] == name:
+    #             func_meta_data[i][1] = result
+    #             break
+    #     if len(result) == 4:
+    #         print('filter_shape', result[0])
+    #         print('input_shape', result[1])
+    #         print('output_shape', result[2])
+    #         # for O0 binary we do not need layout shape
+    #     else:
+    #         print(result)
+    # exit(0)
     
     # ==============================================================
     
@@ -105,6 +107,9 @@ if __name__ == '__main__':
             if start_addr in utils.addr2label.keys():
                 func_type = utils.addr2label[start_addr]
                 if func_type in ['lrn', 'max_pool2d', 'bias_add', 'add', 'avg_pool2d', ]:
+
+                    if '0251' not in asm_file:
+                        continue
 
                     print('\nSE for {}, {}'.format(asm_file, func_type))
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
@@ -129,7 +134,9 @@ if __name__ == '__main__':
         print(name)
         print(result)
     # exit(0)
-    
+
+    list_to_json(topo_list, './topo_list.json')
+    dict_to_json(func_meta_data, './meta_data.json')
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================
@@ -141,20 +148,32 @@ if __name__ == '__main__':
             continue
         else:
             logged_func.append(meta_data[0])
-        if meta_data[3] == 'conv2d':
-            meta_data[6] = 1
+        if 'conv2d' in meta_data[3]:
+            meta_data[6] = 1  # if conv_type == 3 else 2
             meta_data[5] = int(meta_data[1][1][3] / meta_data[1][2][3])
-            meta_data[4] = math.ceil((meta_data[1][1][3] - meta_data[1][2][3]*meta_data[5]) / 2)
-            new_meta_data.append(meta_data)
-        elif meta_data[3] == 'dense' or meta_data[3] == 'bias_add' or meta_data[3] == 'add':
+            meta_data[4] = math.ceil((meta_data[1][1][3] - meta_data[1][2][3] * meta_data[5]) / 2)
+            meta_data[3] = 'conv2d'
+            new_meta_data.append(meta_data)  # weights of conv
+            meta_data = copy.deepcopy(meta_data)
+            meta_data[6] = 2  # if conv_type == 3 else 3
+            meta_data[5] = meta_data[4] = None
+            meta_data[3] = 'bias_add'
+            meta_data[1] = [1, int(meta_data[1][0][0])]
+            new_meta_data.append(meta_data)  # biases of conv
+        elif 'dense' in meta_data[3]:
             meta_data[6] = 1
-            new_meta_data.append(meta_data)
+            new_meta_data.append(meta_data)  # weights of dense
+            meta_data = copy.deepcopy(meta_data)
+            meta_data[6] = 2
+            meta_data[3] = 'bias_add'
+            meta_data[1] = [1, int(meta_data[1][0])]
+            new_meta_data.append(meta_data)  # biases of dense
         
     func_meta_data = new_meta_data
     for meta_data in func_meta_data:
         if meta_data[6]:
             print(meta_data)
-
+    dict_to_json(func_meta_data, './new_meta_data.json')
 
     logged_func = []
     for meta_data in func_meta_data:

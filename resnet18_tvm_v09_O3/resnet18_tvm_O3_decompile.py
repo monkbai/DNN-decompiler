@@ -14,11 +14,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_tvm_O3_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/resnet18_tvm_O3/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/resnet18_tvm_O3/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/resnet18_tvm_O3/ground_truth.txt"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_funcs/"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_tvm_O3_strip"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -72,7 +72,7 @@ if __name__ == '__main__':
     # Step 2.2.1 Conv and Matmul layers
 
     #se_engine.extern_functions = {'0x400c10': 'memset'}
-    #utils.generate_symbolic_expression('0038.txt', '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/resnet18_tvm_O3/0038_slice.log', exp_log_path, max_inst=5000000)
+    #utils.generate_symbolic_expression('0038.txt', '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/0038_slice.log', exp_log_path, max_inst=5000000)
     #shape = utils.recover_shape_tvm('0038.txt', exp_log_path, mem_read_log_path, mem_write_log_path, prog_path, in_data, func_type='conv2d', optimized=True)
     #print(shape)
     #exit(0)
@@ -96,7 +96,7 @@ if __name__ == '__main__':
             print('layout_shape', result[3])
         else:
             print(result)
-    #exit(0)
+    exit(0)
     
     
     # ==============================================================
