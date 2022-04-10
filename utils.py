@@ -20,7 +20,7 @@ from explain import explain_glow_avgpool_result, explain_tvm_embedding_result
 import explain
 
 
-def list_to_json(dict_obj: dict, output_path: str):
+def list_to_json(dict_obj: list, output_path: str):
     j = json.dumps(dict_obj, sort_keys=True, indent=4)
     with open(output_path, 'w') as f:
         f.write(j)
@@ -34,7 +34,7 @@ def dict_to_json(dict_obj: dict, output_path: str):
 
 def json_to_list(json_path: str):
     if not os.path.exists(json_path):
-        return dict()
+        return list()
     with open(json_path, 'r') as f:
         j_txt = f.read()
         list_obj = json.loads(s=j_txt)
