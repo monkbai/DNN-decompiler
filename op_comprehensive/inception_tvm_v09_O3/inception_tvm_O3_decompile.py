@@ -76,21 +76,21 @@ if __name__ == '__main__':
     se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf', '0x401190': 'powf'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
 
-    # func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True, topo_list=topo_list)
-    # print('all conv and dense done.')
-    # for name, result in func_shape.items():
-    #     print(name)
-    #     for i in range(len(func_meta_data)):
-    #         if func_meta_data[i][0] == name:
-    #             func_meta_data[i][1] = result
-    #             break
-    #     if len(result) == 4:
-    #         print('filter_shape', result[0])
-    #         print('input_shape', result[1])
-    #         print('output_shape', result[2])
-    #         # for O0 binary we do not need layout shape
-    #     else:
-    #         print(result)
+    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True, topo_list=topo_list)
+    print('all conv and dense done.')
+    for name, result in func_shape.items():
+        print(name)
+        for i in range(len(func_meta_data)):
+            if func_meta_data[i][0] == name:
+                func_meta_data[i][1] = result
+                break
+        if len(result) == 4:
+            print('filter_shape', result[0])
+            print('input_shape', result[1])
+            print('output_shape', result[2])
+            # for O0 binary we do not need layout shape
+        else:
+            print(result)
     # exit(0)
     
     # ==============================================================
@@ -107,9 +107,6 @@ if __name__ == '__main__':
             if start_addr in utils.addr2label.keys():
                 func_type = utils.addr2label[start_addr]
                 if func_type in ['lrn', 'max_pool2d', 'bias_add', 'add', 'avg_pool2d', ]:
-
-                    if '0251' not in asm_file:
-                        continue
 
                     print('\nSE for {}, {}'.format(asm_file, func_type))
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'
@@ -178,18 +175,29 @@ if __name__ == '__main__':
     logged_func = []
     for meta_data in func_meta_data:
         func_name = meta_data[0]
-        if func_name not in logged_func:
-            logged_func.append(func_name)
-        else:
-            continue
         w_shape = list(meta_data[1])
+        layout_shape = ()
         dump_point = meta_data[2]
         func_type = meta_data[3]
         data_index = meta_data[6]
-        if func_type == 'conv2d':
+        if '{}-{}'.format(func_name, func_type) not in logged_func:
+            logged_func.append('{}-{}'.format(func_name, func_type))
+        else:
+            continue
+
+        if 'conv2d' in func_type :
+            layout_shape = meta_data[1][-1]
             w_shape = w_shape[0]
-        for i in range(len(w_shape)):
-            if isinstance(w_shape[i], float):
-                w_shape[i] = int(w_shape[i])
+            w_shape = [int(w_shape[i]) for i in range(len(w_shape))]
+            w_shape = tuple(w_shape)
+            layout_shape = [int(layout_shape[i]) for i in range(len(layout_shape))]
+        elif 'dense' in func_type:
+            layout_shape = (int(w_shape[0]/8), int(w_shape[1]), 8)  # TODO: should we write another rule for this?
+            w_shape = [int(w_shape[i]) for i in range(len(w_shape))]
+            w_shape = tuple(w_shape)
+        else:
+            w_shape = [int(w_shape[i]) for i in range(len(w_shape))]
+            w_shape = tuple(w_shape)
         
-        utils.extract_params_tvm(prog_path, in_data, w_shape, dump_point, mem_dump_log_path, func_name, func_type, data_index)
+        utils.extract_params_tvm(prog_path, in_data, w_shape, dump_point, mem_dump_log_path,
+                                 func_name, func_type, data_index, special_layout=layout_shape)
