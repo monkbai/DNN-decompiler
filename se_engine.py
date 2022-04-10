@@ -676,7 +676,10 @@ def xmm_movlhps_xmm(xmm1: str, xmm2: str):
 
 def xmm_movhlps_xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
-    xmm_regs[xmm1] = 'hpd({}):hpd({})'.format(xmm_regs[xmm1], xmm_regs[xmm2])
+    if xmm_regs[xmm1] == xmm_regs[xmm2]:
+        xmm_regs[xmm1] = xmm_regs[xmm2]
+    else:
+        xmm_regs[xmm1] = 'hpd({}):hpd({})'.format(xmm_regs[xmm1], xmm_regs[xmm2])
 
 
 def xmm_unpcklpd_xmm(xmm1: str, xmm2: str):
@@ -716,7 +719,10 @@ def xmm_vunpcklps_xmm(xmm1: str, xmm2: str, xmm3: str):
 
 def xmm_unpckhpd_xmm(xmm1: str, xmm2: str):
     global xmm_regs, mem_state
-    xmm_regs[xmm1] = 'hpd({}):hpd({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
+    if xmm_regs[xmm1] == xmm_regs[xmm2]:
+        xmm_regs[xmm1] = xmm_regs[xmm2]
+    else:
+        xmm_regs[xmm1] = 'hpd({}):hpd({})'.format(xmm_regs[xmm2], xmm_regs[xmm1])
 
 
 def xmm_unpckhps_xmm(xmm1: str, xmm2: str):
@@ -764,7 +770,10 @@ def xmm_unpcklps_mem(xmm_name: str, mem_addr: str, size: int):
 def xmm_unpckhpd_mem(xmm_name: str, mem_addr: str, size: int):
     global xmm_regs, mem_state
     mem_key = mem_addr + ',' + str(size)
-    xmm_regs[xmm_name] = 'hpd({}):hpd({})'.format(mem_state[mem_key], xmm_regs[xmm_name])
+    if xmm_regs[xmm_name] == mem_state[mem_key]:
+        pass  # xmm_regs[xmm_name] = mem_state[mem_key]
+    else:
+        xmm_regs[xmm_name] = 'hpd({}):hpd({})'.format(mem_state[mem_key], xmm_regs[xmm_name])
 
 
 def xmm_unpckhps_mem(xmm_name: str, mem_addr: str, size: int):

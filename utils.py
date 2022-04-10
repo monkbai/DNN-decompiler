@@ -763,7 +763,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0238' in name):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0188' in name):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()
