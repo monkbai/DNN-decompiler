@@ -16,12 +16,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/shufflenetv2_funcs/"
-    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/shufflenetv2_tvm_O0_strip"
-    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/cat.bin"
-    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/ground_truth.txt"
-    # label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/step1.txt"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/shufflenetv2_funcs/"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/shufflenetv2_tvm_O3_strip"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -103,7 +102,7 @@ if __name__ == '__main__':
             # for O0 binary we do not need layout shape
         else:
             print(result)
-    # exit(0)
+    exit(0)
     
     # ==============================================================
     

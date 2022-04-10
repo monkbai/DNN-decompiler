@@ -254,14 +254,14 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict(), confi
                 if 'add add' not in label:
                     param_labels = []
                     for key, labels_list in func2param.items():
-                        if key in label:
+                        if key in label and len(params) == len(labels_list):
                             param_labels = labels_list
                             break
                     if len(param_labels) > 0:  # refine the inputs and output with config
                         inputs = []
                         output = []
                         for i in range(len(params)):
-                            if 'out' in param_labels[i]:
+                            if i < len(param_labels) and'out' in param_labels[i]:
                                 output.append(params[i])
                             else:
                                 inputs.append(params[i])
