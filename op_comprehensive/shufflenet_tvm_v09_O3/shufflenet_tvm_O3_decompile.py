@@ -99,10 +99,11 @@ if __name__ == '__main__':
             print('filter_shape', result[0])
             print('input_shape', result[1])
             print('output_shape', result[2])
+            print('layout_shape', result[3])
             # for O0 binary we do not need layout shape
         else:
             print(result)
-    exit(0)
+    # exit(0)
     
     # ==============================================================
     
@@ -120,8 +121,7 @@ if __name__ == '__main__':
             start_addr, _ = utils.get_func_range(asm_path)
             if start_addr in utils.addr2label.keys():
                 func_type = utils.addr2label[start_addr]
-                if 'pool' in func_type or 'bias_add' in func_type or 'add' in func_type or \
-                        'mean' in func_type:
+                if 'pool' in func_type or 'bias_add' in func_type or 'mean' in func_type:
 
                     if func_type == 'mean':
                         func_type = 'avg_pool'  # the same
