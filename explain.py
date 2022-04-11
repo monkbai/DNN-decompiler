@@ -306,8 +306,6 @@ def get_input_shape(name, exp, mem_regions, input_channel, size):
 # how to interpret the taint analysis result
 # can we assume that we know the start addresses of inputs and output?
 def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list, guess_stride=1, optimized=False):
-    input_region = biggest_region(mem_read_regions)
-
     # assume the mem_log comes from a convolution layer
     tmp_mem_write_regions = []
     if not optimized:
@@ -326,7 +324,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     output_shape = [1, 1, 1, 1]
 
     blk_size = 0
-    if len(mem_read_regions) > 10:
+    if len(mem_read_regions) > 18:
         kernel_num, input_num, blk_size = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
         filter_shape[1] = kernel_num
         input_shape[1] = kernel_num
@@ -338,12 +336,14 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         special_flag = False
     else:
         # get the filter shape and input shape from first output
-        if exp.startswith('sub'):
-            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=input_region, weight_addr=True)
+        if exp.strip('()').startswith('sub'):
+            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, weight_addr=True)
+            addr_list = get_addr_list(mem_list[0][1], compiler='tvm', size=16)
         else:
-            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=input_region, weight_addr=True)  # analyze the first expression (with the smallest address)
+            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', weight_addr=True)  # analyze the first expression (with the smallest address)
+            addr_list = get_addr_list(mem_list[0][1], compiler='tvm')
         # print('debug input offset_list', offset_list)  # debug
-        in_mem = biggest_region(mem_read_regions)
+        in_mem = region_with_target(mem_read_regions, addr_list[0])  # in_mem = biggest_region(mem_read_regions)
         out_mem = biggest_region(mem_write_regions)
 
         # try to get the weight_mem region
@@ -455,7 +455,9 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             elif filter_shape[1] <= ind_a or (filter_shape[1] % ind_a) != 0:
                 layout_shape = [filter_shape[0]/ind_b, 1, filter_shape[2], filter_shape[3], filter_shape[1], ind_b]
         elif optimized and special_flag:
-            if filter_shape[0] > ind_a and (filter_shape[0] % ind_a) == 0:
+            if filter_shape[1] == 1:  # group conv
+                layout_shape = [filter_shape[0] / ind_b, 1, filter_shape[2], filter_shape[3], 1, ind_b]
+            elif filter_shape[0] > ind_a and (filter_shape[0] % ind_a) == 0:
                 layout_shape = [ind_a, filter_shape[1] / ind_b, filter_shape[2], filter_shape[3], filter_shape[0]/ind_a, ind_b]
             elif filter_shape[0] <= ind_a or (filter_shape[0] % ind_a) != 0:
                 layout_shape = [1, filter_shape[1] / ind_b, filter_shape[2], filter_shape[3], filter_shape[0], ind_b]
@@ -743,11 +745,11 @@ def get_addr_list(value: str, compiler: str, size=4, in_blk=(0, 0), weight_addr=
     if compiler == 'tvm' and size == 4:
         match = re.search(r'(0x[0-9a-f]+),4 \*', value)
         if match:
-            it = re.finditer(r'(0x[0-9a-f]+),4 \*', value)
+            it = re.finditer(r'(0x[0-9a-f]+),[0-9]+ \*', value)
             weight_it = re.finditer(r' \* (0x[0-9a-f]+),[0-9]+', value)
             input_on_the_left = True
         else:
-            it = re.finditer(r'\* (0x[0-9a-f]+),4', value)
+            it = re.finditer(r'\* (0x[0-9a-f]+),[0-9]+', value)
             weight_it = re.finditer(r'(0x[0-9a-f]+),[0-9]+ \*', value)
             input_on_the_left = False
         for match in it:
