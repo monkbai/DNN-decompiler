@@ -394,8 +394,9 @@ def handle_inst(read_buf: list):
         elif opcode.startswith('vminss') or opcode.startswith('vmaxss') or \
                 opcode.startswith('vaddss') or opcode.startswith('vmulss') or opcode.startswith('vaddps'):
             kept = handle_three(opcode, operands, mem_addr)
-        elif opcode.startswith('maxss') or opcode.startswith('addss') or opcode.startswith('mulss') or \
-             opcode.startswith('maxps') or opcode.startswith('addps') or opcode.startswith('mulps'):
+        elif opcode.startswith('minps') or opcode.startswith('minss') or opcode.startswith('maxss') or \
+                opcode.startswith('addss') or opcode.startswith('mulss') or opcode.startswith('maxps') or \
+                opcode.startswith('addps') or opcode.startswith('mulps'):
             kept = handle_two_arith(opcode, operands, mem_addr)
         elif opcode.startswith('vfmadd231ss') or opcode.startswith('vfmadd213ps') or \
                 opcode.startswith('vfmadd231ps') or opcode.startswith('vfmadd132ss') or \

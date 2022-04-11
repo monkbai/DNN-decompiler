@@ -314,9 +314,20 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
     name, exp = choose_one_4bytes(exp_log_path, tmp_mem_write_regions)
     if len(name) == 0:
         name, exp = choose_one_16bytes(exp_log_path, tmp_mem_write_regions)  # TODO
+        max_value = None
+        if 'min(' in exp:
+            max_value_addr = get_max_value_addr(exp)
+            max_value = get_max_value(max_value_addr)
+            print('max value of clip:', max_value)
         return explain_tvm_conv2d_result_16(name, exp, mem_read_regions, mem_write_regions, guess_stride, optimized)
     mem_list = [(name, exp)]
-    # mem_list.append(tuple(choose_one_4bytes(exp_log_path, tmp_mem_write_regions, 1)))
+
+    # clip merged into conv2d
+    max_value = None
+    if 'min(' in exp:
+        max_value_addr = get_max_value_addr(exp)
+        max_value = get_max_value(max_value_addr)
+        print('max value of clip:', max_value)
 
     # TODO: here assume width==height
     input_shape = [1, 1, 1, 1]
@@ -336,7 +347,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         special_flag = False
     else:
         # get the filter shape and input shape from first output
-        if exp.strip('()').startswith('sub'):
+        if 'sub(' in exp:
             offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, weight_addr=True)
             addr_list = get_addr_list(mem_list[0][1], compiler='tvm', size=16)
         else:
@@ -379,8 +390,6 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             index += 1
 
         # add case: filter shape is [1 x 1]
-        tmp1 = offset_list[index + 1]
-        the_threshold = 144  # do not know how to describe it  # is it reasonable?
         # if filter_shape[3] > 9 and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and tmp1 >= the_threshold:
         if (not is_integer_num(filter_shape[1]) or filter_shape[3] > 9) and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and index < 4:  # index == 3
             tmp1 = offset_list[index + 1]
@@ -407,8 +416,9 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
             # tmp_value = math.sqrt((out_mem[1] - out_mem[0]) / 4 / filter_shape[0])
             # input_shape[2] = input_shape[3] = output_shape[2] = output_shape[3] = math.ceil(tmp_value)
             special_flag = True
-        # add case: group conv  # exists in shufflenet
-        elif (index + 1) ** 2 == len(offset_list):
+        # add case: group conv  # exists in shufflenet, efficientnet
+        elif (index + 1) ** 2 == len(offset_list):  # or index == len(offset_list) - 1:  # condition not verified
+            index = int(math.sqrt(len(offset_list))) - 1
             filter_shape[1] = 1
             filter_shape[2] = filter_shape[3] = index + 1
             filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / (filter_shape[2] * filter_shape[3])
