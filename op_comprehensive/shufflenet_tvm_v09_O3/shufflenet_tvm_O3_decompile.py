@@ -21,8 +21,7 @@ if __name__ == '__main__':
     in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/cat.bin"
     log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/func_call.log"
     label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/ground_truth.txt"
-    # label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/step1.txt"
-
+    
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
     mem_read_log_path = './mem_read.log'
