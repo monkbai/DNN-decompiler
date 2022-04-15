@@ -13,12 +13,12 @@ print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/inception_funcs"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/inception_v1/inception_funcs"
 
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/inception_v1_strip.out"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/ground_truth.txt"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/inception_v1/inception_v1_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/inception_v1/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/inception_v1/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/inception_v1/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     func_meta_data, topo_list = utils.print_input_id(log_path, compiler='glow', addr2param=addr2param)
 
     list_to_json(topo_list, './topo_list.json')
-
+    
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     #exit(0)
 
     # Step 2.2.1 Conv and Matmul layers
-    se_engine.extern_functions = {'0x401040': 'expf', '0x401080':'powf'}
+    se_engine.extern_functions = {'0x401040': 'expf', '0x401090':'powf'}
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='glow') # also matmul layer
     print('all conv and matmul done.')
     for name, result in func_shape.items():
@@ -94,7 +94,7 @@ if __name__ == '__main__':
     
 
     # Step 2.2.2 Other layers
-    se_engine.extern_functions = {'0x401040': 'expf', '0x401080':'powf'}
+    se_engine.extern_functions = {'0x401040': 'expf', '0x401090':'powf'}
     results_dict = dict()
     asm_files = os.listdir(utils.funcs_dir)
     for asm_file in asm_files:
@@ -186,11 +186,10 @@ if __name__ == '__main__':
             meta_data[6] = 1
             new_meta_data.append(meta_data)  # weights of dense
             meta_data = copy.deepcopy(meta_data)
+        elif 'batchedadd' in meta_data[3]:
             meta_data[6] = 2
             meta_data[5] = meta_data[4] = None
-            meta_data[3] = 'add'
-            meta_data[1] = [1, int(meta_data[1][0])]
-            new_meta_data.append(meta_data)  # biases of conv
+            new_meta_data.append(meta_data)  # biases of dense
         else:
             new_meta_data.append(meta_data)
 

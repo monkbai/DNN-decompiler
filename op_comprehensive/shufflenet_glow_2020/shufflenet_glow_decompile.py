@@ -13,12 +13,12 @@ print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/shufflenet_funcs"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/shufflenet_funcs"
 
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/shufflenet_v2_strip.out"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/ground_truth.txt"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/shufflenet_v2_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -189,11 +189,10 @@ if __name__ == '__main__':
             meta_data[6] = 1
             new_meta_data.append(meta_data)  # weights of dense
             meta_data = copy.deepcopy(meta_data)
+        elif 'batchedadd' in meta_data[3]:
             meta_data[6] = 2
             meta_data[5] = meta_data[4] = None
-            meta_data[3] = 'add'
-            meta_data[1] = [1, int(meta_data[1][0])]
-            new_meta_data.append(meta_data)  # biases of conv
+            new_meta_data.append(meta_data)  # biases of dense
         else:
             new_meta_data.append(meta_data)
 
