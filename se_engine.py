@@ -800,8 +800,8 @@ def xmm_add_mem(xmm_name: str, mem_addr: str, size: int):
         xmm_regs[xmm_name] = '({} + {})'.format(xmm_regs[xmm_name], mem_state[mem_key])
     else:
         # TODO: this is inaccurate
-        if mem_key.startswith('0x7f'):  # or mem_key.startswith('0x4'):
-            return
+        # if mem_key.startswith('0x7f'):  # or mem_key.startswith('0x4'):
+        #     return
 
         value = check_sub_mem(mem_addr, size)
         if value:
