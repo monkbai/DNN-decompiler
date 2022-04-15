@@ -1,0 +1,18 @@
+{"take": ["param", "in", "out"],
+ "transpose": ["in", "out", "dims"],
+ "reshape": ["in", "out", "none"],
+ "pad": ["in", "out", "none"],
+ "avg_pool": ["in", "out", "none"],
+ "max_pool": ["in", "out", "none"],
+ "squeeze": ["in", "out", "none"],
+ "matmul, add": ["out", "in", "weight", "bias"],
+ "matmul": ["out", "in", "weight"],
+ "add, relu": ["in/out", "in", "none"],
+ "batchedadd": ["out", "in", "param"],
+ "bias_add": ["param", "in", "out"],
+ "add": ["in/out", "in"],
+ "conv": ["out", "in", "weight", "bias"],
+ "relu": ["in/out", "none", "none"],
+ "insert_tensor": ["in/out", "in", "offset"],
+ "extract_tensor": ["in", "out", "offset"]
+}
