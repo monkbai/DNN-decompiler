@@ -718,12 +718,12 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
             m_addr = hex(addr_int + step)
             mem_list.append(m_addr)
         set_tainted(mem_list)
-        if (not os.path.exists(slice_log)) or os.path.getsize(slice_log) > (1024 * 1):
+        if (not os.path.exists(slice_log)) or os.path.getsize(slice_log) <= (1024 * 1):
             reverse_taint(rev_log, slice_log)
         else:
             print('{} already exists.'.format(slice_log))
 
-        if os.path.getsize(slice_log) > (1024 * 1):  # 5kb, any conv/dense slice log should be larger than this
+        if os.path.getsize(slice_log) > (1024 * 1):  # 1kb, any conv/dense slice log should be larger than this
             break  # if the size of slice log is too small, it indicates a inappropriate rnd_addr has been chosed
     
     logger.debug(' slice_log {}\n rnd_addr {}\n loop_size {}\n start_addr {}\n end_addr {}\n'.format(slice_log, rnd_addr, loop_size, start_addr, end_addr))

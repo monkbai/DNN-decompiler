@@ -168,7 +168,7 @@ if __name__ == '__main__':
             new_meta_data.append(meta_data)  # weights of dense
             meta_data = copy.deepcopy(meta_data)
         elif 'batchedadd' in meta_data[3]:
-            meta_data[6] = 2
+            meta_data[6] = 1
             meta_data[5] = meta_data[4] = None
             new_meta_data.append(meta_data)  # biases of dense
         else:

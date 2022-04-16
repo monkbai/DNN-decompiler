@@ -214,7 +214,7 @@ class MobileNetV2(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = nn.Linear(1280, num_classes)
         set_weights(self.classifier, '0051.params_0.json')
-        set_biases(self.classifier, '0051.biases_0.json')
+        set_biases(self.classifier, '0052.params_0.json')
 
         # self._initialize_weights()
 
@@ -248,7 +248,7 @@ if __name__ == '__main__':
     # exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
-    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/mobilenet/cat.bin", 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/mobilenet/cat.bin", 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
             print(np_arr.shape)
