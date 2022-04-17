@@ -374,7 +374,7 @@ def handle_inst(read_buf: list):
             kept = False
         elif opcode.startswith('unpck') or opcode.startswith('movlh') or opcode.startswith('movhl'):
             kept = handle_two_arith(opcode, operands, mem_addr)  # although it is not arithmetic instruction
-        elif opcode.startswith('mov') and (opcode.endswith('ps') or opcode.endswith('ss') or opcode.endswith('sd')):
+        elif opcode.startswith('mov') and (opcode.endswith('ps') or opcode.endswith('ss') or opcode.endswith('sd') or opcode.endswith('qa')):
             kept = handle_two(opcode, operands, mem_addr)  # mov related to xmm regs 
         elif opcode.startswith('mov') or opcode.startswith('lea'):
             if check_operands(operands, read_buf[1]):
@@ -385,7 +385,7 @@ def handle_inst(read_buf: list):
         elif opcode.startswith('call'):
             kept = True  # keep function calls  to memset and expf for TVM
             unset_common_regs('rax')
-        elif opcode.startswith('xor'):
+        elif opcode.startswith('xor') or opcode.startswith('pxor'):
             kept = handle_xor(opcode, operands, mem_addr)
         elif opcode.startswith('vmovss') or opcode.startswith('vmovups') or opcode.startswith('vmovaps'):
             kept = handle_two(opcode, operands, mem_addr)  # mov realted to xmm regs

@@ -139,74 +139,74 @@ class EfficientNetLite(nn.Module):
             # nn.BatchNorm2d(num_features=out_channels, momentum=momentum, eps=epsilon),
             nn.ReLU6(inplace=True),
         )
-        set_weights(self.stem[0], '0299.weights_0.json')
-        set_biases(self.stem[0], '0246.biases_0.json')
+        set_weights(self.stem[0], '0305.weights_0.json')
+        set_biases(self.stem[0], '0252.biases_0.json')
 
         # Build blocks
         self.blocks = nn.ModuleList([])
 
         # 0
         self.blocks.append(nn.ModuleList([
-            MBConvBlock(32, 24, 3, 1, 1, ['0303.weights_0.json', '0351.weights_0.json'], ['0246.biases_1.json', '0249.biases_0.json'])
+            MBConvBlock(32, 24, 3, 1, 1, ['0309.weights_0.json', '0360.weights_0.json'], ['0252.biases_1.json', '0255.biases_0.json'])
         ]))
 
         # 1
         self.blocks.append(nn.ModuleList([
-            MBConvBlock(24, 32, 3, 2, 6, ['0402.weights_0.json', '0416.weights_0.json', '0421.weights_0.json'], ['', '0273.biases_0.json', '0276.biases_0.json'],
-                        with_bn=True, bn_init_list=['0021.var_0.json', '0179.gamma_0.json', '0221.mean_0.json', '0024.beta_0.json']),
-            MBConvBlock(32, 32, 3, 1, 6, ['0426.weights_0.json', '0430.weights_0.json', '0435.weights_0.json'], ['', '0279.biases_0.json', '0276.biases_1.json'],
-                        with_bn=True, bn_init_list=['0080.var_0.json', '0197.gamma_0.json', '0224.mean_0.json', '0083.beta_0.json']),
-            MBConvBlock(32, 32, 3, 1, 6, ['0426.weights_1.json', '0430.weights_1.json', '0435.weights_1.json'], ['0279.biases_1.json', '0279.biases_2.json', '0276.biases_2.json']),
-            MBConvBlock(32, 32, 3, 1, 6, ['0426.weights_2.json', '0430.weights_2.json', '0435.weights_2.json'], ['0279.biases_3.json', '0279.biases_4.json', '0276.biases_3.json'])
+            MBConvBlock(24, 32, 3, 2, 6, ['0411.weights_0.json', '0425.weights_0.json', '0430.weights_0.json'], ['', '0279.biases_0.json', '0282.biases_0.json'],
+                        with_bn=True, bn_init_list=['0021.var_0.json', '0185.gamma_0.json', '0227.mean_0.json', '0024.beta_0.json']),
+            MBConvBlock(32, 32, 3, 1, 6, ['0435.weights_0.json', '0439.weights_0.json', '0444.weights_0.json'], ['', '0285.biases_0.json', '0282.biases_1.json'],
+                        with_bn=True, bn_init_list=['0080.var_0.json', '0203.gamma_0.json', '0230.mean_0.json', '0083.beta_0.json']),
+            MBConvBlock(32, 32, 3, 1, 6, ['0435.weights_1.json', '0439.weights_1.json', '0444.weights_1.json'], ['0285.biases_1.json', '0285.biases_2.json', '0282.biases_2.json']),
+            MBConvBlock(32, 32, 3, 1, 6, ['0435.weights_2.json', '0439.weights_2.json', '0444.weights_2.json'], ['0285.biases_3.json', '0285.biases_4.json', '0282.biases_3.json'])
         ]))
 
         # 2
         self.blocks.append(nn.ModuleList([
-            MBConvBlock(32, 56, 5, 2, 6, ['0426.weights_3.json', '0439.weights_0.json', '0307.weights_0.json'], ['0279.biases_5.json', '0282.biases_0.json', '0285.biases_0.json']),
-            MBConvBlock(56, 56, 5, 1, 6, ['0311.weights_0.json', '0315.weights_0.json', '0319.weights_0.json'], ['', '0288.biases_0.json', '0285.biases_1.json'],
-                        with_bn=True, bn_init_list=['0092.var_0.json', '0203.gamma_0.json', '0227.mean_0.json', '0095.beta_0.json']),
-            MBConvBlock(56, 56, 5, 1, 6, ['0311.weights_1.json', '0315.weights_1.json', '0319.weights_1.json'], ['0288.biases_1.json', '0288.biases_2.json', '0285.biases_2.json']),
-            MBConvBlock(56, 56, 5, 1, 6, ['0311.weights_2.json', '0315.weights_2.json', '0319.weights_2.json'], ['0288.biases_3.json', '0288.biases_4.json', '0285.biases_3.json'])
+            MBConvBlock(32, 56, 5, 2, 6, ['0435.weights_3.json', '0448.weights_0.json', '0314.weights_0.json'], ['0285.biases_5.json', '0288.biases_0.json', '0291.biases_0.json']),
+            MBConvBlock(56, 56, 5, 1, 6, ['0319.weights_0.json', '0323.weights_0.json', '0328.weights_0.json'], ['', '0294.biases_0.json', '0291.biases_1.json'],
+                        with_bn=True, bn_init_list=['0092.var_0.json', '0209.gamma_0.json', '0233.mean_0.json', '0095.beta_0.json']),
+            MBConvBlock(56, 56, 5, 1, 6, ['0319.weights_1.json', '0323.weights_1.json', '0328.weights_1.json'], ['0294.biases_1.json', '0294.biases_2.json', '0291.biases_2.json']),
+            MBConvBlock(56, 56, 5, 1, 6, ['0319.weights_2.json', '0323.weights_2.json', '0328.weights_2.json'], ['0294.biases_3.json', '0294.biases_4.json', '0291.biases_3.json'])
         ]))
 
         # 3
         self.blocks.append(nn.ModuleList([
-            MBConvBlock(56, 112, 3, 2, 6, ['0311.weights_3.json', '0323.weights_0.json', '0328.weights_0.json'], ['0288.biases_5.json', '0291.biases_0.json', '0294.biases_0.json']),
-            MBConvBlock(112, 112, 3, 1, 6, ['0333.weights_0.json', '0337.weights_0.json', '0342.weights_0.json'], ['', '0252.biases_0.json', '0294.biases_1.json'],
-                        with_bn=True, bn_init_list=['0030.var_0.json', '0209.gamma_0.json', '0230.mean_0.json', '0033.beta_0.json']),
-            MBConvBlock(112, 112, 3, 1, 6, ['0333.weights_1.json', '0337.weights_1.json', '0342.weights_1.json'], ['0252.biases_1.json', '0252.biases_2.json', '0294.biases_2.json']),
-            MBConvBlock(112, 112, 3, 1, 6, ['0333.weights_2.json', '0337.weights_2.json', '0342.weights_2.json'], ['0252.biases_3.json', '0252.biases_4.json', '0294.biases_3.json']),
-            MBConvBlock(112, 112, 3, 1, 6, ['0333.weights_3.json', '0337.weights_3.json', '0342.weights_3.json'], ['0252.biases_5.json', '0252.biases_6.json', '0294.biases_4.json']),
-            MBConvBlock(112, 112, 3, 1, 6, ['0333.weights_4.json', '0337.weights_4.json', '0342.weights_4.json'], ['0252.biases_7.json', '0252.biases_8.json', '0294.biases_5.json']),
+            MBConvBlock(56, 112, 3, 2, 6, ['0319.weights_3.json', '0332.weights_0.json', '0337.weights_0.json'], ['0294.biases_5.json', '0297.biases_0.json', '0300.biases_0.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0342.weights_0.json', '0346.weights_0.json', '0351.weights_0.json'], ['', '0258.biases_0.json', '0300.biases_1.json'],
+                        with_bn=True, bn_init_list=['0030.var_0.json', '0215.gamma_0.json', '0236.mean_0.json', '0033.beta_0.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0342.weights_1.json', '0346.weights_1.json', '0351.weights_1.json'], ['0258.biases_1.json', '0258.biases_2.json', '0300.biases_2.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0342.weights_2.json', '0346.weights_2.json', '0351.weights_2.json'], ['0258.biases_3.json', '0258.biases_4.json', '0300.biases_3.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0342.weights_3.json', '0346.weights_3.json', '0351.weights_3.json'], ['0258.biases_5.json', '0258.biases_6.json', '0300.biases_4.json']),
+            MBConvBlock(112, 112, 3, 1, 6, ['0342.weights_4.json', '0346.weights_4.json', '0351.weights_4.json'], ['0258.biases_7.json', '0258.biases_8.json', '0300.biases_5.json']),
         ]))
 
         # 4
         self.blocks.append(nn.ModuleList([
-            MBConvBlock(112, 160, 5, 1, 6, ['0333.weights_5.json', '0346.weights_0.json', '0356.weights_0.json'], ['0252.biases_9.json', '0252.biases_10.json', '0255.biases_0.json']),
-            MBConvBlock(160, 160, 5, 1, 6, ['0361.weights_0.json', '0365.weights_0.json', '0370.weights_0.json'], ['', '0258.biases_0.json', '0255.biases_1.json'],
-                        with_bn=True, bn_init_list=['0042.var_0.json', '0215.gamma_0.json', '0233.mean_0.json', '0045.beta_0.json']),
-            MBConvBlock(160, 160, 5, 1, 6, ['0361.weights_1.json', '0365.weights_1.json', '0370.weights_1.json'], ['0258.biases_1.json', '0258.biases_2.json', '0255.biases_2.json']),
-            MBConvBlock(160, 160, 5, 1, 6, ['0361.weights_2.json', '0365.weights_2.json', '0370.weights_2.json'], ['0258.biases_3.json', '0258.biases_4.json', '0255.biases_3.json']),
-            MBConvBlock(160, 160, 5, 1, 6, ['0361.weights_3.json', '0365.weights_3.json', '0370.weights_3.json'], ['0258.biases_5.json', '0258.biases_6.json', '0255.biases_4.json']),
-            MBConvBlock(160, 160, 5, 1, 6, ['0361.weights_4.json', '0365.weights_4.json', '0370.weights_4.json'], ['0258.biases_7.json', '0258.biases_8.json', '0255.biases_5.json'])
+            MBConvBlock(112, 160, 5, 1, 6, ['0342.weights_5.json', '0355.weights_0.json', '0365.weights_0.json'], ['0258.biases_9.json', '0258.biases_10.json', '0261.biases_0.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0370.weights_0.json', '0374.weights_0.json', '0379.weights_0.json'], ['', '0264.biases_0.json', '0261.biases_1.json'],
+                        with_bn=True, bn_init_list=['0042.var_0.json', '0221.gamma_0.json', '0239.mean_0.json', '0045.beta_0.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0370.weights_1.json', '0374.weights_1.json', '0379.weights_1.json'], ['0264.biases_1.json', '0264.biases_2.json', '0261.biases_2.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0370.weights_2.json', '0374.weights_2.json', '0379.weights_2.json'], ['0264.biases_3.json', '0264.biases_4.json', '0261.biases_3.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0370.weights_3.json', '0374.weights_3.json', '0379.weights_3.json'], ['0264.biases_5.json', '0264.biases_6.json', '0261.biases_4.json']),
+            MBConvBlock(160, 160, 5, 1, 6, ['0370.weights_4.json', '0374.weights_4.json', '0379.weights_4.json'], ['0264.biases_7.json', '0264.biases_8.json', '0261.biases_5.json'])
         ]))
 
         # 5
         self.blocks.append(nn.ModuleList([
-            MBConvBlock(160, 272, 5, 2, 6, ['0361.weights_5.json', '0374.weights_0.json', '0379.weights_0.json'], ['0258.biases_5.json', '0261.biases_0.json', '0264.biases_0.json']),
-            MBConvBlock(272, 272, 5, 1, 6, ['0384.weights_0.json', '0388.weights_0.json', '0393.weights_0.json'], ['', '0267.biases_0.json', '0264.biases_1.json'],
-                        with_bn=True, bn_init_list=['0054.var_0.json', '0185.gamma_0.json', '0236.mean_0.json', '0060.beta_0.json']),
-            MBConvBlock(272, 272, 5, 1, 6, ['0384.weights_1.json', '0388.weights_1.json', '0393.weights_1.json'], ['0267.biases_1.json', '0267.biases_2.json', '0264.biases_2.json']),
-            MBConvBlock(272, 272, 5, 1, 6, ['0384.weights_2.json', '0388.weights_2.json', '0393.weights_2.json'], ['0267.biases_3.json', '0267.biases_4.json', '0264.biases_3.json']),
-            MBConvBlock(272, 272, 5, 1, 6, ['0384.weights_3.json', '0388.weights_3.json', '0393.weights_3.json'], ['0267.biases_5.json', '0267.biases_6.json', '0264.biases_4.json']),
-            MBConvBlock(272, 272, 5, 1, 6, ['0384.weights_4.json', '0388.weights_4.json', '0393.weights_4.json'], ['0267.biases_7.json', '0267.biases_8.json', '0264.biases_5.json']),
-            MBConvBlock(272, 272, 5, 1, 6, ['0384.weights_5.json', '0388.weights_5.json', '0393.weights_5.json'], ['0267.biases_9.json', '0267.biases_10.json', '0264.biases_6.json']),
-            MBConvBlock(272, 272, 5, 1, 6, ['0384.weights_6.json', '0388.weights_6.json', '0393.weights_6.json'], ['0267.biases_11.json', '0267.biases_12.json', '0264.biases_7.json'])
+            MBConvBlock(160, 272, 5, 2, 6, ['0370.weights_5.json', '0383.weights_0.json', '0388.weights_0.json'], ['0264.biases_5.json', '0267.biases_0.json', '0270.biases_0.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0393.weights_0.json', '0397.weights_0.json', '0402.weights_0.json'], ['', '0273.biases_0.json', '0270.biases_1.json'],
+                        with_bn=True, bn_init_list=['0054.var_0.json', '0191.gamma_0.json', '0242.mean_0.json', '0060.beta_0.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0393.weights_1.json', '0397.weights_1.json', '0402.weights_1.json'], ['0273.biases_1.json', '0273.biases_2.json', '0270.biases_2.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0393.weights_2.json', '0397.weights_2.json', '0402.weights_2.json'], ['0273.biases_3.json', '0273.biases_4.json', '0270.biases_3.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0393.weights_3.json', '0397.weights_3.json', '0402.weights_3.json'], ['0273.biases_5.json', '0273.biases_6.json', '0270.biases_4.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0393.weights_4.json', '0397.weights_4.json', '0402.weights_4.json'], ['0273.biases_7.json', '0273.biases_8.json', '0270.biases_5.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0393.weights_5.json', '0397.weights_5.json', '0402.weights_5.json'], ['0273.biases_9.json', '0273.biases_10.json', '0270.biases_6.json']),
+            MBConvBlock(272, 272, 5, 1, 6, ['0393.weights_6.json', '0397.weights_6.json', '0402.weights_6.json'], ['0273.biases_11.json', '0273.biases_12.json', '0270.biases_7.json'])
         ]))
 
         # 6
         self.blocks.append(nn.ModuleList([
-            MBConvBlock(272, 448, 3, 1, 6, ['0384.weights_7.json', '0397.weights_0.json', '0407.weights_0.json'], ['0267.biases_13.json', '0267.biases_14.json', '0270.biases_0.json'])
+            MBConvBlock(272, 448, 3, 1, 6, ['0393.weights_7.json', '0406.weights_0.json', '0416.weights_0.json'], ['0273.biases_13.json', '0273.biases_14.json', '0276.biases_0.json'])
         ]))
 
         # Head
@@ -217,17 +217,17 @@ class EfficientNetLite(nn.Module):
             nn.BatchNorm2d(num_features=out_channels, momentum=momentum, eps=epsilon),
             nn.ReLU6(inplace=True),
         )
-        set_weights(self.head[0], '0412.weights_0.json')
+        set_weights(self.head[0], '0421.weights_0.json')
         # set_biases(self.head[0], '0063.biases_0.json')
         set_var(self.head[1], '0069.var_0.json')
-        set_bn_weights(self.head[1], '0191.gamma_0.json')
-        set_mean(self.head[1], '0239.mean_0.json')
+        set_bn_weights(self.head[1], '0197.gamma_0.json')
+        set_mean(self.head[1], '0245.mean_0.json')
         set_biases(self.head[1], '0072.beta_0.json')
 
         self.avgpool = torch.nn.AdaptiveAvgPool2d((1, 1))
 
         self.fc = nn.Linear(out_channels, num_classes)
-        set_weights(self.fc, '0442.dense_weights_0.json')
+        set_weights(self.fc, '0451.dense_weights_0.json')
         set_biases(self.fc, '0077.biases_0.json')
 
         self.softmax = nn.Softmax()
@@ -278,7 +278,7 @@ if __name__ == '__main__':
     # exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
-    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/cat.bin", 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/efficientnet_tvm_O0/cat.bin", 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
             print(np_arr.shape)
@@ -287,7 +287,7 @@ if __name__ == '__main__':
 
             new_np_arr = np.transpose(np_arr, (0, 2, 3, 1))
             print(new_np_arr.shape)
-            with open("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0/cat_transpose.bin", "wb") as fp:
+            with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/efficientnet_tvm_O0/cat_transpose.bin", "wb") as fp:
                 fp.write(new_np_arr.astype(np.float32).tobytes())
 
             x = torch.Tensor(np_arr)

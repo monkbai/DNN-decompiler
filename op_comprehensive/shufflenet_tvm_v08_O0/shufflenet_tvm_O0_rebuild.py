@@ -258,7 +258,7 @@ class ShuffleNetV2(nn.Module):
 
         # building first layer
         input_channel = self.stage_out_channels[1]
-        self.conv1 = conv_bn(3, input_channel, 2, './0181.weights_0.json', '',
+        self.conv1 = conv_bn(3, input_channel, 2, './0183.weights_0.json', '',
                              '0021.var_0.json', '0122.gamma_0.json', '0164.mean_0.json', '0024.beta_0.json')
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
@@ -268,11 +268,11 @@ class ShuffleNetV2(nn.Module):
         #     output_channel = self.stage_out_channels[idxstage + 2]
         self.features = [
             InvertedResidual(24, 116, 2, 2,
-                             ['./0185.weights_0.json',
-                              './0217.weights_0.json',
-                              './0222.weights_0.json',
-                              './0226.weights_0.json',
-                              './0231.weights_0.json'],
+                             ['./0187.weights_0.json',
+                              './0219.weights_0.json',
+                              './0224.weights_0.json',
+                              './0228.weights_0.json',
+                              './0233.weights_0.json'],
                              [],
                              ['0021.var_1.json',
                               '0062.var_0.json',
@@ -296,9 +296,9 @@ class ShuffleNetV2(nn.Module):
                               '0065.beta_6.json'],
                              ),
             InvertedResidual(116, 116, 1, 1,
-                             ['./0231.weights_1.json',
-                              './0235.weights_0.json',
-                              './0231.weights_2.json'],
+                             ['./0233.weights_1.json',
+                              './0237.weights_0.json',
+                              './0233.weights_2.json'],
                              [],
                              ['0062.var_4.json',
                               '0062.var_5.json',
@@ -314,9 +314,9 @@ class ShuffleNetV2(nn.Module):
                               '0065.beta_12.json'],
                              ),
             InvertedResidual(116, 116, 1, 1,
-                             ['./0231.weights_3.json',
-                              './0235.weights_1.json',
-                              './0231.weights_4.json'],
+                             ['./0233.weights_3.json',
+                              './0237.weights_1.json',
+                              './0233.weights_4.json'],
                              [],
                              ['0062.var_7.json',
                               '0062.var_8.json',
@@ -332,9 +332,9 @@ class ShuffleNetV2(nn.Module):
                               '0065.beta_18.json'],
                              ),
             InvertedResidual(116, 116, 1, 1,
-                             ['./0231.weights_5.json',
-                              './0235.weights_2.json',
-                              './0231.weights_6.json'],
+                             ['./0233.weights_5.json',
+                              './0237.weights_2.json',
+                              './0233.weights_6.json'],
                              [],
                              ['0062.var_10.json',
                               '0062.var_11.json',
@@ -351,11 +351,11 @@ class ShuffleNetV2(nn.Module):
                              ),
 
             InvertedResidual(116, 232, 2, 2,
-                             ['./0239.weights_0.json',
-                              './0244.weights_0.json',
-                              './0248.weights_0.json',
-                              './0239.weights_1.json',
-                              './0244.weights_1.json'],
+                             ['./0241.weights_0.json',
+                              './0246.weights_0.json',
+                              './0251.weights_0.json',
+                              './0241.weights_1.json',
+                              './0246.weights_1.json'],
                              [],
                              ['0074.var_0.json',
                               '0074.var_1.json',
@@ -379,9 +379,9 @@ class ShuffleNetV2(nn.Module):
                               '0077.beta_8.json'],
                              ),
             InvertedResidual(232, 232, 1, 1,
-                             ['./0244.weights_2.json',
-                              './0189.weights_0.json',
-                              './0244.weights_3.json'],
+                             ['./0246.weights_2.json',
+                              './0191.weights_0.json',
+                              './0246.weights_3.json'],
                              [],
                              ['0074.var_5.json',
                               '0074.var_6.json',
@@ -397,9 +397,9 @@ class ShuffleNetV2(nn.Module):
                               '0077.beta_14.json'],
                              ),
             InvertedResidual(232, 232, 1, 1,
-                             ['./0244.weights_4.json',
-                              './0189.weights_1.json',
-                              './0244.weights_5.json'],
+                             ['./0246.weights_4.json',
+                              './0191.weights_1.json',
+                              './0246.weights_5.json'],
                              [],
                              ['0074.var_8.json',
                               '0074.var_9.json',
@@ -415,9 +415,9 @@ class ShuffleNetV2(nn.Module):
                               '0077.beta_20.json'],
                              ),
             InvertedResidual(232, 232, 1, 1,
-                             ['./0244.weights_6.json',
-                              './0189.weights_2.json',
-                              './0244.weights_7.json'],
+                             ['./0246.weights_6.json',
+                              './0191.weights_2.json',
+                              './0246.weights_7.json'],
                              [],
                              ['0074.var_11.json',
                               '0074.var_12.json',
@@ -433,9 +433,9 @@ class ShuffleNetV2(nn.Module):
                               '0077.beta_26.json'],
                              ),
             InvertedResidual(232, 232, 1, 1,
-                             ['./0244.weights_8.json',
-                              './0189.weights_3.json',
-                              './0244.weights_9.json'],
+                             ['./0246.weights_8.json',
+                              './0191.weights_3.json',
+                              './0246.weights_9.json'],
                              [],
                              ['0074.var_14.json',
                               '0074.var_15.json',
@@ -451,9 +451,9 @@ class ShuffleNetV2(nn.Module):
                               '0077.beta_32.json'],
                              ),
             InvertedResidual(232, 232, 1, 1,
-                             ['./0244.weights_10.json',
-                              './0189.weights_4.json',
-                              './0244.weights_11.json'],
+                             ['./0246.weights_10.json',
+                              './0191.weights_4.json',
+                              './0246.weights_11.json'],
                              [],
                              ['0074.var_17.json',
                               '0074.var_18.json',
@@ -469,9 +469,9 @@ class ShuffleNetV2(nn.Module):
                               '0077.beta_38.json'],
                              ),
             InvertedResidual(232, 232, 1, 1,
-                             ['./0244.weights_12.json',
-                              './0189.weights_5.json',
-                              './0244.weights_13.json'],
+                             ['./0246.weights_12.json',
+                              './0191.weights_5.json',
+                              './0246.weights_13.json'],
                              [],
                              ['0074.var_20.json',
                               '0074.var_21.json',
@@ -487,9 +487,9 @@ class ShuffleNetV2(nn.Module):
                               '0077.beta_44.json'],
                              ),
             InvertedResidual(232, 232, 1, 1,
-                             ['./0244.weights_14.json',
-                              './0189.weights_6.json',
-                              './0244.weights_15.json'],
+                             ['./0246.weights_14.json',
+                              './0191.weights_6.json',
+                              './0246.weights_15.json'],
                              [],
                              ['0074.var_23.json',
                               '0074.var_24.json',
@@ -506,11 +506,11 @@ class ShuffleNetV2(nn.Module):
                              ),
 
             InvertedResidual(232, 464, 2, 2,
-                             ['./0193.weights_0.json',
-                              './0198.weights_0.json',
-                              './0203.weights_0.json',
-                              './0193.weights_1.json',
-                              './0198.weights_1.json'],
+                             ['./0195.weights_0.json',
+                              './0200.weights_0.json',
+                              './0205.weights_0.json',
+                              './0195.weights_1.json',
+                              './0200.weights_1.json'],
                              [],
                              ['0033.var_0.json',
                               '0033.var_1.json',
@@ -534,9 +534,9 @@ class ShuffleNetV2(nn.Module):
                               '0036.beta_8.json'],
                              ),
             InvertedResidual(464, 464, 1, 1,
-                             ['./0198.weights_2.json',
-                              './0207.weights_0.json',
-                              './0198.weights_3.json'],
+                             ['./0200.weights_2.json',
+                              './0209.weights_0.json',
+                              './0200.weights_3.json'],
                              [],
                              ['0033.var_5.json',
                               '0033.var_6.json',
@@ -553,9 +553,9 @@ class ShuffleNetV2(nn.Module):
                              )
             ,
             InvertedResidual(464, 464, 1, 1,
-                             ['./0198.weights_4.json',
-                              './0207.weights_1.json',
-                              './0198.weights_5.json'],
+                             ['./0200.weights_4.json',
+                              './0209.weights_1.json',
+                              './0200.weights_5.json'],
                              [],
                              ['0033.var_8.json',
                               '0033.var_9.json',
@@ -570,9 +570,9 @@ class ShuffleNetV2(nn.Module):
                               '0036.beta_18.json',
                               '0036.beta_20.json'],),
             InvertedResidual(464, 464, 1, 1,
-                             ['./0198.weights_6.json',
-                              './0207.weights_2.json',
-                              './0198.weights_7.json'],
+                             ['./0200.weights_6.json',
+                              './0209.weights_2.json',
+                              './0200.weights_7.json'],
                              [],
                              ['0033.var_11.json',
                               '0033.var_12.json',
@@ -602,13 +602,13 @@ class ShuffleNetV2(nn.Module):
         self.features = nn.Sequential(*self.features)
 
         # building last several layers
-        self.conv_last = conv_1x1_bn(input_channel, self.stage_out_channels[-1], './0212.weights_0.json', '',
+        self.conv_last = conv_1x1_bn(input_channel, self.stage_out_channels[-1], './0214.weights_0.json', '',
                                      '0045.var_0.json', '0134.gamma_0.json', '0176.mean_0.json', '0048.beta_0.json')
         self.globalpool = nn.Sequential(nn.AvgPool2d(7))
 
         # building classifier
         self.classifier = nn.Sequential(nn.Linear(self.stage_out_channels[-1], n_class))
-        set_weights(self.classifier[0], './0251.dense_weights_0.json')
+        set_weights(self.classifier[0], './0254.dense_weights_0.json')
         set_biases(self.classifier[0], './0053.biases_0.json')
 
     def forward(self, x):
@@ -633,7 +633,7 @@ if __name__ == "__main__":
     model = ShuffleNetV2()
     # print(model)
     # input = torch.randn(1, 3, 224, 224)
-    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/cat.bin", 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O0/cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)
