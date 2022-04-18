@@ -16,11 +16,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/shufflenetv2_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/shufflenetv2_tvm_O3_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/ground_truth.txt"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O3/shufflenetv2_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O3/shufflenetv2_tvm_O3_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O3/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O3/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O3/ground_truth.txt"
     
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -39,17 +39,6 @@ if __name__ == '__main__':
     param_list, addr2param = utils.print_layer_label_tvm(log_path, config_path='config.json', only_fused=True)
     func_meta_data, topo_list = utils.print_input_id(log_path, config_path='config.json')  # to reconstruct the conputational graph
     # exit(0)
-    
-    """ # to be removed
-    log_path = './resnet18_strip_func_call_fused.log'
-    get_funcs_trace(prog_path, in_data, log_path, label_file, only_fused=True)
-    new_log_path = './resnet18_strip_func_call_fused_2.log'
-    print_fused_trace(log_path, new_log_path)
-    call_graph_list = get_call_graph_list('./resnet18_strip_func_call_fused_3.log')
-    show_graph(call_graph_list)
-    # print_layer_label(log_path)
-    """
-
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
