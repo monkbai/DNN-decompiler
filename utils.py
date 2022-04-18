@@ -83,6 +83,7 @@ def rm_duplicated_call(log_path: str):
 
 
 def get_addr_list(label_path: str, fused=False):
+    global addr2label, addr2funcs
     addr_list = []
     with open(label_path, 'r') as f:
         label_txt = f.read()
@@ -99,7 +100,7 @@ def get_addr_list(label_path: str, fused=False):
                 addr2funcs[addr] = name.strip()
                 if fused and ('fused' not in label and 'entry' not in label):
                     continue
-                elif not fused and ('fused' in label or 'entry' in label):
+                elif not fused and ('fused' in label or 'entry'==label.strip()):
                     continue
 
                 addr_list.append(addr)
@@ -166,8 +167,11 @@ def print_layer_label_tvm(trace_log_path: str, config_path='', only_fused=False)
                 addr = hex(int(line.split(':')[0].strip(), 16))
                 addr_list = list(addr2label.keys())  # type: list
                 addr_list.sort()
-                idx = addr_list.index(addr) + 1
-                label = addr2label[addr_list[idx]]
+                if 'entry,' in addr2label[addr]:  # sometimes, the entry function also conducts computation
+                    label = addr2label[addr]
+                else:
+                    idx = addr_list.index(addr) + 1
+                    label = addr2label[addr_list[idx]]  # this line try to fetch the meaningful label for current entry function
 
                 # print the func type
                 print('{}: {:<18}:'.format(addr, label), end=' ')
@@ -246,8 +250,13 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict(), confi
 
                 addr_list = list(addr2label.keys())  # type: list
                 addr_list.sort()
-                idx = addr_list.index(addr) + 1
-                label = addr2label[addr_list[idx]]  # type: str
+                
+                if 'entry,' in addr2label[addr]:  # sometimes, the entry function also conducts computation
+                    label = addr2label[addr]
+                else:
+                    # this line try to fetch the meaningful label for current entry function
+                    idx = addr_list.index(addr) + 1
+                    label = addr2label[addr_list[idx]]  # type: str
 
                 id2addr[id] = (addr_list[idx], addr)
 
