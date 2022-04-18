@@ -14,11 +14,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/mobilenetv2_tvm_O0/mobilenet_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/mobilenetv2_tvm_O0/mobilenetv2_7_tvm_O0_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/mobilenetv2_tvm_O0/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/mobilenetv2_tvm_O0/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/mobilenetv2_tvm_O0/ground_truth.txt"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/mobilenetv2_tvm_O0/mobilenet_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/mobilenetv2_tvm_O0/mobilenetv2_7_tvm_O0_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/mobilenetv2_tvm_O0/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/mobilenetv2_tvm_O0/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/mobilenetv2_tvm_O0/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -148,7 +148,7 @@ if __name__ == '__main__':
             meta_data[5] = int(meta_data[1][1][3] / meta_data[1][2][3])
             meta_data[4] = math.ceil((meta_data[1][1][3] - meta_data[1][2][3] * meta_data[5]) / 2)
             new_meta_data.append(meta_data)
-        elif meta_data[3] == 'dense' or meta_data[3] == 'bias_add' or meta_data[3] == 'gamma' or meta_data[3] == 'beta':
+        elif meta_data[3] == 'dense' or meta_data[3] == 'bias_add' or meta_data[3] == 'add' or meta_data[3] == 'gamma' or meta_data[3] == 'beta':
             meta_data[6] = 1
             new_meta_data.append(meta_data)
         elif meta_data[3] == 'mean' or meta_data[3] == 'var':

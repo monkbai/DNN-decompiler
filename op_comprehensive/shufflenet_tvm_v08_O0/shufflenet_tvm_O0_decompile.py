@@ -3,7 +3,7 @@ import os
 import sys
 import json
 import math
-sys.path.append("..")
+sys.path.append("../..")
 import trace_filter
 import utils
 import se_engine
@@ -14,19 +14,19 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/shufflenetv2_funcs/"
-    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/shufflenetv2_tvm_O0_strip"
-    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/cat.bin"
-    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/ground_truth.txt"
-    # label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/shufflenetv2_tvm_O0/step1.txt"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O0/shufflenetv2_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O0/shufflenetv2_tvm_O0_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O0/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O0/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O0/ground_truth.txt"
+    # label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O0/step1.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
     mem_read_log_path = './mem_read.log'
     mem_write_log_path = './mem_write.log'
     mem_dump_log_path = 'mem_dump.log'
-
+    
     # ==============================================================
     # Step 1 --- Get the Sequence of Layers ---
     # ==============================================================
@@ -38,17 +38,6 @@ if __name__ == '__main__':
     param_list, addr2param = utils.print_layer_label_tvm(log_path, config_path='config.json', only_fused=True)
     func_meta_data, topo_list = utils.print_input_id(log_path, config_path='config.json')  # to reconstruct the conputational graph
     # exit(0)
-    
-    """ # to be removed
-    log_path = './resnet18_strip_func_call_fused.log'
-    get_funcs_trace(prog_path, in_data, log_path, label_file, only_fused=True)
-    new_log_path = './resnet18_strip_func_call_fused_2.log'
-    print_fused_trace(log_path, new_log_path)
-    call_graph_list = get_call_graph_list('./resnet18_strip_func_call_fused_3.log')
-    show_graph(call_graph_list)
-    # print_layer_label(log_path)
-    """
-
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
@@ -169,7 +158,7 @@ if __name__ == '__main__':
             meta_data[5] = int(meta_data[1][1][3] / meta_data[1][2][3])
             meta_data[4] = math.ceil((meta_data[1][1][3] - meta_data[1][2][3]*meta_data[5]) / 2)
             new_meta_data.append(meta_data)
-        elif meta_data[3] == 'dense' or meta_data[3] == 'bias_add' or meta_data[3] == 'gamma' or meta_data[3] == 'beta':
+        elif meta_data[3] == 'dense' or meta_data[3] == 'bias_add' or meta_data[3] == 'add' or meta_data[3] == 'gamma' or meta_data[3] == 'beta':
             meta_data[6] = 1
             new_meta_data.append(meta_data)
         elif meta_data[3] == 'mean' or meta_data[3] == 'var':

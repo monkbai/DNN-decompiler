@@ -303,7 +303,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         elif mnemonic.startswith('shufps'):
             pass  # it is hard to model, to simplify the implementation, skip it
         elif mnemonic.startswith('pxor'):
-            pass
+            handle_xorps(code_list, mem_addr)
         elif mnemonic.startswith('por'):
             pass
         elif mnemonic.startswith('pshufd'):
