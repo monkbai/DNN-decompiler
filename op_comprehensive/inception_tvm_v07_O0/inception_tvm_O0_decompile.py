@@ -6,6 +6,7 @@ import math
 sys.path.append("../..")
 import trace_filter
 import utils
+from utils import list_to_json, dict_to_json, json_to_list, json_to_dict
 import se_engine
 import logging
 print('get logger: {}'.format('decompiler.'+__name__))
@@ -13,11 +14,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/inceptionv1_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/ground_truth.txt"
+    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/inceptionv1_funcs/"
+    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip"
+    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/cat.bin"
+    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/func_call.log"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -129,7 +130,8 @@ if __name__ == '__main__':
         print(name)
         print(result)
     # exit(0)
-    
+    list_to_json(topo_list, './topo_list.json')
+    dict_to_json(func_meta_data, './meta_data.json')
     # ==============================================================
     # Step 3 --- Extract Weights/Biases from Binary (dynamically)
     # ==============================================================
@@ -154,7 +156,7 @@ if __name__ == '__main__':
     for meta_data in func_meta_data:
         if meta_data[6]:
             print(meta_data)
-
+    list_to_json(func_meta_data, './new_meta_data.json')
 
     logged_func = []
     for meta_data in func_meta_data:
