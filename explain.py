@@ -16,11 +16,11 @@ def is_integer_num(n):
     return False
 
 
-def smallest_region(mem_regions: list, target_addr=0):
+def smallest_region(mem_regions: list, target_addr=0, min_size=0):
     small_mem = (0, 0xdeadbeaf)
     target_mem = (0, 0)
     for mem_blk in mem_regions:
-        if (mem_blk[1] - mem_blk[0]) < (small_mem[1] - small_mem[0]):
+        if min_size < (mem_blk[1] - mem_blk[0]) < (small_mem[1] - small_mem[0]):
             small_mem = mem_blk
         if mem_blk[0] <= target_addr <= mem_blk[1]:
             target_mem = mem_blk
@@ -350,12 +350,10 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         # get the filter shape and input shape from first output
         in_mem = (0, 0)  # biggest_region(mem_read_regions)  # biggest not necessarily to be the input
         if 'sub(' in exp:
-            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=in_mem,
-                                                       weight_addr=True)
+            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', size=16, in_blk=in_mem, weight_addr=True)
             addr_list = get_addr_list(mem_list[0][1], compiler='tvm', size=16, in_blk=in_mem)
         else:
-            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=in_mem,
-                                                       weight_addr=True)  # analyze the first expression (with the smallest address)
+            offset_list, weight_list = get_offset_list(mem_list[0][1], compiler='tvm', in_blk=in_mem, weight_addr=True)  # analyze the first expression (with the smallest address)
             addr_list = get_addr_list(mem_list[0][1], compiler='tvm', in_blk=in_mem)
         # print('debug input offset_list', offset_list)  # debug
         in_mem = region_with_target(mem_read_regions, addr_list[0])  # in_mem = biggest_region(mem_read_regions)
@@ -364,7 +362,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         # try to get the weight_mem region
         if hex(weight_list[0]).lower().startswith('0x7ff'):
             prev_read_regions = utils.previous_read_mem_regions()
-            weights_mem = smallest_region(prev_read_regions)
+            weights_mem = smallest_region(prev_read_regions, min_size=144)
         else:
             weights_mem = region_with_target(mem_read_regions, weight_list[0])
 
@@ -393,9 +391,20 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
                 break
             index += 1
 
+        # add case: group conv  # exists in shufflenet, efficientnet
+        if (index + 1) ** 2 == len(offset_list) and (index + 1) % 2 != 0:  # or index == len(offset_list) - 1:  # condition not verified
+            # (index + 1) % 2 != 0 -> the kernel filter size should not be an even number
+            index = int(math.sqrt(len(offset_list))) - 1
+            filter_shape[1] = 1
+            filter_shape[2] = filter_shape[3] = index + 1
+            filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / (
+                    filter_shape[2] * filter_shape[3])
+            input_shape[1] = filter_shape[0]
+            input_shape[2] = input_shape[3] = math.sqrt((in_mem[1] - in_mem[0]) / 4 / input_shape[1])
+            special_flag = True
         # add case: filter shape is [1 x 1]
-        if (not is_integer_num(filter_shape[1]) or filter_shape[3] > 9 or filter_shape[3] % 2 == 0 or filter_shape[1] < 3) and \
-                (index == 3 or index == 7):  # index == 3 -> 4 float align, index == 7 -> 8 float align
+        elif (not is_integer_num(filter_shape[1]) or filter_shape[3] > 9 or filter_shape[3] % 2 == 0 or filter_shape[1] < 3) and \
+                (index == 3 or index == 7 or index < 4):  # index == 3 -> 4 float align, index == 7 -> 8 float align
             tmp1 = offset_list[index + 1]
             tmp2 = tmp1 / (index + 1)  # input[2] * input[3]
             input_shape[2] = input_shape[3] = math.sqrt(tmp2)
@@ -410,7 +419,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
         # case [3 x 3], [5 x 5], ...
         # elif filter_shape[3] > 9 and (filter_shape[1] != int(filter_shape[1]) or filter_shape[1] < 3) and tmp1 < the_threshold:
         elif (not is_integer_num(filter_shape[1]) or filter_shape[3] > 9 or filter_shape[3] % 2 == 0 or filter_shape[1] < 3) and \
-                (index != 3 and index != 7):
+                (index != 3 and index != 7 and index >= 4):
             tmp1 = offset_list[index + 1]
             tmp2 = tmp1 / 4  # input[2] or input[3]
             input_shape[2] = input_shape[3] = tmp2
@@ -426,16 +435,6 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
                         filter_shape[1] * filter_shape[2] * filter_shape[3])
             # tmp_value = math.sqrt((out_mem[1] - out_mem[0]) / 4 / filter_shape[0])
             # input_shape[2] = input_shape[3] = output_shape[2] = output_shape[3] = math.ceil(tmp_value)
-            special_flag = True
-        # add case: group conv  # exists in shufflenet, efficientnet
-        elif (index + 1) ** 2 == len(offset_list):  # or index == len(offset_list) - 1:  # condition not verified
-            index = int(math.sqrt(len(offset_list))) - 1
-            filter_shape[1] = 1
-            filter_shape[2] = filter_shape[3] = index + 1
-            filter_shape[0] = output_shape[1] = (weights_mem[1] - weights_mem[0]) / 4 / (
-                        filter_shape[2] * filter_shape[3])
-            input_shape[1] = filter_shape[0]
-            input_shape[2] = input_shape[3] = math.sqrt((in_mem[1] - in_mem[0]) / 4 / input_shape[1])
             special_flag = True
 
         stride = guess_stride  # if we cannot get accurate stride, guess one

@@ -666,12 +666,29 @@ def recover_shape(func_name: str, mem_exp_log: str,
 
 
 def previous_read_mem_regions():
+    global addr2label
+    assert len(addr2label) > 0
     # This function is only used for TVM binary
-    func_name = cur_fun_name
-    func_num = int(func_name.split('.')[0])
-    prev_func = "{:0>4d}.txt".format(func_num - 2)
+    # used when weights are transformed and stored in stack
+    # this happens when the size of weights is small
+    offset_index = -1
+    target_func_name = "{:0>4d}.txt".format(int(cur_fun_name.split('.')[0]) - 2)
+    # while len(target_func_name) == 0:
+    #     func_name = cur_fun_name
+    #     func_num = int(func_name.split('.')[0])
+    #     prev_func = "{:0>4d}.txt".format(func_num + offset_index)
+    #
+    #     func_asm_path = os.path.join(funcs_dir, prev_func)
+    #     func_asm_path = os.path.abspath(func_asm_path)
+    #     start_addr, end_addr = get_func_range(func_asm_path)
+    #
+    #     if start_addr in addr2label.keys() and 'entry' in addr2label[start_addr]:
+    #         target_func_name = "{:0>4d}.txt".format(func_num + offset_index + 1)
+    #         break
+    #
+    #     offset_index -= 1
 
-    func_asm_path = os.path.join(funcs_dir, prev_func)
+    func_asm_path = os.path.join(funcs_dir, target_func_name)
     func_asm_path = os.path.abspath(func_asm_path)
     start_addr, end_addr = get_func_range(func_asm_path)
 
@@ -772,7 +789,7 @@ def handle_all_conv(prog_path: str, in_data: str, label_file_path: str,
             if ':' not in line:
                 continue
             name, label = line.split(':')
-            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0077' in name):
+            if len(label.strip()) > 0 and ('conv' in label or 'dense' in label or 'matmul' in label):  # and ('0167' in name):
                 name = name.strip()
                 funcs_name_list.append(name)
                 func_types[name] = label.strip()
