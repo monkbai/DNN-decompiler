@@ -1096,6 +1096,12 @@ def get_max_value(dump_addr: int):
     return max_value
 
 
+def get_min_value_addr(exp: str):
+    mat = re.search('max\(.*, 0x([0-9a-f]+),[0-9]+\)', exp)
+    if mat:
+        return int(mat.group(1), 16)
+
+
 # ==============================================================
 # Heuristics used to recover shape for TVM dense/fully-connected layer
 # ==============================================================
@@ -1308,7 +1314,7 @@ def explain_tvm_lrn_result(exp_log_path: str, mem_read_regions: list, mem_write_
     return size
 
 
-def explain_tvm_clip_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+def explain_tvm_minimum_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
     name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4, num=-1)
     block_size = 4
     if len(name) == 0:
@@ -1324,6 +1330,22 @@ def explain_tvm_clip_result(exp_log_path: str, mem_read_regions: list, mem_write
         max_value_addr = get_max_value_addr(exp)
         max_value = get_max_value(max_value_addr)
     return max_value
+
+
+def explain_tvm_maximum_result(exp_log_path: str, mem_read_regions: list, mem_write_regions: list):
+    name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=4, num=-1)
+    block_size = 4
+    if len(name) == 0:
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=16, num=-1)
+        block_size = 16
+    if len(name) == 0:
+        name, exp = choose_one_bytes(exp_log_path, mem_write_regions, size=32, num=-1)
+        block_size = 32
+    min_value = None
+    if 'max(' in exp:
+        min_value_addr = get_min_value_addr(exp)
+        min_value = get_max_value(min_value_addr)
+    return min_value
 
 
 # ==============================================================

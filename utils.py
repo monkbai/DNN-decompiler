@@ -754,7 +754,7 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
             return (read_mem_regions[0][1] - read_mem_regions[0][0]) / 4
         bias_length = explain_tvm_add_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return bias_length
-    elif 'max' in func_type:
+    elif 'max' in func_type and 'pool' in func_type:
         kernel_size, stride = explain_tvm_maxpool_result(mem_exp_log, write_mem_regions)
         return kernel_size, stride
     elif 'avg' in func_type:
@@ -767,8 +767,14 @@ def recover_shape_tvm(func_name: str, mem_exp_log: str,
         size = explain.explain_tvm_lrn_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return size
     elif 'clip' in func_type:
-        max_value = explain.explain_tvm_clip_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        max_value = explain.explain_tvm_minimum_result(mem_exp_log, read_mem_regions, write_mem_regions)
         return max_value
+    elif 'minimum' in func_type:
+        max_value = explain.explain_tvm_minimum_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        return max_value
+    elif 'maximum' in func_type:
+        min_value = explain.explain_tvm_maximum_result(mem_exp_log, read_mem_regions, write_mem_regions)
+        return min_value
 
 
 # ==============================================================
