@@ -14,11 +14,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/inceptionv1_funcs/"
-    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip"
-    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/cat.bin"
-    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O0/ground_truth.txt"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/inceptionv1_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'

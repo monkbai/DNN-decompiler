@@ -112,7 +112,7 @@ if __name__ == '__main__':
             start_addr, _ = utils.get_func_range(asm_path)
             if start_addr in utils.addr2label.keys():
                 func_type = utils.addr2label[start_addr]
-                if 'clip' in func_type or 'bias_add' in func_type or 'add' in func_type or 'avg_pool2d' in func_type:
+                if 'clip' in func_type or 'bias_add' in func_type or 'add' in func_type or 'avg_pool2d' in func_type or 'minimum' in func_type or 'maximum' in func_type:
 
                     print('\nSE for {}, {}'.format(asm_file, func_type))
                     tmp_log_path = os.path.basename(asm_file)[:-4] + '.log'

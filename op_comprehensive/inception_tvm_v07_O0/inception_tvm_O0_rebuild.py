@@ -137,8 +137,8 @@ class InceptionV1(nn.Module):
             nn.LocalResponseNorm(5),
 
         )
-        set_weights(self.blockA[0], './0163.weights_0.json')
-        set_biases(self.blockA[0], '0062.biases_0.json')
+        set_weights(self.blockA[0], './0261.weights_0.json')
+        set_biases(self.blockA[0], '0226.biases_0.json')
         
         self.blockB = nn.Sequential(
             nn.Conv2d(in_channels=64, out_channels=64, kernel_size=1, stride=1),
@@ -148,10 +148,10 @@ class InceptionV1(nn.Module):
             nn.LocalResponseNorm(5),
             nn.MaxPool2d(kernel_size=3, stride=2, padding=0),
         )
-        set_weights(self.blockB[0], './0168.weights_0.json')
-        set_biases(self.blockB[0], '0065.biases_0.json')
-        set_weights(self.blockB[2], './0228.weights_0.json')
-        set_biases(self.blockB[2], '0098.biases_0.json')
+        set_weights(self.blockB[0], './0307.weights_0.json')
+        set_biases(self.blockB[0], '0228.biases_0.json')
+        set_weights(self.blockB[2], './0116.weights_0.json')
+        set_biases(self.blockB[2], '0212.biases_0.json')
 
         self.blockC = nn.Sequential(
             Block(in_channels=192,out_chanel_1=64, out_channel_3_reduce=96, out_channel_3=128,
@@ -161,29 +161,29 @@ class InceptionV1(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=2, padding=0),
         )
         set_block(self.blockC[0], 
-                  '0287.weights_0.json', '0131.biases_0.json', 
-                  '0345.weights_0.json', '0143.biases_0.json', 
-                  '0400.weights_0.json', '0146.biases_0.json', 
-                  '0405.weights_0.json', '0149.biases_0.json',
-                  '0411.weights_0.json', '0152.biases_0.json',
-                  '0416.weights_0.json', '0152.biases_1.json')
+                  '0216.weights_0.json', '0210.biases_0.json', 
+                  '0381.weights_0.json', '0363.biases_0.json', 
+                  '0336.weights_0.json', '0136.biases_0.json', 
+                  '0276.weights_0.json', '0202.biases_0.json',
+                  '0249.weights_0.json', '0321.biases_0.json',
+                  '0025.weights_0.json', '0321.biases_1.json')
         set_block(self.blockC[1],  
-                  '0421.weights_0.json', '0146.biases_1.json', 
-                  '0421.weights_1.json', '0146.biases_2.json', 
-                  '0174.weights_0.json', '0155.biases_0.json',
-                  '0179.weights_0.json', '0152.biases_2.json',
-                  '0185.weights_0.json', '0143.biases_1.json',
-                  '0190.weights_0.json', '0131.biases_1.json')
+                  '0183.weights_0.json', '0136.biases_1.json', 
+                  '0183.weights_1.json', '0136.biases_2.json', 
+                  '0171.weights_0.json', '0284.biases_0.json',
+                  '0371.weights_0.json', '0321.biases_2.json',
+                  '0386.weights_0.json', '0363.biases_1.json',
+                  '0206.weights_0.json', '0210.biases_1.json')
 
         self.blockD_1 = Block(in_channels=480, out_chanel_1=192, out_channel_3_reduce=96, out_channel_3=208,
                               out_channel_5_reduce=16, out_channel_5=48, out_channel_pool=64)
         set_block(self.blockD_1,  
-                  '0195.weights_0.json', '0158.biases_0.json', 
-                  '0200.weights_0.json', '0068.biases_0.json', 
-                  '0206.weights_0.json', '0071.biases_0.json',
-                  '0211.weights_0.json', '0074.biases_0.json',
-                  '0217.weights_0.json', '0077.biases_0.json',
-                  '0222.weights_0.json', '0080.biases_0.json')
+                  '0105.weights_0.json', '0173.biases_0.json', 
+                  '0088.weights_0.json', '0208.biases_0.json', 
+                  '0361.weights_0.json', '0162.biases_0.json',
+                  '0035.weights_0.json', '0090.biases_0.json',
+                  '0051.weights_0.json', '0031.biases_0.json',
+                  '0220.weights_0.json', '0365.biases_0.json')
         # if self.stage == 'train':
         #     self.Classifiction_logits1 = InceptionClassifiction(in_channels=512,out_channels=num_classes)
 
@@ -196,26 +196,26 @@ class InceptionV1(nn.Module):
                               out_channel_5_reduce=32, out_channel_5=64, out_channel_pool=64),
         )
         set_block(self.blockD_2[0],  
-                  '0233.weights_0.json', '0083.biases_0.json', 
-                  '0238.weights_0.json', '0086.biases_0.json', 
-                  '0244.weights_0.json', '0089.biases_0.json',
-                  '0249.weights_0.json', '0092.biases_0.json',
-                  '0255.weights_0.json', '0080.biases_1.json',
-                  '0260.weights_0.json', '0080.biases_2.json')
+                  '0160.weights_0.json', '0412.biases_0.json', 
+                  '0196.weights_0.json', '0329.biases_0.json', 
+                  '0101.weights_0.json', '0319.biases_0.json',
+                  '0345.weights_0.json', '0175.biases_0.json',
+                  '0141.weights_0.json', '0365.biases_1.json',
+                  '0130.weights_0.json', '0365.biases_2.json')
         set_block(self.blockD_2[1],  
-                  '0265.weights_0.json', '0095.biases_0.json', 
-                  '0265.weights_1.json', '0095.biases_1.json', 
-                  '0271.weights_0.json', '0101.biases_0.json',
-                  '0249.weights_1.json', '0092.biases_1.json',
-                  '0255.weights_1.json', '0080.biases_3.json',
-                  '0260.weights_1.json', '0080.biases_4.json')
+                  '0288.weights_0.json', '0059.biases_0.json', 
+                  '0288.weights_1.json', '0059.biases_1.json', 
+                  '0046.weights_0.json', '0149.biases_0.json',
+                  '0345.weights_1.json', '0175.biases_1.json',
+                  '0141.weights_1.json', '0365.biases_3.json',
+                  '0130.weights_1.json', '0365.biases_4.json')
         set_block(self.blockD_2[2],  
-                  '0238.weights_1.json', '0086.biases_1.json', 
-                  '0276.weights_0.json', '0104.biases_0.json', 
-                  '0282.weights_0.json', '0107.biases_0.json',
-                  '0292.weights_0.json', '0110.biases_0.json',
-                  '0298.weights_0.json', '0080.biases_5.json',
-                  '0260.weights_2.json', '0080.biases_6.json')
+                  '0196.weights_1.json', '0329.biases_1.json', 
+                  '0232.weights_0.json', '0373.biases_0.json', 
+                  '0270.weights_0.json', '0126.biases_0.json',
+                  '0311.weights_0.json', '0164.biases_0.json',
+                  '0070.weights_0.json', '0365.biases_5.json',
+                  '0130.weights_2.json', '0365.biases_6.json')
 
         # if self.stage == 'train':
         #     self.Classifiction_logits2 = InceptionClassifiction(in_channels=528,out_channels=num_classes)
@@ -226,12 +226,12 @@ class InceptionV1(nn.Module):
             nn.MaxPool2d(kernel_size=3, stride=2, padding=1),
         )
         set_block(self.blockD_3[0],  
-                  '0303.weights_0.json', '0101.biases_1.json', 
-                  '0308.weights_0.json', '0083.biases_1.json', 
-                  '0314.weights_0.json', '0113.biases_0.json',
-                  '0319.weights_0.json', '0110.biases_1.json',
-                  '0325.weights_0.json', '0095.biases_2.json',
-                  '0330.weights_0.json', '0095.biases_3.json')
+                  '0200.weights_0.json', '0149.biases_1.json', 
+                  '0299.weights_0.json', '0412.biases_1.json', 
+                  '0156.weights_0.json', '0037.biases_0.json',
+                  '0303.weights_0.json', '0164.biases_1.json',
+                  '0356.weights_0.json', '0059.biases_2.json',
+                  '0400.weights_0.json', '0059.biases_3.json')
 
         self.blockE = nn.Sequential(
             Block(in_channels=832, out_chanel_1=256, out_channel_3_reduce=160, out_channel_3=320,
@@ -240,25 +240,25 @@ class InceptionV1(nn.Module):
                   out_channel_5_reduce=48, out_channel_5=128, out_channel_pool=128),
         )
         set_block(self.blockE[0],  
-                  '0335.weights_0.json', '0116.biases_0.json', 
-                  '0340.weights_0.json', '0119.biases_0.json', 
-                  '0351.weights_0.json', '0122.biases_0.json',
-                  '0356.weights_0.json', '0125.biases_0.json',
-                  '0362.weights_0.json', '0128.biases_0.json',
-                  '0367.weights_0.json', '0128.biases_1.json')
+                  '0253.weights_0.json', '0224.biases_0.json', 
+                  '0021.weights_0.json', '0151.biases_0.json', 
+                  '0077.weights_0.json', '0410.biases_0.json',
+                  '0041.weights_0.json', '0222.biases_0.json',
+                  '0082.weights_0.json', '0029.biases_0.json',
+                  '0280.weights_0.json', '0029.biases_1.json')
         set_block(self.blockE[1],  
-                  '0372.weights_0.json', '0134.biases_0.json', 
-                  '0377.weights_0.json', '0137.biases_0.json', 
-                  '0383.weights_0.json', '0134.biases_1.json',
-                  '0388.weights_0.json', '0140.biases_0.json',
-                  '0394.weights_0.json', '0128.biases_2.json',
-                  '0367.weights_1.json', '0128.biases_3.json')
+                  '0096.weights_0.json', '0177.biases_0.json', 
+                  '0265.weights_0.json', '0388.biases_0.json', 
+                  '0192.weights_0.json', '0177.biases_1.json',
+                  '0055.weights_0.json', '0367.biases_0.json',
+                  '0341.weights_0.json', '0029.biases_2.json',
+                  '0280.weights_1.json', '0029.biases_3.json')
 
         self.avgpool = nn.AvgPool2d(kernel_size=7,stride=1)
         # self.dropout = nn.Dropout(p=0.4)
         self.linear = nn.Linear(in_features=1024,out_features=num_classes)
-        set_weights(self.linear, './0424.dense_weights_0.json')
-        set_biases(self.linear, './0020.biases_0.json')
+        set_weights(self.linear, './0272.dense_weights_0.json')
+        set_biases(self.linear, './0406.biases_0.json')
         
         self.softmax = nn.Softmax()
 
@@ -288,7 +288,7 @@ model = InceptionV1(num_classes=1000, stage='test')
 # print(model)
 
 # input = torch.randn(1, 3, 224, 224)
-with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/inceptionv1_tvm_O0/cat.bin", 'br') as f:
+with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O0/cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)
