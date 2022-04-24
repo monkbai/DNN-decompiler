@@ -15,11 +15,11 @@ logger = logging.getLogger('decompiler.'+__name__)
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/inceptionv1_tvm_O3/inceptionv1_funcs/"
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/inceptionv1_tvm_O3/inceptionv1_tvm_O3_strip"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/inceptionv1_tvm_O3/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/inceptionv1_tvm_O3/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/inceptionv1_tvm_O3/ground_truth.txt"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O3/inceptionv1_funcs/"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O3/inceptionv1_tvm_O3_strip"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O3/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O3/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/inceptionv1_tvm_O3/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     # We have to pass the external function address to SE engine
     # This can be done automatically, but we do it manually for simplicity
-    se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf', '0x401190': 'powf'}  # address in .plt, name
+    se_engine.extern_functions = {'0x400D10': 'memset', '0x400C60': 'expf', '0x400D70': 'powf'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
 
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True, topo_list=topo_list)
@@ -91,14 +91,14 @@ if __name__ == '__main__':
             print('layout_shape', result[3])
         else:
             print(result)
-    # exit(0)
+    exit(0)
     
     # ==============================================================
     
     # Step 2.2.2 Other layers
     
     asm_files = os.listdir(utils.funcs_dir)
-    se_engine.extern_functions = {'0x401130': 'memset', '0x401080': 'expf', '0x401190': 'powf'}  # address in .plt, name
+    se_engine.extern_functions = {'0x400D10': 'memset', '0x400C60': 'expf', '0x400D70': 'powf'}  # address in .plt, name
     results_dict = dict()
     for asm_file in asm_files:
         if 'labels' not in asm_file and asm_file.endswith('.txt'):
@@ -192,7 +192,7 @@ if __name__ == '__main__':
             w_shape = tuple(w_shape)
             layout_shape = [int(layout_shape[i]) for i in range(len(layout_shape))]
         elif 'dense' in func_type:
-            layout_shape = (int(w_shape[0]/8), int(w_shape[1]), 8)  # TODO: should we write another rule for this?
+            # layout_shape = (int(w_shape[0]/8), int(w_shape[1]), 8)  # no such opt in v0.7
             w_shape = [int(w_shape[i]) for i in range(len(w_shape))]
             w_shape = tuple(w_shape)
         else:
