@@ -129,62 +129,62 @@ class MobileNetV2(nn.Module):
 
         # building first layer
         layers = [conv_3x3_bn(3, 32, 2)]
-        set_weights(layers[0][0], '0063.weights_0.json')
-        set_biases(layers[0][0], '0063.biases_0.json')
+        set_weights(layers[0][0], '0084.weights_0.json')
+        set_biases(layers[0][0], '0084.biases_0.json')
 
-        layers.append(InvertedResidual(32, 16, 1, 1, ['0091.weights_0.json', '0026.weights_0.json'],
-                                                     ['0091.biases_0.json', '0026.biases_0.json']))
+        layers.append(InvertedResidual(32, 16, 1, 1, ['0031.weights_0.json', '0099.weights_0.json'],
+                                                     ['0031.biases_0.json', '0099.biases_0.json']))
 
-        layers.append(InvertedResidual(16, 24, 2, 6, ['0066.weights_0.json', '0095.weights_0.json', '0029.weights_0.json'],
-                                                     ['0066.biases_0.json', '0095.biases_0.json', '0029.biases_0.json']))
-        layers.append(InvertedResidual(24, 24, 1, 6, ['0069.weights_0.json', '0099.weights_0.json', '0047.weights_0.json'],
-                                                     ['0069.biases_0.json', '0099.biases_0.json', '0047.biases_0.json']))
+        layers.append(InvertedResidual(16, 24, 2, 6, ['0028.weights_0.json', '0081.weights_0.json', '0064.weights_0.json'],
+                                                     ['0028.biases_0.json', '0081.biases_0.json', '0064.biases_0.json']))
+        layers.append(InvertedResidual(24, 24, 1, 6, ['0078.weights_0.json', '0053.weights_0.json', '0086.weights_0.json'],
+                                                     ['0078.biases_0.json', '0053.biases_0.json', '0086.biases_0.json']))
 
-        layers.append(InvertedResidual(24, 32, 2, 6, ['0069.weights_1.json', '0103.weights_0.json', '0032.weights_0.json'],
-                                                     ['0069.biases_1.json', '0103.biases_0.json', '0032.biases_0.json']))
-        layers.append(InvertedResidual(32, 32, 1, 6, ['0072.weights_0.json', '0107.weights_0.json', '0050.weights_0.json'],
-                                                     ['0072.biases_0.json', '0107.biases_0.json', '0050.biases_0.json']))
-        layers.append(InvertedResidual(32, 32, 1, 6, ['0072.weights_1.json', '0107.weights_1.json', '0050.weights_1.json'],
-                                                     ['0072.biases_1.json', '0107.biases_1.json', '0050.biases_1.json']))
+        layers.append(InvertedResidual(24, 32, 2, 6, ['0078.weights_1.json', '0062.weights_0.json', '0026.weights_0.json'],
+                                                     ['0078.biases_1.json', '0062.biases_0.json', '0026.biases_0.json']))
+        layers.append(InvertedResidual(32, 32, 1, 6, ['0037.weights_0.json', '0071.weights_0.json', '0022.weights_0.json'],
+                                                     ['0037.biases_0.json', '0071.biases_0.json', '0022.biases_0.json']))
+        layers.append(InvertedResidual(32, 32, 1, 6, ['0037.weights_1.json', '0071.weights_1.json', '0022.weights_1.json'],
+                                                     ['0037.biases_1.json', '0071.biases_1.json', '0022.biases_1.json']))
 
-        layers.append(InvertedResidual(32, 64, 2, 6, ['0072.weights_2.json', '0111.weights_0.json', '0035.weights_0.json'],
-                                                     ['0072.biases_2.json', '0111.biases_0.json', '0035.biases_0.json']))
-        layers.append(InvertedResidual(64, 64, 1, 6, ['0075.weights_0.json', '0115.weights_0.json', '0053.weights_0.json'],
-                                                     ['0075.biases_0.json', '0115.biases_0.json', '0053.biases_0.json']))
-        layers.append(InvertedResidual(64, 64, 1, 6, ['0075.weights_1.json', '0115.weights_1.json', '0053.weights_1.json'],
-                                                     ['0075.biases_1.json', '0115.biases_1.json', '0053.biases_1.json']))
-        layers.append(InvertedResidual(64, 64, 1, 6, ['0075.weights_2.json', '0115.weights_2.json', '0053.weights_2.json'],
-                                                     ['0075.biases_2.json', '0115.biases_2.json', '0053.biases_2.json']))
+        layers.append(InvertedResidual(32, 64, 2, 6, ['0037.weights_2.json', '0042.weights_0.json', '0091.weights_0.json'],
+                                                     ['0037.biases_2.json', '0042.biases_0.json', '0091.biases_0.json']))
+        layers.append(InvertedResidual(64, 64, 1, 6, ['0046.weights_0.json', '0074.weights_0.json', '0039.weights_0.json'],
+                                                     ['0046.biases_0.json', '0074.biases_0.json', '0039.biases_0.json']))
+        layers.append(InvertedResidual(64, 64, 1, 6, ['0046.weights_1.json', '0074.weights_1.json', '0039.weights_1.json'],
+                                                     ['0046.biases_1.json', '0074.biases_1.json', '0039.biases_1.json']))
+        layers.append(InvertedResidual(64, 64, 1, 6, ['0046.weights_2.json', '0074.weights_2.json', '0039.weights_2.json'],
+                                                     ['0046.biases_2.json', '0074.biases_2.json', '0039.biases_2.json']))
 
-        layers.append(InvertedResidual(64, 96, 1, 6, ['0075.weights_3.json', '0115.weights_3.json', '0038.weights_0.json'],
-                                                     ['0075.biases_3.json', '0115.biases_3.json', '0038.biases_0.json']))
-        layers.append(InvertedResidual(96, 96, 1, 6, ['0078.weights_0.json', '0119.weights_0.json', '0056.weights_0.json'],
-                                                     ['0078.biases_0.json', '0119.biases_0.json', '0056.biases_0.json']))
-        layers.append(InvertedResidual(96, 96, 1, 6, ['0078.weights_1.json', '0119.weights_1.json', '0056.weights_1.json'],
-                                                     ['0078.biases_1.json', '0119.biases_1.json', '0056.biases_1.json']))
+        layers.append(InvertedResidual(64, 96, 1, 6, ['0046.weights_3.json', '0074.weights_3.json', '0035.weights_0.json'],
+                                                     ['0046.biases_3.json', '0074.biases_3.json', '0035.biases_0.json']))
+        layers.append(InvertedResidual(96, 96, 1, 6, ['0048.weights_0.json', '0094.weights_0.json', '0024.weights_0.json'],
+                                                     ['0048.biases_0.json', '0094.biases_0.json', '0024.biases_0.json']))
+        layers.append(InvertedResidual(96, 96, 1, 6, ['0048.weights_1.json', '0094.weights_1.json', '0024.weights_1.json'],
+                                                     ['0048.biases_1.json', '0094.biases_1.json', '0024.biases_1.json']))
 
-        layers.append(InvertedResidual(96, 160, 2, 6, ['0078.weights_2.json', '0123.weights_0.json', '0041.weights_0.json'],
-                                                      ['0078.biases_2.json', '0123.biases_0.json', '0041.biases_0.json']))
-        layers.append(InvertedResidual(160, 160, 1, 6, ['0081.weights_0.json', '0127.weights_0.json', '0059.weights_0.json'],
-                                                       ['0081.biases_0.json', '0127.biases_0.json', '0059.biases_0.json']))
-        layers.append(InvertedResidual(160, 160, 1, 6, ['0081.weights_1.json', '0127.weights_1.json', '0059.weights_1.json'],
-                                                       ['0081.biases_1.json', '0127.biases_1.json', '0059.biases_1.json']))
+        layers.append(InvertedResidual(96, 160, 2, 6, ['0048.weights_2.json', '0089.weights_0.json', '0076.weights_0.json'],
+                                                      ['0048.biases_2.json', '0089.biases_0.json', '0076.biases_0.json']))
+        layers.append(InvertedResidual(160, 160, 1, 6, ['0057.weights_0.json', '0020.weights_0.json', '0050.weights_0.json'],
+                                                       ['0057.biases_0.json', '0020.biases_0.json', '0050.biases_0.json']))
+        layers.append(InvertedResidual(160, 160, 1, 6, ['0057.weights_1.json', '0020.weights_1.json', '0050.weights_1.json'],
+                                                       ['0057.biases_1.json', '0020.biases_1.json', '0050.biases_1.json']))
 
-        layers.append(InvertedResidual(160, 320, 1, 6, ['0081.weights_2.json', '0127.weights_2.json', '0044.weights_0.json'],
-                                                       ['0081.biases_2.json', '0127.biases_2.json', '0044.biases_0.json']))
+        layers.append(InvertedResidual(160, 320, 1, 6, ['0057.weights_2.json', '0020.weights_2.json', '0066.weights_0.json'],
+                                                       ['0057.biases_2.json', '0020.biases_2.json', '0066.biases_0.json']))
 
         self.features = nn.Sequential(*layers)
 
         self.conv = conv_1x1_bn(320, 1280)
-        set_weights(self.conv[0], '0084.weights_0.json')
-        set_biases(self.conv[0], '0084.biases_0.json')
+        set_weights(self.conv[0], '0059.weights_0.json')
+        set_biases(self.conv[0], '0059.biases_0.json')
 
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = nn.Linear(1280, num_classes)
-        set_weights(self.classifier, '0087.dense_weights_0.json')
-        set_biases(self.classifier, '0087.biases_0.json')
+        set_weights(self.classifier, '0044.dense_weights_0.json')
+        set_biases(self.classifier, '0044.biases_0.json')
 
-        # self._initialize_weights()
+        self.softmax = nn.Softmax()
 
     def forward(self, x):
         x = self.features(x)
@@ -192,7 +192,7 @@ class MobileNetV2(nn.Module):
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
-        return x
+        return self.softmax(x)
 
     # def _initialize_weights(self):
     #     for m in self.modules():
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     # exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
-    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/mobilenetv2_tvm_O3/cat.bin", 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/mobilenetv2_tvm_O3/cat.bin", 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
             print(np_arr.shape)

@@ -22,11 +22,11 @@ if __name__ == '__main__':
     log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/mobilenetv2_tvm_O3/func_call.log"
     label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.7/mobilenetv2_tvm_O3/ground_truth.txt"
 
-    utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/mobilenet_funcs/"
-    prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/mobilenetv2_7_tvm_O3_strip"
-    in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/cat.bin"
-    log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/ground_truth.txt"
+    # utils.funcs_dir = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/mobilenet_funcs/"
+    # prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/mobilenetv2_7_tvm_O3_strip"
+    # in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/cat.bin"
+    # log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/func_call.log"
+    # label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -153,14 +153,23 @@ if __name__ == '__main__':
             continue
         else:
             logged_func.append(meta_data[0])
+
+        # identify the type of conv
+        func_name = meta_data[0]
+        conv_type = 0
+        for node in topo_list:
+            if 'conv2d' in node[2] and node[1] == func_name:
+                conv_type = len(node[3])
+                break
+        
         if 'conv2d' in meta_data[3] and 'add' in meta_data[3]:
-            meta_data[6] = 1  # if conv_type == 3 else 2
+            meta_data[6] = 1  if conv_type == 3 else 2
             meta_data[5] = int(meta_data[1][1][3] / meta_data[1][2][3])
             meta_data[4] = math.ceil((meta_data[1][1][3] - meta_data[1][2][3] * meta_data[5]) / 2)
             meta_data[3] = 'conv2d'
             new_meta_data.append(meta_data)  # weights of conv
             meta_data = copy.deepcopy(meta_data)
-            meta_data[6] = 2  # if conv_type == 3 else 3
+            meta_data[6] = 2  if conv_type == 3 else 3
             meta_data[5] = meta_data[4] = None
             meta_data[3] = 'bias_add'
             meta_data[1] = [1, int(meta_data[1][0][0])]
