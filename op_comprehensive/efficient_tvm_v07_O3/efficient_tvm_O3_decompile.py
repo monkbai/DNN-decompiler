@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     # We have to pass the external function address to SE engine
     # This can be done automatically, but we do it manually for simplicity
-    se_engine.extern_functions = {'0x400CD0': 'memset', '0x400C20': 'expf'}  # address in .plt, name
+    se_engine.extern_functions = {'0x400cd0': 'memset', '0x400c20': 'expf'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
 
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map,
@@ -92,14 +92,14 @@ if __name__ == '__main__':
             print('layout_shape', result[3])
         else:
             print(result)
-    exit(0)
+    # exit(0)
     
     # ==============================================================
     
     # Step 2.2.2 Other layers
     
     asm_files = os.listdir(utils.funcs_dir)
-    se_engine.extern_functions = {'0x400CD0': 'memset', '0x400C20': 'expf'}  # address in .plt, name
+    se_engine.extern_functions = {'0x400cd0': 'memset', '0x400c20': 'expf'}  # address in .plt, name
     results_dict = dict()
     for asm_file in asm_files:
         if 'labels' not in asm_file and asm_file.endswith('.txt'):

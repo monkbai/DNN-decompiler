@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     # We have to pass the external function address to SE engine
     # This can be done automatically, but we do it manually for simplicity
-    se_engine.extern_functions = {'0x400C50': 'memset'}  # address in .plt, name
+    se_engine.extern_functions = {'0x400c50': 'memset'}  # address in .plt, name
     # handle all conv layer. Also, all dense/matmul
     func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map,
                                        compiler='tvm', optimized=True, topo_list=topo_list)
@@ -91,7 +91,7 @@ if __name__ == '__main__':
             print('layout_shape', result[3])
         else:
             print(result)
-    exit(0)
+    # exit(0)
     
     # ==============================================================
     
@@ -101,7 +101,7 @@ if __name__ == '__main__':
     # For this special sequence, we try to merge it back into BatchNorm in fused_trace.py
     
     asm_files = os.listdir(utils.funcs_dir)
-    se_engine.extern_functions = {'0x400C50': 'memset'}  # address in .plt, name
+    se_engine.extern_functions = {'0x400c50': 'memset'}  # address in .plt, name
     results_dict = dict()
     for asm_file in asm_files:
         if 'labels' not in asm_file and asm_file.endswith('.txt'):

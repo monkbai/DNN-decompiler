@@ -211,15 +211,6 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         elif mnemonic == 'call':
             rax_value = ''
 
-        if '46148c' in asm_addr:
-            print('debug')
-        elif '0x2526a50,16' in mem_state.keys() and mem_state['0x2526a50,16'].count('*') > 147:
-            print('why')
-        elif 'call' in code_list:
-            print('call')
-        else:
-            pass
-
         # TODO: should we update the mem_value of the address to be read?
         if len(mem_value) > 0 and mem_size == 8 and mem_addr.startswith('0x7ff'):
             # debug: resnet18 TVM v0.8 O0 dense layer
