@@ -1,3 +1,4 @@
+import copy
 import os
 import re
 import math
@@ -156,6 +157,15 @@ def clear_mem_state():
 """ Represent each memory block with its address """
 
 
+def refine_external_funcs():
+    global extern_functions
+    tmp_dict = copy.deepcopy(extern_functions)
+    extern_functions.clear()
+    for key, value in tmp_dict.items():
+        func_addr = int(key, 16)
+        extern_functions[hex(func_addr).lower()] = value
+
+
 def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_inst_num=5000000):
     logger.info('Symbolic Execution Start - {}'.format(func_asm_path))
     localtime = time.asctime( time.localtime(time.time()) )
@@ -163,6 +173,7 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
     start_time = time.time()
 
     clear_mem_state()
+    refine_external_funcs()
     # record_ext_funcs(func_asm_path)  # for IDA, we manually set the extern_functions
 
     f = open(log_file, 'r')
@@ -199,6 +210,15 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
             index += 1
         elif mnemonic == 'call':
             rax_value = ''
+
+        if '46148c' in asm_addr:
+            print('debug')
+        elif '0x2526a50,16' in mem_state.keys() and mem_state['0x2526a50,16'].count('*') > 147:
+            print('why')
+        elif 'call' in code_list:
+            print('call')
+        else:
+            pass
 
         # TODO: should we update the mem_value of the address to be read?
         if len(mem_value) > 0 and mem_size == 8 and mem_addr.startswith('0x7ff'):
@@ -314,12 +334,14 @@ def lightweight_SymEx(func_asm_path: str, log_file: str, exp_log_path: str, max_
         elif mnemonic.startswith('lea'):
             handle_lea(code_list, mem_addr)
         elif mnemonic.startswith('call'):
-            if code_list[1] in extern_functions.keys():
-                if 'memset' == extern_functions[code_list[1]]:
+            func_key = code_list[1].lower()
+            if func_key in extern_functions.keys():
+                func_name = extern_functions[func_key]
+                if 'memset' == func_name:
                     handle_memset(code_list, rax_value)  # how to handle the function call
-                elif 'expf' == extern_functions[code_list[1]]:
+                elif 'expf' == func_name:
                     handle_expf(code_list, rax_value)
-                elif 'powf' == extern_functions[code_list[1]]:
+                elif 'powf' == func_name:
                     handle_powf(code_list, rax_value)
                 else:
                     logger.info('call not implemented: {}'.format(extern_functions[code_list[1]]))

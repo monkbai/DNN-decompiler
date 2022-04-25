@@ -874,6 +874,8 @@ def get_weights_layout_info(value: str, mem_read_regions: list, compiler='tvm', 
 
     if offset_list[1] < offset_list[0]:
         offset_list.reverse()
+    if 0 < offset_list.index(min(offset_list)) < len(offset_list) - 1:
+        offset_list.sort()
 
     for i in range(1, len(offset_list)):
         offset_list[i] = (offset_list[i] - offset_list[0]) / 4
