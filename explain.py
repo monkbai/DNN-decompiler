@@ -613,7 +613,7 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
                         break
                 filter_shape[3] = math.ceil(length / tmp2)
                 filter_shape[2] = filter_shape[3]  # TODO assume
-                print(tmp2, filter_shape[2])
+                # print(tmp2, filter_shape[2])
                 filter_shape[1] = tmp2 / filter_shape[2]
                 filter_shape[1] *= (len(offset_list) / length)
                 filter_shape[1] = math.floor(filter_shape[1])
@@ -621,9 +621,9 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
                     break  # another case
                 # input[1] = filter[1]
                 input_shape[1] = filter_shape[1]
-                print(tmp1)
+                # print(tmp1)
                 input_shape[2] = tmp1 / input_shape[1]
-                print(len(offset_list), length)
+                # print(len(offset_list), length)
                 input_shape[2] *= (len(offset_list) / length)
                 input_shape[2] = math.floor(input_shape[2])
                 input_shape[3] = input_shape[2]  # TODO assume
@@ -705,7 +705,7 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
 
     if not ignore_flag:
         # try to get the weights layout indicators
-        ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions, size=16)
+        ind_a, ind_b, smooth = get_weights_layout_info(mem_list[0][1], mem_read_regions, size=16, special_flag=special_flag)
         # print('ind_a {}, ind_b {}, smooth {}'.format(ind_a, ind_b, smooth))
         # final shape
         # print('input shape', input_shape)
