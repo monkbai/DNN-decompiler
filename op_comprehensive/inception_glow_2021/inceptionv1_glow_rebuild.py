@@ -288,7 +288,7 @@ model = InceptionV1(num_classes=1000, stage='test')
 # print(model)
 
 # input = torch.randn(1, 3, 224, 224)
-with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/inception_v1/cat.bin", 'br') as f:
+with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/inception_v1/cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)

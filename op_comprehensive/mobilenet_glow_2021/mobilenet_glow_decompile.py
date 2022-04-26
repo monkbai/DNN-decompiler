@@ -13,12 +13,12 @@ print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/mobilenet/mobilenet_funcs"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/mobilenet/mobilenet_funcs"
 
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/mobilenet/mobilenetv2_7_strip.out"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/mobilenet/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/mobilenet/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/mobilenet/ground_truth.txt"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/mobilenet/mobilenetv2_7_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/mobilenet/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/mobilenet/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/mobilenet/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'

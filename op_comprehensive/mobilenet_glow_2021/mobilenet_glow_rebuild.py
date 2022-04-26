@@ -248,17 +248,12 @@ if __name__ == '__main__':
     # exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
-    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/mobilenet/cat.bin", 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/mobilenet/cat.bin", 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
             print(np_arr.shape)
             np_arr = np_arr.reshape(3, 224, 224)
             np_arr = np_arr.reshape((1, 3, 224, 224))
-
-            # new_np_arr = np.transpose(np_arr, (0, 2, 3, 1))
-            # print(new_np_arr.shape)
-            # with open("/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/efficientnet/cat_transpose.bin", "wb") as fp:
-            #     fp.write(new_np_arr.astype(np.float32).tobytes())
 
             x = torch.Tensor(np_arr)
             print(x.shape)

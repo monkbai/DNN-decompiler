@@ -13,12 +13,12 @@ print('get logger: {}'.format('decompiler.' + __name__))
 logger = logging.getLogger('decompiler.' + __name__)
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/efficientnet/efficientnet_funcs"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/efficientnet/efficientnet_funcs"
 
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/efficientnet/efficientnet_lite4_strip.out"
-    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/efficientnet/cat.bin"
-    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/efficientnet/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/efficientnet/ground_truth.txt"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/efficientnet/efficientnet_lite4_strip.out"
+    in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/efficientnet/cat.bin"
+    log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/efficientnet/func_call.log"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/efficientnet/ground_truth.txt"
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     func_meta_data, topo_list = utils.print_input_id(log_path, compiler='glow', addr2param=addr2param)
 
     list_to_json(topo_list, './topo_list.json')
-
+    # exit(0)
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
     # ==============================================================
