@@ -57,12 +57,12 @@ def get_embedding_region(entry_func: str, next_func: str, src_list: list):
 
 
 if __name__ == '__main__':
-    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022_funcs/"
+    utils.funcs_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/embedding/embedding_2_funcs_backup/"
 
     # prepared in advance
-    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022"
+    prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/embedding/embedding_2_strip.out"
     in_data = ''  # no input needed, hard coded in source code
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022_funcs/labels.txt"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/embedding/ground_truth_backup.txt"
     config_file = './config.json'
 
     # (tmp files) generated during analysis
@@ -113,14 +113,15 @@ if __name__ == '__main__':
     
     list_to_json(topo_list, './topo_list.json')
     dict_to_json(func_meta_data, './meta_data.json')
+    # exit(0)
     # ===============================
     # Extract Parameters
     # ===============================
     # func_meta_data is collected from previous output
     func_meta_data = [
-                      ('0008.embedding_2.txt', (25002, 100), '0x401270', '0x404080', 'embedding'),  # embedding need to be manually set
-                      ('0010.libjit_matmul_f.txt', (1, 100), '0x401610', '0xd8da80', 'matmul'),
-                      ('0011.libjit_stacked_kernel.txt', (1, 1), '0x401690', '0xd8da40', 'add'),
+                      ('0008.embedding_2.txt', (25002, 100), '0x401270', '0x404080', 'embedding'),  # embedding need to be manually set (proof of concept)
+                      ('0010.libjit_matmul_f.txt', (1, 100), '0x401630', '0xd8da80', 'matmul'),
+                      ('0011.libjit_stacked_kernel.txt', (1, 1), '0x4016B0', '0xd8da40', 'add'),
                       ]
     for fun_data in func_meta_data:
         func_name = fun_data[0]
