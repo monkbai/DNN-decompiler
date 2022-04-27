@@ -337,7 +337,7 @@ def explain_tvm_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wri
 
     blk_size = 0
     if len(mem_read_regions) > 18:
-        kernel_num, input_num, blk_size = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
+        kernel_num, input_num, blk_size, in_mem = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
         filter_shape[1] = kernel_num
         input_shape[1] = kernel_num
         input_shape[2] = input_shape[3] = input_num
@@ -555,7 +555,7 @@ def kernel_1_1(name, exp, mem_read_regions: list, mem_write_regions: list, compi
                 mem_start = mem_blk[0]
             if mem_blk[1] > mem_end:
                 mem_end = mem_blk[1]
-    offset_list = get_offset_list(exp, compiler=compiler)
+    offset_list = get_offset_list(exp, compiler=compiler, in_blk=(mem_start, mem_end + mem_size))
     blk_size = 1
     stride = offset_list[1] - offset_list[0]
     while blk_size < len(offset_list):
@@ -566,7 +566,7 @@ def kernel_1_1(name, exp, mem_read_regions: list, mem_write_regions: list, compi
     kernel_num = len(offset_list)
     input_shape = math.sqrt((mem_end - mem_start + mem_size) / 4 / kernel_num)
     input_shape = math.ceil(input_shape)
-    return kernel_num, input_shape, blk_size
+    return kernel_num, input_shape, blk_size, (mem_start, mem_end + mem_size)
 
 
 def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, mem_write_regions: list,
@@ -580,7 +580,7 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
 
     blk_size = 0
     if len(mem_read_regions) > 10:
-        kernel_num, input_num, blk_size = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
+        kernel_num, input_num, blk_size, in_mem = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
         filter_shape[1] = kernel_num
         input_shape[1] = kernel_num
         input_shape[2] = input_shape[3] = input_num
@@ -1021,7 +1021,7 @@ def explain_glow_conv2d_result(exp_log_path: str, mem_read_regions: list, mem_wr
     output_shape = [1, 1, 1, 1]
 
     if len(mem_read_regions) > 10:
-        kernel_num, input_num, blk_size = kernel_1_1(name, exp, mem_read_regions, mem_write_regions, compiler='glow')
+        kernel_num, input_num, blk_size, in_mem = kernel_1_1(name, exp, mem_read_regions, mem_write_regions, compiler='glow')
         input_num = math.ceil(input_num)
         filter_shape[1] = kernel_num
         input_shape[1] = kernel_num
