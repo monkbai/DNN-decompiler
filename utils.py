@@ -303,9 +303,18 @@ def print_input_id(trace_log_path: str, compiler='tvm', addr2param=dict(), confi
                 func_name = addr2funcs[addr]
                 params = line.split(':')[1].strip(' ,')
                 params = params.split(',')  # not used, inputs and output is produced in utils.print_layer_label()
-                inputs = addr2param[id][2][0]
-                assert len(addr2param[id][2][1]) == 1, 'len(output_list) should be 1.'
-                output = addr2param[id][2][1][0]
+                
+                if isinstance(addr2param[id][2][0], list):
+                    inputs = addr2param[id][2][0]
+                elif isinstance(addr2param[id][2][0], str):
+                    inputs = [addr2param[id][2][0]]  # make inputs a list
+                
+                if isinstance(addr2param[id][2][1], list):
+                    assert len(addr2param[id][2][1]) == 1, 'len(output_list) should be 1.'
+                    output = addr2param[id][2][1][0]
+                elif isinstance(addr2param[id][2][1], str):
+                    output = addr2param[id][2][1]  # make output a str
+                
                 label = addr2label[addr]  # type: str
 
                 params_list.append((id, label, inputs, output))

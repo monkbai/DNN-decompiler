@@ -1,0 +1,13 @@
+{"take": ["param", "in", "out"],
+ "transpose": ["in", "out", "dims"],
+ "reshape": ["in", "out", "none"],
+ "pad": ["in", "out", "none"],
+ "avg_pool2d": ["in", "out", "none"],
+ "max_pool": ["in", "out", "none"],
+ "squeeze": ["in", "out", "none"],
+ "matmul": ["out", "in", "param"],
+ "batchedadd": ["out", "in", "param"],
+ "add": ["param", "in", "out"],
+ "conv2d": ["out", "in", "param"],
+ "relu": ["in/out", "none", "none"]
+}

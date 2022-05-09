@@ -210,7 +210,7 @@ class MyResNet(nn.Module):
 
 if __name__ == "__main__":
     # x = torch.rand(size=(1, 3, 224, 224))
-    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/cat.bin", 'br') as f:
+    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2021/resnet18_glow/cat.bin", 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)
