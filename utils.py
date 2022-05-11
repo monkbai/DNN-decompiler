@@ -416,15 +416,18 @@ def print_layer_label(trace_log_path: str, config_path=''):  # for glow
                     addr_list[i] = addr_list[i].replace('rdx ', '').strip()
                 elif 'rcx' in addr_list[i]:
                     addr_list[i] = addr_list[i].replace('rcx ', '').strip()
+                elif 'r8' in addr_list[i]:
+                    addr_list[i] = addr_list[i].replace('r8 ', '').strip()
             config_flag = False
             for key, param_list in func2param.items():
                 if key in addr2label[addr]:
-                    print('{}: {:>10} - {:<16}: {} {}, {} {}, {} {}, {} {}'.format(addr, addr2funcs[addr],
-                                                                                   addr2label[addr],
-                                                                                   param_list[0], addr_list[0],
-                                                                                   param_list[1], addr_list[1],
-                                                                                   param_list[2], addr_list[2],
-                                                                                   param_list[3], addr_list[3]))
+                    print('{}: {:>10} - {:<16}: {} {}, {} {}, {} {}, {} {}, {} {}'.format(addr, addr2funcs[addr],
+                                                                                          addr2label[addr],
+                                                                                          param_list[0], addr_list[0],
+                                                                                          param_list[1], addr_list[1],
+                                                                                          param_list[2], addr_list[2],
+                                                                                          param_list[3], addr_list[3],
+                                                                                          param_list[3], addr_list[3]))
                     input_list = []
                     output_list = []
                     for i in range(len(param_list)):
