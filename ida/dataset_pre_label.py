@@ -46,6 +46,10 @@ def get_TVM_O0_labels(file_name: str, prefix='fused_'):
 
 def get_TVM_O3_labels(file_name: str, prefix='fused_'):
     global labels_set
+    tmp_list = list(labels_set)
+    tmp_list.sort(key=len, reverse=True)
+    labels_set = set(tmp_list)
+
     contrib_flag = False
     labels = []
     file_name = file_name.split('.')[1]
@@ -105,6 +109,7 @@ def get_TVM_O3_labels(file_name: str, prefix='fused_'):
 
 
 def main_TVM(the_dir: str, opt_level=0):
+    global labels_set
     if opt_level == 3:
         labels_set.add('batch_flatten')
         labels_set.add('layout_transform')
@@ -118,6 +123,7 @@ def main_TVM(the_dir: str, opt_level=0):
         for d in dirs:
             curr_d = os.path.join(root, d)
             label_path = os.path.join(curr_d, 'labels.txt')
+            labels_set.clear()
             # if os.path.exists(label_path):
             #     continue
             print(curr_d)
@@ -157,6 +163,7 @@ def main_TVM(the_dir: str, opt_level=0):
 
 
 def main_tvm_v08(the_dir: str, opt_level=0):
+    global labels_set
     if opt_level == 3:
         labels_set.add('batch_flatten')
         labels_set.add('layout_transform')
@@ -170,6 +177,7 @@ def main_tvm_v08(the_dir: str, opt_level=0):
         for d in dirs:
             curr_d = os.path.join(root, d)
             label_path = os.path.join(curr_d, 'labels.txt')
+            labels_set.clear()
             # if os.path.exists(label_path):
             #     continue
             print(curr_d)
@@ -245,10 +253,58 @@ def main_GLOW(the_dir: str):
             print('continue?')
 
 
+def find_all():
+    main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/Glow_2020')
+    main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/Glow_2021')
+    main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/Glow_2022')
+
+    main_TVM('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/TVM_v0.7_O0', opt_level=0)
+    main_TVM('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/TVM_v0.7_O3', opt_level=3)
+
+    main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/TVM_v0.8_O0', opt_level=0)
+    main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/TVM_v0.8_O3', opt_level=3)
+    main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/TVM_v0.9.dev_O0', opt_level=0)
+    main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/labeled_dataset_2022/binaries_rm_section/TVM_v0.9.dev_O3', opt_level=3)
+    exit(0)
+
+
 if __name__ == '__main__':
+    find_all()
     # main_TVM('./TVM_binaries/O0/')
     # main_TVM('./TVM_binaries/O3/', opt_level=3)
-    main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow')
+    # main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow')
+    # main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/vgg16_glow')
+    #main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2021/inception_v1/')
+    #main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2021/shufflenet_v2/')
+    #main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2021/efficientnet/')
+    #main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2021/mobilenet/')
+    
+    # main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2021/vgg16_glow/')
+    # main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2021/resnet18_glow/')
+    # main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2021/embedding/')
+    
+    main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/shakespeare')
+    #main_GLOW('/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/LSTM/')
+    exit(0)
     #for label in labels_set:
     #    print(label)
     # main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/resnet18_tvm_O3/', opt_level=3)
+    # main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/vgg16_tvm_O0/', opt_level=0)
+    # main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.8/vgg16_tvm_O3/', opt_level=3)
+    
+    #main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_O0', opt_level=0)
+    #main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/vgg16_tvm_O3', opt_level=3)
+    #main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/mobilenetv2_tvm_O0', opt_level=0)
+    
+    
+    #main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/inceptionv1_tvm_O0/', opt_level=0)
+    #main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/resnet18_tvm_O3/', opt_level=3)
+    
+    #main_tvm_v08('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/mobilenetv2_tvm_v09_O3/', opt_level=3)
+    
+    
+    main_TVM('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/inceptionv1_tvm_O3', opt_level=3)
+    main_TVM('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/shufflenetv2_tvm_O3', opt_level=3)
+    main_TVM('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/mobilenetv2_tvm_O3', opt_level=3)
+    main_TVM('/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/efficientnet_tvm_O3', opt_level=3)
+
