@@ -23,9 +23,14 @@ ida/
 
 ### Decompile&Rebuild Scripts
 resnet18_\*/  
+
 vgg16_\*/  
+
 embedding_\*/
+
 nnfusion\*/
+
+op_comprehensive/\*
 
 ### Appendix of Our Paper
 docs/
