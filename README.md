@@ -1,6 +1,12 @@
 # BTD: DNN Executables Decompiler
 
-Artifact for draft: "Decompiling x86 Deep Neural Network Executables"
+Research Artifact for our USENIXSecurity 2023 paper: "Decompiling x86 Deep Neural Network Executables"
+
+Paper: [will release soon](README.md)
+
+Extended version: [will release soon](README.md)
+
+TODO: We will release and update all code and data in a few days and a usable Docker image will be available for artifact evaluation at that time. Please check this repo later.
 
 ## Structure
 
