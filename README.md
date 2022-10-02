@@ -1,6 +1,8 @@
 # BTD: DNN Executables Decompiler
 
-Research Artifact for our USENIXSecurity 2023 paper: "Decompiling x86 Deep Neural Network Executables"
+Research Artifact for our USENIX Security 2023 paper: "Decompiling x86 Deep Neural Network Executables"
+
+BTD is the **first** deep neural network (DNN) executables decompiler. BTD takes DNN executables and outputs full model specifications, including types of DNN operators, network topology, dimensions, and parameters that are (nearly) identical to those of the input models. BTD is evaluated to be robust against complex compiler optimizations. Please find our paper for details.
 
 Paper: [will release soon](README.md)
 
