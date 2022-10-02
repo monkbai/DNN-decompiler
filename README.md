@@ -10,6 +10,18 @@ Extended version: [will release soon](README.md)
 
 TODO: We will release and update all code and data in a few days and a usable Docker image will be available for artifact evaluation at that time. Please check this repo later.
 
+## Prerequisites
+```
+python3
+Intel pin 3.14 
+IDA Pro (optional)
+```
+You can download pin 3.14 from [here](https://www.intel.com/content/www/us/en/developer/articles/tool/pin-a-binary-instrumentation-tool-downloads.html), or use the docker image with all prerequisites installed.
+
+BTD relies on IDA Pro (version 7.5) for disassembly, and because IDA is commercial software, we do not provide it in this repo; instead, in order to reduce the workload of AE reviewers, we provide the disassembly results directly as input for BTD. The scripts used to disassemble DNN executable into assembly functions with IDA are presented in [ida/](https://github.com/monkbai/DNN-decompiler/tree/master/ida). IDA Pro is not indispensable; any other full-fledged disassembly tool can be used to replace IDA, but we do not provide the relevant code here.
+
+
+
 ## Structure
 
 ### Pin tools
