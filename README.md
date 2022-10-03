@@ -30,7 +30,7 @@ Download and unzip Intel pin 3.14, then update the pin home directory in [config
 
 ```
 git clone https://github.com/monkbai/DNN-decompiler.git
-mkdi <path_to_pin_home>/source/tools/MyPinTool/obj-intel64
+mkdir <path_to_pin_home>/source/tools/MyPinTool/obj-intel64
 cd DNN-decompiler
 python3 pin_tool.py
 ```
