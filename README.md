@@ -12,15 +12,29 @@ TODO: We will release and update all code and data in a few days and a usable Do
 
 ## Prerequisites
 ```
-python3
-Intel pin 3.14 
+ubuntu 18.04
+git
+gcc/g++ (7.5.0)
+make (4.1)
+python3 (3.6.9 or higher)
+Intel pin (3.14) 
 IDA Pro (optional)
 ```
 You can download pin 3.14 from [here](https://www.intel.com/content/www/us/en/developer/articles/tool/pin-a-binary-instrumentation-tool-downloads.html), or use the docker image with all prerequisites installed.
 
 BTD relies on IDA Pro (version 7.5) for disassembly, and because IDA is commercial software, we do not provide it in this repo; instead, in order to reduce the workload of AE reviewers, we provide the disassembly results directly as input for BTD. The scripts used to disassemble DNN executable into assembly functions with IDA are presented in [ida/](https://github.com/monkbai/DNN-decompiler/tree/master/ida). IDA Pro is not indispensable; any other full-fledged disassembly tool can be used to replace IDA, but we do not provide the relevant code here.
 
+## 0.Prepare
 
+Download and unzip Intel pin 3.14, then update the pin home directory in [config.py](https://github.com/monkbai/DNN-decompiler/blob/master/config.py#L3).
+
+```
+git clone https://github.com/monkbai/DNN-decompiler.git
+mkdi <path_to_pin_home>/source/tools/MyPinTool/obj-intel64
+cd DNN-decompiler
+python3 pin_tool.py
+```
+[pin_tool.py](https://github.com/monkbai/DNN-decompiler/blob/master/pin_tools.py#L101) will copy and compile all pin tools listed in [MyPinTool/](https://github.com/monkbai/DNN-decompiler/tree/master/MyPinTool).
 
 ## Structure
 
