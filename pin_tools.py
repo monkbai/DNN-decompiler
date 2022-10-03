@@ -100,11 +100,15 @@ tools_list = ["InstTrace", "MemoryRead", "FunCallTrace", "MemoryWrite",
 
 def compile_all_tools():
     global project_dir
-    project_dir_backup = project_dir
-    project_dir = mypintool_dir
     for tool_name in tools_list:
         print("copying {} source code to MyPinTool dir...".format(tool_name))
         status, output = cmd("cp MyPinTool/{}.cpp {}".format(tool_name, config.pintool_dir))
+        if status != 0:
+            print(output)
+    
+    project_dir_backup = project_dir
+    project_dir = mypintool_dir
+    for tool_name in tools_list:
         print("compiling {}...".format(tool_name))
         status, output = cmd(compile_tool_cmd.format(tool_name))
         if status != 0:
