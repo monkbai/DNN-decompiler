@@ -1,0 +1,13 @@
+{
+    "transform": ["in", "out"],
+    "conv2d, multiply, add": ["in", "weights", "biases", "out"],
+    "conv2d, add": ["in", "weights", "biases", "out"],
+    "dense, relu, add": ["in", "param", "param", "out"],
+    "bias_add": ["in", "bias", "out"],
+    "add": ["in", "bias", "out"],
+    "max_pool": ["in", "out"],
+    "conv2d": ["in", "param", "out"],
+    "dense": ["in", "param", "out"],
+    "relu": ["in", "out"],
+    "batch_flatten": ["in", "out"]
+}

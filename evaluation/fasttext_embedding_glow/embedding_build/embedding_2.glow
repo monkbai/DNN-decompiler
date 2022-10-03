@@ -1,0 +1,27 @@
+function ./embedding_2.onnx
+declare {
+  %embedding_weight = WeightVar float<25002 x 100> const // size: 10000800 // Users: @in 3
+  %fc_bias__1_constfold = WeightVar float<1 x 1 x 1> const // size: 4 // Users: @in 13
+  %A30__2 = WeightVar float<100 x 1> const // size: 400 // Users: @in 11
+  %input_1 = WeightVar index64<7 x 1> mutable // size: 56 // Users: @in 1
+  %A28 = WeightVar float<1 x 1 x 1> mutable // size: 4 // Users: @in 9, @in 13, @out 13
+
+  ; size = 10001264 bytes
+}
+
+code {
+  0 %input_1_converted_res = allocactivation  { Ty: index32<7 x 1>} // size: 28 // Users: @out 4, @in 3, @out 1
+  1 %input_1_converted = convertto @out %input_1_converted_res, @in %input_1
+  2 %Gather_0_res = allocactivation  { Ty: float<7 x 1 x 100>} // size: 2800 // Users: @in 5, @out 8, @out 3
+  3 %Gather_0 = gather @out %Gather_0_res, @in %embedding_weight, @in %input_1_converted_res { BatchDims: 0}
+  4 %dealloc_input_1_converted_res = deallocactivation @out %input_1_converted_res // size: 28
+  5 %Gather_0_res__2 = tensorview @in %Gather_0_res { Ty: float<1 x 7 x 100 x 1>, Offsets: [0, 0, 0]} // Users: @in 7
+  6 %AveragePool_18__1_res = allocactivation  { Ty: float<1 x 1 x 100 x 1>} // size: 400 // Users: @in 10, @out 12, @out 7
+  7 %AveragePool_18__1 = avgpool @out %AveragePool_18__1_res, @in %Gather_0_res__2 { Kernels: [7, 1], Strides: [7, 1], Pads: [0, 0, 0, 0], Layout: 0, CountIncludePads: 0}
+  8 %dealloc_Gather_0_res = deallocactivation @out %Gather_0_res // size: 2800
+  9 %A28__1 = tensorview @in %A28 { Ty: float<1 x 1>, Offsets: [0, 0, 0]} // Users: @out 11
+  10 %AveragePool_18__1_res__2 = tensorview @in %AveragePool_18__1_res { Ty: float<1 x 100>, Offsets: [0, 0, 0, 0]} // Users: @in 11
+  11 %MatMul_20_MatMul_0 = matmul @out %A28__1, @in %AveragePool_18__1_res__2, @in %A30__2
+  12 %dealloc_AveragePool_18__1_res = deallocactivation @out %AveragePool_18__1_res // size: 400
+  13 %Add_21 = elementadd @out %A28, @in %fc_bias__1_constfold, @in %A28
+}
