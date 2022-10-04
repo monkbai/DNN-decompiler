@@ -6,7 +6,7 @@ BTD is the **first** deep neural network (DNN) executables decompiler. BTD takes
 
 Paper: [will release soon](README.md)
 
-Extended version: [will release soon](README.md)
+Extended version: [https://arxiv.org/abs/2210.01075](https://arxiv.org/abs/2210.01075)
 
 TODO: We will release and update all code and data in a few days and a usable Docker image will be available for artifact evaluation at that time. Please check this repo later.
 
