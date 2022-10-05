@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
+sys.setdefaultencoding('UTF8')
 sys.path.append("../../")
 import utils
 import trace_filter
