@@ -719,7 +719,7 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
             m_addr = hex(addr_int + step)
             mem_list.append(m_addr)
         set_tainted(mem_list)
-        if (not os.path.exists(slice_log)) or os.path.getsize(slice_log) <= (1024 * 1):
+        if (not os.path.exists(slice_log)) or os.path.getsize(slice_log) <= (minimal_slice_size):
             reverse_taint(rev_log, slice_log)
         else:
             print('{} already exists.'.format(slice_log))
