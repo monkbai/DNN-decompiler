@@ -267,7 +267,7 @@ if __name__ == '__main__':
     # exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
-    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/efficientnet/cat.bin", 'br') as f:
+    with open("/home/BTD-data/Glow-2020/efficientnet/cat.bin", 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
             print(np_arr.shape)
@@ -276,7 +276,7 @@ if __name__ == '__main__':
 
             new_np_arr = np.transpose(np_arr, (0, 2, 3, 1))
             print(new_np_arr.shape)
-            with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/efficientnet/cat_transpose.bin", "wb") as fp:
+            with open("/home/BTD-data/Glow-2020/efficientnet/cat_transpose.bin", "wb") as fp:
                 fp.write(new_np_arr.astype(np.float32).tobytes())
 
             x = torch.Tensor(np_arr)
