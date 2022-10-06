@@ -27,7 +27,7 @@ if __name__ == '__main__':
     mem_read_log_path = './mem_read.log'
     mem_write_log_path = './mem_write.log'
     mem_dump_log_path = './mem_dump.log'
-    trace_filter.minimal_slice_size = 1024 * 3  # 3kb
+    
     # ==============================================================
     # Step 1 --- Get the Sequence of Layers ---
     # ==============================================================
@@ -44,12 +44,18 @@ if __name__ == '__main__':
 
     # Step 2.1 Generate and Filter Trace
     # Warning: 0091.txt has paddings 2, may need to pick rand target addr several times, that's annoying
+    trace_filter.minimal_slice_size = 1024 * 3  # 3kb
+    slice_size_limits = {'0021.txt': 1024*10}
     trace_filter.all_trace_list = json_to_list('./all_trace_list.json')
     func_trace_map = {}
     func_rndaddr_map = {}
     asm_files = os.listdir(utils.funcs_dir)
     for asm_file in asm_files:
         if 'labels' not in asm_file and asm_file.endswith('.txt'):
+            if asm_file in slice_size_limits:
+                trace_filter.minimal_slice_size = slice_size_limits[asm_file]
+            else:
+                trace_filter.minimal_slice_size = 1024 * 3  # 3kb
             asm_path = os.path.join(utils.funcs_dir, asm_file)
             start_addr, _ = utils.get_func_range(asm_path)
             if start_addr in utils.addr2label.keys():
