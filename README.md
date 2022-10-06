@@ -18,6 +18,7 @@ gcc/g++ (7.5.0)
 make (4.1)
 python3 (3.6.9 or higher)
 numpy-1.19.5
+torch (1.9.0 or higher)
 Intel pin (3.14) 
 IDA Pro (optional)
 ```
