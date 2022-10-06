@@ -27,7 +27,7 @@ if __name__ == '__main__':
     mem_read_log_path = './mem_read.log'
     mem_write_log_path = './mem_write.log'
     mem_dump_log_path = './mem_dump.log'
-
+    trace_filter.minimal_slice_size = 1024 * 3  # 3kb
     # ==============================================================
     # Step 1 --- Get the Sequence of Layers ---
     # ==============================================================

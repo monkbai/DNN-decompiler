@@ -689,6 +689,7 @@ def handle_not_implemented(opcode: str, operands: list):
 # Interface
 #
 # ===============================================
+minimal_slice_size = 1024
 def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, compiler='glow', func_type='conv', func_info=[]):
     clear_state()
 
@@ -723,7 +724,7 @@ def get_trace(asm_path: str, prog_path: str, data_path: str, log_path: str, comp
         else:
             print('{} already exists.'.format(slice_log))
 
-        if os.path.getsize(slice_log) > (1024 * 1):  # 1kb, any conv/dense slice log should be larger than this
+        if os.path.getsize(slice_log) > (minimal_slice_size):  # default 1kb, any conv/dense slice log should be larger than this
             break  # if the size of slice log is too small, it indicates a inappropriate rnd_addr has been chosed
     
     logger.debug(' slice_log {}\n rnd_addr {}\n loop_size {}\n start_addr {}\n end_addr {}\n'.format(slice_log, rnd_addr, loop_size, start_addr, end_addr))
