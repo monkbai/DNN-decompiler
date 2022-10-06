@@ -9,7 +9,7 @@ btd_data_dir = '/home/BTD-data/'
 def clean_trace():
     for subdir, dirs, files in os.walk(btd_data_dir):
         for file in files:
-            mat = re.match(r"\d{4,4}(_rev)?(_slice)?\.log", file)
+            mat = re.match(r"\d{4,4}(_rev)?\.log", file)
             if mat:
                 #print os.path.join(subdir, file)
                 filepath = os.path.join(subdir, file)
