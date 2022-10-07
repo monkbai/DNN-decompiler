@@ -1,3 +1,4 @@
+import sys
 import torch.nn as nn
 import torch
 import json
@@ -209,33 +210,36 @@ class MyResNet(nn.Module):
 
 
 if __name__ == "__main__":
+    input_cat = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/cat.bin"
+    if len(sys.argv) == 2:
+        input_cat = sys.argv[1]
     # x = torch.rand(size=(1, 3, 224, 224))
-    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2020/resnet18_glow/cat.bin", 'br') as f:
+    with open(input_cat, 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
-        print(np_arr.shape)
+        # print(np_arr.shape)
         np_arr = np_arr.reshape(3, 224, 224)
         np_arr = np_arr.reshape((1, 3, 224, 224))
         x = torch.Tensor(np_arr)
-        print(x.shape)
+        # print(x.shape)
 
     time1 = time.time()
-    print('building the model:', end=' ')
+    # print('building the model:', end=' ')
     vgg = MyResNet()
     time2 = time.time()
-    print('{}s'.format(time2 - time1))
+    # print('{}s'.format(time2 - time1))
 
-    print('predicting the label:', end=' ')
+    # print('predicting the label:', end=' ')
     out = vgg(x)
     time3 = time.time()
-    print('{}s'.format(time3 - time2))
+    # print('{}s'.format(time3 - time2))
 
-    print(out.size())
-    print(type(out))
+    # print(out.size())
+    # print(type(out))
     max_index = np.argmax(out.detach().numpy())
-    print(max_index)
+    print("Result:", max_index)
     # print(out)
-    print(out.detach().numpy()[0, max_index])
+    print("Confidence:", out.detach().numpy()[0, max_index])
     exit(0)
 
     # Input to the model

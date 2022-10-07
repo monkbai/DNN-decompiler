@@ -1,3 +1,4 @@
+import sys
 import torch
 import torch.nn as nn
 import numpy as np
@@ -242,13 +243,16 @@ class MobileNetV2(nn.Module):
 
 
 if __name__ == '__main__':
+    input_cat = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/mobilenet/cat.bin"
+    if len(sys.argv) == 2:
+        input_cat = sys.argv[1]
     model = MobileNetV2()
     model.eval()
     # print(model)
     # exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
-    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/mobilenet/cat.bin", 'br') as f:
+    with open(input_cat, 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
             print(np_arr.shape)
@@ -266,7 +270,7 @@ if __name__ == '__main__':
     out = model(input)
 
     max_index = np.argmax(out.detach().numpy())
-    print(max_index)
+    print("Result:", max_index)
     # print(out)
-    print(out.detach().numpy()[0, max_index])
+    print("Confidence:", out.detach().numpy()[0, max_index])
     exit(0)
