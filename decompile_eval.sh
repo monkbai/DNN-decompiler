@@ -19,17 +19,17 @@ echo "BTD home: $CUR_DIR"
 # TMP_DIR=$DATA_DIR/Glow-2020/inception_v1
 # python3 ./inception_glow_decompile.py $TMP_DIR/inception_funcs $TMP_DIR/inception_v1_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-cd $CUR_DIR/evaluation/mobilenet_glow_2020/
-TMP_DIR=$DATA_DIR/Glow-2020/mobilenet
-python3 ./mobilenet_glow_decompile.py $TMP_DIR/mobilenet_funcs $TMP_DIR/mobilenetv2_7_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# cd $CUR_DIR/evaluation/mobilenet_glow_2020/
+# TMP_DIR=$DATA_DIR/Glow-2020/mobilenet
+# python3 ./mobilenet_glow_decompile.py $TMP_DIR/mobilenet_funcs $TMP_DIR/mobilenetv2_7_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-cd $CUR_DIR/evaluation/shufflenet_glow_2020/
-TMP_DIR=$DATA_DIR/Glow-2020/shufflenet_v2
-python3 ./shufflenet_glow_decompile.py $TMP_DIR/shufflenet_funcs $TMP_DIR/shufflenet_v2_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# cd $CUR_DIR/evaluation/shufflenet_glow_2020/
+# TMP_DIR=$DATA_DIR/Glow-2020/shufflenet_v2
+# python3 ./shufflenet_glow_decompile.py $TMP_DIR/shufflenet_funcs $TMP_DIR/shufflenet_v2_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-cd $CUR_DIR/evaluation/resnet_glow_2020/
-TMP_DIR=$DATA_DIR/Glow-2020/resnet18_glow
-python3 ./resnet18_glow_decompile.py $TMP_DIR/resnet18_glow_ida $TMP_DIR/resnet18_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# cd $CUR_DIR/evaluation/resnet_glow_2020/
+# TMP_DIR=$DATA_DIR/Glow-2020/resnet18_glow
+# python3 ./resnet18_glow_decompile.py $TMP_DIR/resnet18_glow_ida $TMP_DIR/resnet18_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 cd $CUR_DIR/evaluation/vgg16_glow_2020/
 TMP_DIR=$DATA_DIR/Glow-2020/vgg16_glow

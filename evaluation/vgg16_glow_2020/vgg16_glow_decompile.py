@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
-sys.path.append("../")
+sys.path.append("../..")
 import utils
 import trace_filter
 from utils import list_to_json, dict_to_json, json_to_list, json_to_dict
