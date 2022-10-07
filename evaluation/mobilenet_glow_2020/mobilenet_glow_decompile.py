@@ -65,8 +65,8 @@ if __name__ == '__main__':
                         trace_filter.get_trace(asm_path, prog_path, in_data, trace_path, func_type=utils.addr2label[start_addr])
                     func_trace_map[asm_file] = slice_log
                     func_rndaddr_map[asm_file] = (rnd_addr, loop_size, start_addr, end_addr)
-    print(func_trace_map)
-    print(func_rndaddr_map)
+    # print(func_trace_map)
+    # print(func_rndaddr_map)
     #exit(0)
     
     # ==============================================================

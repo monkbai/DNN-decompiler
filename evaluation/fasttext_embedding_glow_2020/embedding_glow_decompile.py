@@ -65,6 +65,11 @@ if __name__ == '__main__':
     label_file = './step1.txt'
     config_file = './config.json'
 
+    if len(sys.argv) == 4:
+        utils.funcs_dir = sys.argv[1]
+        prog_path = sys.argv[2]
+        label_file = sys.argv[3]
+
     # (tmp files) generated during analysis
     log_path = './embedding_glow_func_call.log'
     tmp_log_path = './inst_trace.log'

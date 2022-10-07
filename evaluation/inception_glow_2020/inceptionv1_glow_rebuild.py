@@ -296,11 +296,11 @@ model = InceptionV1(num_classes=1000, stage='test')
 with open(input_cat, 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
-        print(np_arr.shape)
+        # print(np_arr.shape)
         np_arr = np_arr.reshape(3, 224, 224)
         np_arr = np_arr.reshape((1, 3, 224, 224))
         x = torch.Tensor(np_arr)
-        print(x.shape)
+        # print(x.shape)
 input = x
 out = model(input)
 

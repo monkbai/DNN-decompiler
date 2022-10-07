@@ -1,0 +1,4 @@
+{"avg_pool": ["in", "out", "none"],
+ "matmul": ["out", "in", "weights"],
+ "stacked_kernel": ["in/out", "bias", "none"]
+}

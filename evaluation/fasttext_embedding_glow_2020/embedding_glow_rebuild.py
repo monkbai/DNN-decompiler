@@ -60,19 +60,19 @@ if __name__ == "__main__":
 
 
     time1 = time.time()
-    print('building the model:', end=' ')
+    # print('building the model:', end=' ')
     vgg = NET(seq_len=7)
     time2 = time.time()
-    print('{}s'.format(time2 - time1))
+    # print('{}s'.format(time2 - time1))
 
-    print('predicting the label:', end=' ')
+    # print('predicting the label:', end=' ')
     out = vgg(x)
     time3 = time.time()
-    print('{}s'.format(time3 - time2))
+    # print('{}s'.format(time3 - time2))
 
-    print(out.size())
-    print(type(out))
-    print(out)
+    # print(out.size())
+    # print(type(out))
+    print("Result:", out)
     exit(0)
 
     # Input to the model
