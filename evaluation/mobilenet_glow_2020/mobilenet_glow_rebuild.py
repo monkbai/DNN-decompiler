@@ -255,7 +255,7 @@ if __name__ == '__main__':
     with open(input_cat, 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
-            print(np_arr.shape)
+            # print(np_arr.shape)
             np_arr = np_arr.reshape(3, 224, 224)
             np_arr = np_arr.reshape((1, 3, 224, 224))
 
@@ -265,7 +265,7 @@ if __name__ == '__main__':
             #     fp.write(new_np_arr.astype(np.float32).tobytes())
 
             x = torch.Tensor(np_arr)
-            print(x.shape)
+            # print(x.shape)
     input = x
     out = model(input)
 
