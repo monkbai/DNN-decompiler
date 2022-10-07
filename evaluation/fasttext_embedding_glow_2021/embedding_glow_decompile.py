@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
-sys.path.append("../")
+sys.path.append("../..")
 import math
 import utils
 from utils import list_to_json, dict_to_json, json_to_list, json_to_dict

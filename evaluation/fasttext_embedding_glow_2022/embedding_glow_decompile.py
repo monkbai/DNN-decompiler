@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
-sys.path.append("../")
+sys.path.append("../..")
 import math
 import utils
 from utils import list_to_json, dict_to_json, json_to_list, json_to_dict
@@ -62,8 +62,13 @@ if __name__ == '__main__':
     # prepared in advance
     prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022"
     in_data = ''  # no input needed, hard coded in source code
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022_funcs/labels.txt"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_glow_2022_funcs/label.txt"
     config_file = './config.json'
+
+    if len(sys.argv) == 4:
+        utils.funcs_dir = sys.argv[1]
+        prog_path = sys.argv[2]
+        label_file = sys.argv[3]
 
     # (tmp files) generated during analysis
     log_path = './embedding_glow_func_call.log'

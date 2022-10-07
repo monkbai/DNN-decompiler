@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
-sys.path.append("../")
+sys.path.append("../..")
 import utils
 import trace_filter
 from utils import list_to_json, dict_to_json, json_to_list, json_to_dict
@@ -17,7 +17,14 @@ if __name__ == '__main__':
     prog_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/resnet18_strip.out"
     in_data = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/cat.bin"
     log_path = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/func_call.log"
-    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/ground_truth.txt"
+    label_file = "/home/lifter/Documents/DL_compiler/BTD_DATA/Glow-2022/resnet18_glow/label.txt"
+
+    if len(sys.argv) == 6:
+        utils.funcs_dir = sys.argv[1]
+        prog_path = sys.argv[2]
+        in_data = sys.argv[3]
+        log_path = sys.argv[4]
+        label_file = sys.argv[5]
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -53,8 +60,8 @@ if __name__ == '__main__':
                         trace_filter.get_trace(asm_path, prog_path, in_data, trace_path, func_type=utils.addr2label[start_addr])
                     func_trace_map[asm_file] = slice_log
                     func_rndaddr_map[asm_file] = (rnd_addr, loop_size, start_addr, end_addr)
-    print(func_trace_map)
-    print(func_rndaddr_map)
+    # print(func_trace_map)
+    # print(func_rndaddr_map)
     #exit(0)
     
     # ==============================================================

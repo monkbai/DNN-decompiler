@@ -18,7 +18,14 @@ if __name__ == '__main__':
     prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/shufflenet_v2_strip.out"
     in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/cat.bin"
     log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/ground_truth.txt"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2022/shufflenet_v2/label.txt"
+
+    if len(sys.argv) == 6:
+        utils.funcs_dir = sys.argv[1]
+        prog_path = sys.argv[2]
+        in_data = sys.argv[3]
+        log_path = sys.argv[4]
+        label_file = sys.argv[5]
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -33,7 +40,7 @@ if __name__ == '__main__':
     utils.get_funcs_trace(prog_path, in_data, log_path, label_file)
     addr2param = utils.print_layer_label(log_path, 'config.json')  # set addr2label in utils
     func_meta_data, topo_list = utils.print_input_id(log_path, compiler='glow', addr2param=addr2param)
-    exit(0)
+    # exit(0)
     list_to_json(topo_list, './topo_list.json')
 
     # ==============================================================
@@ -58,8 +65,8 @@ if __name__ == '__main__':
                                                func_type=utils.addr2label[start_addr])
                     func_trace_map[asm_file] = slice_log
                     func_rndaddr_map[asm_file] = (rnd_addr, loop_size, start_addr, end_addr)
-    print(func_trace_map)
-    print(func_rndaddr_map)
+    # print(func_trace_map)
+    # print(func_rndaddr_map)
     # exit(0)
 
     # ==============================================================

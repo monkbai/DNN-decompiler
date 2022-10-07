@@ -82,6 +82,45 @@ cd $CUR_DIR/evaluation/fasttext_embedding_glow_2021/
 python3 ./embedding_glow_decompile.py $DATA_DIR/embedding/embedding_2_funcs_backup $DATA_DIR/embedding/embedding_2_strip.out $DATA_DIR/embedding/label.txt
 
 
+# ------- Glow 2022 -------
+#       Decompilation
+# -------------------------
+echo " - Decompiling efficientnet_glow_2022"
+cd $CUR_DIR/evaluation/efficientnet_glow_2022/
+TMP_DIR=$DATA_DIR/Glow-2022/efficientnet
+python3 ./efficientnet_glow_decompile.py $TMP_DIR/efficientnet_funcs $TMP_DIR/efficientnet_lite4_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+
+echo " - Decompiling inception_glow_2022"
+cd $CUR_DIR/evaluation/inception_glow_2022/
+TMP_DIR=$DATA_DIR/Glow-2022/inception_v1
+python3 ./inception_glow_decompile.py $TMP_DIR/inception_funcs $TMP_DIR/inception_v1_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+
+echo " - Decompiling mobilenet_glow_2022"
+cd $CUR_DIR/evaluation/mobilenet_glow_2022/
+TMP_DIR=$DATA_DIR/Glow-2022/mobilenet
+python3 ./mobilenet_glow_decompile.py $TMP_DIR/mobilenet_funcs $TMP_DIR/mobilenetv2_7_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+
+echo " - Decompiling shufflenet_glow_2022"
+cd $CUR_DIR/evaluation/shufflenet_glow_2022/
+TMP_DIR=$DATA_DIR/Glow-2022/shufflenet_v2
+python3 ./shufflenet_glow_decompile.py $TMP_DIR/shufflenet_funcs $TMP_DIR/shufflenet_v2_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+
+echo " - Decompiling resnet18_glow_2022"
+cd $CUR_DIR/evaluation/resnet18_glow_2022/
+TMP_DIR=$DATA_DIR/Glow-2022/resnet18_glow
+python3 ./resnet18_glow_decompile.py $TMP_DIR/resnet18_v1_7_funcs $TMP_DIR/resnet18_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+
+echo " - Decompiling vgg16_glow_2022"
+cd $CUR_DIR/evaluation/vgg16_glow_2022/
+TMP_DIR=$DATA_DIR/Glow-2022/vgg16_glow
+python3 ./vgg16_glow_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_strip.out $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+
+echo " - Decompiling fasttext_glow_2022"
+cd $CUR_DIR/evaluation/fasttext_embedding_glow_2022/
+python3 ./embedding_glow_decompile.py $DATA_DIR/embedding_extra/embedding_glow_2022_funcs $DATA_DIR/embedding_extra/embedding_glow_2022 $DATA_DIR/embedding_extra/label_glow_2022.txt
+
+
+
 # ------- Glow 2020 -------
 #         Rebuild
 # -------------------------
