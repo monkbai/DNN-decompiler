@@ -5,7 +5,7 @@ DATA_DIR=/home/BTD-data
 echo "BTD home: $CUR_DIR"
 
 cd $CUR_DIR/evaluation/efficientnet_glow_2020/
-python3 ./efficientnet_glow_rebuild.py 2>&-
+python3 ./efficientnet_glow_rebuild.py /home/cat.bin 2>&-
 cd ..
 exit 0
 
@@ -15,5 +15,5 @@ python3 ./efficientnet_glow_decompile.py $TMP_DIR/efficientnet_funcs $TMP_DIR/ef
 cd ..
 
 cd $CUR_DIR/evaluation/efficientnet_glow_2020/
-python3 ./efficientnet_glow_rebuild.py 2>&-
+python3 ./efficientnet_glow_rebuild.py /home/cat.bin 2>&-
 cd ..
