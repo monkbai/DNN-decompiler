@@ -284,11 +284,15 @@ class InceptionV1(nn.Module):
             return self.softmax(out)
 
 
+input_cat = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/inception_v1/cat.bin"
+if len(sys.argv) == 2:
+    input_cat = sys.argv[1]
+
 model = InceptionV1(num_classes=1000, stage='test')
 # print(model)
 
 # input = torch.randn(1, 3, 224, 224)
-with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/inception_v1/cat.bin", 'br') as f:
+with open(input_cat, 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
         print(np_arr.shape)
@@ -300,7 +304,7 @@ input = x
 out = model(input)
 
 max_index = np.argmax(out.detach().numpy())
-print(max_index)
+print("Result:", max_index)
 # print(out)
-print(out.detach().numpy()[0, max_index])
+print("Confidence:", out.detach().numpy()[0, max_index])
 exit(0)

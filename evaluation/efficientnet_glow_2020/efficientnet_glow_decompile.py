@@ -18,7 +18,7 @@ if __name__ == '__main__':
     prog_path = "/home/BTD-data/Glow-2020/efficientnet/efficientnet_lite4_strip.out"
     in_data = "/home/BTD-data/Glow-2020/efficientnet/cat.bin"
     log_path = "/home/BTD-data/Glow-2020/efficientnet/func_call.log"
-    label_file = "/home/BTD-data/Glow-2020/efficientnet/ground_truth.txt"
+    label_file = "/home/BTD-data/Glow-2020/efficientnet/label.txt"
     
     if len(sys.argv) == 6:
         utils.funcs_dir = sys.argv[1]
