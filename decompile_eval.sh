@@ -41,51 +41,58 @@ python3 ./embedding_glow_decompile.py $DATA_DIR/embedding/embedding_glow_funcs $
 
 # Rebuild
 # Glow 2020
-# echo "inception_glow_2020"
-# echo "Rebuilt model output:"
+# echo " - inception_glow_2020"
+# echo " - Rebuilt model output:"
 # cd $CUR_DIR/evaluation/efficientnet_glow_2020/
 # python3 ./efficientnet_glow_rebuild.py /home/cat.bin 2>&-
-echo "DNN Executable output:"
-$DATA_DIR/Glow-2020/efficientnet/efficientnet_lite4_strip.out /home/cat_transpose.bin
+# echo " - DNN Executable output:"
+# $DATA_DIR/Glow-2020/efficientnet/efficientnet_lite4_strip.out /home/cat_transpose.bin
+echo ""
 
-echo "inception_glow_2020"
-echo "Rebuilt model output:"
+echo " - inception_glow_2020"
+echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/inception_glow_2020/
 python3 ./inceptionv1_glow_rebuild.py /home/cat.bin 2>&-
-echo "DNN Executable output:"
+echo " - DNN Executable output:"
 $DATA_DIR/Glow-2020/inception_v1/inception_v1_strip.out /home/cat.bin
+echo ""
 
-echo "mobilenet_glow_2020"
-echo "Rebuilt model output:"
+echo " - mobilenet_glow_2020"
+echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/mobilenet_glow_2020/
 python3 ./mobilenet_glow_rebuild.py /home/cat.bin 2>&-
-echo "DNN Executable output:"
+echo " - DNN Executable output:"
 $DATA_DIR/Glow-2020/mobilenet/mobilenetv2_7_strip.out /home/cat.bin
+echo ""
 
-echo "shufflenet_glow_2020"
-echo "Rebuilt model output:"
+echo " - shufflenet_glow_2020"
+echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/shufflenet_glow_2020/
 python3 ./shufflenet_glow_rebuild.py /home/cat.bin 2>&-
-echo "DNN Executable output:"
+echo " - DNN Executable output:"
 $DATA_DIR/Glow-2020/shufflenet_v2/shufflenet_v2_strip.out /home/cat.bin
+echo ""
 
-echo "resnet18_glow_2020"
-echo "Rebuilt model output:"
+echo " - resnet18_glow_2020"
+echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/resnet18_glow_2020/
 python3 ./resnet18_glow_rebuild.py /home/cat.bin 2>&-
-echo "DNN Executable output:"
+echo " - DNN Executable output:"
 $DATA_DIR/Glow-2020/resnet18_glow/resnet18_strip.out /home/cat.bin
+echo ""
 
-echo "vgg16_glow_2020"
-echo "Rebuilt model output:"
+echo " - vgg16_glow_2020"
+echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/vgg16_glow_2020/
 python3 ./vgg16_glow_rebuild.py /home/cat.bin 2>&-
-echo "DNN Executable output:"
+echo " - DNN Executable output:"
 $DATA_DIR/Glow-2020/vgg16_glow/vgg16_strip.out /home/cat.bin
+echo ""
 
-echo "fasttext_glow_2020"
-echo "Rebuilt model output:"
+echo " - fasttext_glow_2020"
+echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/fasttext_embedding_glow_2020/
 python3 ./embedding_glow_rebuild.py /home/cat.bin 2>&-
-echo "DNN Executable output:"
+echo " - DNN Executable output:"
 $DATA_DIR/embedding/embedding_glow
+echo ""
