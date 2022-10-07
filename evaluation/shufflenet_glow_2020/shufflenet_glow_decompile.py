@@ -18,7 +18,7 @@ if __name__ == '__main__':
     prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/shufflenet_v2_strip.out"
     in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/cat.bin"
     log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/ground_truth.txt"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/Glow-2020/shufflenet_v2/label.txt"
 
     if len(sys.argv) == 6:
         utils.funcs_dir = sys.argv[1]
