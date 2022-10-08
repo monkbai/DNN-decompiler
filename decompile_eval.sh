@@ -125,7 +125,7 @@ echo "BTD home: $CUR_DIR"
 #        Decompilation
 # ---------------------------
 echo " - Decompiling efficientnet_tvm_v07_O0"
-cd $CUR_DIR/evaluation/efficientnet_tvm_v07_O0/
+cd $CUR_DIR/evaluation/efficient_tvm_v07_O0/
 TMP_DIR=$DATA_DIR/TVM-v0.7/efficientnet_tvm_O0
 python3 ./efficientnet_tvm_O0_decompile.py $TMP_DIR/efficientnet_funcs $TMP_DIR/efficientnet_lite4_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
@@ -345,7 +345,7 @@ python3 ./embedding_glow_decompile.py $DATA_DIR/embedding/embedding_tvm_O0_funcs
 # ---------------------------
 echo " - efficientnet_tvm_v07_O0"
 echo " - Rebuilt model output:"
-cd $CUR_DIR/evaluation/efficientnet_tvm_v07_O0/
+cd $CUR_DIR/evaluation/efficient_tvm_v07_O0/
 python3 ./efficientnet_tvm_O0_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
 $DATA_DIR/TVM-v0.7/efficientnet_tvm_O0/efficientnet_lite4_tvm_O0_strip /home/cat_transpose.bin
