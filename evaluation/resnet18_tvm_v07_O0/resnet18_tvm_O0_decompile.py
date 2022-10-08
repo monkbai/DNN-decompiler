@@ -89,20 +89,20 @@ if __name__ == '__main__':
     # Step 2.2.1 Conv and Matmul layers
 
     # generated in previous stage, can be removed, just for debugging
-    func_trace_map = {'0170.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0170_slice.log',
-                      '0160.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0160_slice.log',
-                      '0153.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0153_slice.log',
-                      '0142.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0142_slice.log',
-                      '0122.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0122_slice.log',
-                      '0115.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0115_slice.log',
-                      '0090.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0090_slice.log',
-                      '0063.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0063_slice.log',
-                      '0059.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0059_slice.log',
-                      '0051.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0051_slice.log',
-                      '0028.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0028_slice.log',  # conv
-
-                      '0092.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0092_slice.log',  # dense
-                      }
+    # func_trace_map = {'0170.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0170_slice.log',
+    #                   '0160.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0160_slice.log',
+    #                   '0153.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0153_slice.log',
+    #                   '0142.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0142_slice.log',
+    #                   '0122.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0122_slice.log',
+    #                   '0115.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0115_slice.log',
+    #                   '0090.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0090_slice.log',
+    #                   '0063.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0063_slice.log',
+    #                   '0059.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0059_slice.log',
+    #                   '0051.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0051_slice.log',
+    #                   '0028.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0028_slice.log',  # conv
+    # 
+    #                   '0092.txt': '/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.7/resnet18_tvm_O0/0092_slice.log',  # dense
+    #                   }
     # not used
     # func_rndaddr_map = {'0170.txt': ('0x46917c8', 64, '0x432d50', '0x434875'),
     #                     '0160.txt': ('0x377d7c8', 64, '0x42ec00', '0x430F8F'),
