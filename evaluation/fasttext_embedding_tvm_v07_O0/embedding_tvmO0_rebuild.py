@@ -76,22 +76,22 @@ if __name__ == "__main__":
     # x = torch.randint(0, 25000, size=(7, 1))
     # x = torch.tensor([[70, 24, 9, 676, 285, 816, 6514]])  # This film is terrible
     x = torch.tensor([[70, 24, 9, 113, 285, 816, 2382]])  # This film is great
-    print(x.shape)
+    # print(x.shape)
     x = x.reshape((7, 1))
 
     time1 = time.time()
-    print('building the model:', end=' ')
+    # print('building the model:', end=' ')
     vgg = NET(seq_len=7)
     time2 = time.time()
-    print('{}s'.format(time2 - time1))
+    # print('{}s'.format(time2 - time1))
 
-    print('predicting the label:', end=' ')
+    # print('predicting the label:', end=' ')
     out = vgg(x)
     time3 = time.time()
-    print('{}s'.format(time3 - time2))
+    # print('{}s'.format(time3 - time2))
 
-    print(out.size())
-    print(type(out))
+    # print(out.size())
+    # print(type(out))
     print(out)
     exit(0)
 
