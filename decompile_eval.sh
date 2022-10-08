@@ -140,24 +140,24 @@ echo "BTD home: $CUR_DIR"
 # TMP_DIR=$DATA_DIR/TVM-v0.7/mobilenetv2_tvm_O0
 # python3 ./mobilenet_tvm_O0_decompile.py $TMP_DIR/mobilenet_funcs $TMP_DIR/mobilenetv2_7_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling shufflenet_tvm_v07_O0"
-cd $CUR_DIR/evaluation/shufflenet_tvm_v07_O0/
-TMP_DIR=$DATA_DIR/TVM-v0.7/shufflenetv2_tvm_O0
-python3 ./shufflenet_tvm_O0_decompile.py $TMP_DIR/shufflenetv2_funcs $TMP_DIR/shufflenetv2_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling shufflenet_tvm_v07_O0"
+# cd $CUR_DIR/evaluation/shufflenet_tvm_v07_O0/
+# TMP_DIR=$DATA_DIR/TVM-v0.7/shufflenetv2_tvm_O0
+# python3 ./shufflenet_tvm_O0_decompile.py $TMP_DIR/shufflenetv2_funcs $TMP_DIR/shufflenetv2_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling resnet18_tvm_v07_O0"
-cd $CUR_DIR/evaluation/resnet18_tvm_v07_O0/
-TMP_DIR=$DATA_DIR/TVM-v0.7/resnet18_tvm_O0
-python3 ./resnet18_tvm_O0_decompile.py $TMP_DIR/resnet18_funcs $TMP_DIR/resnet18_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling resnet18_tvm_v07_O0"
+# cd $CUR_DIR/evaluation/resnet18_tvm_v07_O0/
+# TMP_DIR=$DATA_DIR/TVM-v0.7/resnet18_tvm_O0
+# python3 ./resnet18_tvm_O0_decompile.py $TMP_DIR/resnet18_funcs $TMP_DIR/resnet18_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 #echo " - Decompiling vgg16_tvm_v07_O0"
 #cd $CUR_DIR/evaluation/vgg16_tvm_v07_O0/
 #TMP_DIR=$DATA_DIR/TVM-v0.7/vgg16_tvm_O0
 #python3 ./vgg16_tvm_O0_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling fasttext_tvm_v07_O0"
-cd $CUR_DIR/evaluation/fasttext_embedding_tvm_v07_O0/
-python3 ./embedding_tvmO0_decompile.py $DATA_DIR/embedding/embedding_tvm_O0_funcs $DATA_DIR/embedding/embedding_tvm_O0 $DATA_DIR/embedding/label_tvm_O0.txt
+#echo " - Decompiling fasttext_tvm_v07_O0"
+#cd $CUR_DIR/evaluation/fasttext_embedding_tvm_v07_O0/
+#python3 ./embedding_tvmO0_decompile.py $DATA_DIR/embedding/embedding_tvm_O0_funcs $DATA_DIR/embedding/embedding_tvm_O0 $DATA_DIR/embedding/label_tvm_O0.txt
 
 
 # ------- TVM v0.7 O3 -------

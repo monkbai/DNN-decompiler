@@ -268,7 +268,7 @@ class MyResNet(nn.Module):
         
         net.append(nn.Linear(in_features=512, out_features=1000))
         set_weights(net[-1], './0092.dense_weights_0.json')
-        set_biases(net[-1], '0155.bias_add_0.json')
+        set_biases(net[-1], '0155.biases_0.json')
         self.net = nn.ModuleList(net)
 
     def forward(self, x):
