@@ -139,7 +139,7 @@ if __name__ == '__main__':
     # This can be done automatically, but we do it manually for simplicity
     
     se_engine.extern_functions = {'0x400c50': 'memset'}  # address in .plt, name
-    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True)  # also all dense
+    func_shape = utils.handle_all_conv(prog_path, in_data, label_file, func_trace_map, compiler='tvm', optimized=True, topo_list=topo_list)  # also all dense
     print('all conv and dense done.')
     for name, result in func_shape.items():
         print(name)
