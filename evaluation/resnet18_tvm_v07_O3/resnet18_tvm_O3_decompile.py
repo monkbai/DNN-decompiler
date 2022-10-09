@@ -232,7 +232,7 @@ if __name__ == '__main__':
             meta_data[3] = 'add'
             meta_data[1] = [1, int(meta_data[1][0][0])]
             new_meta_data.append(meta_data)  # biases of conv
-        elif meta_data[3] == 'dense':
+        elif 'dense' in meta_data[3]:
             meta_data[6] = 1
             new_meta_data.append(meta_data)  # weights of dense
             meta_data = copy.deepcopy(meta_data)

@@ -579,6 +579,7 @@ def explain_tvm_conv2d_result_16(name: str, exp: str, mem_read_regions: list, me
     output_shape = [1, 1, 1, 1]
 
     blk_size = 0
+    special_flag = False
     if len(mem_read_regions) > 10:
         kernel_num, input_num, blk_size, in_mem = kernel_1_1(name, exp, mem_read_regions, mem_write_regions)
         filter_shape[1] = kernel_num
