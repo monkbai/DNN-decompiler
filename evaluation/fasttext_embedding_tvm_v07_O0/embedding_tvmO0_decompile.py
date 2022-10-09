@@ -39,7 +39,7 @@ if __name__ == '__main__':
 
     # with parameters from entry functions
     utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm', only_fused=True)
-    param_list = utils.print_layer_label_tvm(log_path, only_fused=True)
+    param_list, addr2param = utils.print_layer_label_tvm(log_path, only_fused=True)
     # print(param_list)
     func_meta_data, topo_list = utils.print_input_id(log_path)  
     # print(func_meta_data)
@@ -65,7 +65,7 @@ if __name__ == '__main__':
                                         prog_path, in_data, func_type=func_type)
         print(shape)
         if 'embedding' in func_type:
-            embedding_start = int('0x41ec40', 16)  # get fomr topo_list
+            embedding_start = int('0x41ec40', 16)  # get from topo_list
             for param in param_list:
                 if param > embedding_start:
                     dict_size = (param - embedding_start)/4/shape
