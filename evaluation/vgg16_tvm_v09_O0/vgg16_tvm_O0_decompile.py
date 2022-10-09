@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
-sys.path.append("../")
+sys.path.append("../..")
 import time
 import utils
 import trace_filter
@@ -18,7 +18,14 @@ if __name__ == '__main__':
     prog_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/vgg16_tvm_O0/vgg16_tvm_O0_strip"
     in_data = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/vgg16_tvm_O0/cat.bin"
     log_path = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/vgg16_tvm_O0/func_call.log"
-    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/vgg16_tvm_O0/ground_truth.txt"
+    label_file = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.9.dev/vgg16_tvm_O0/label.txt"
+
+    if len(sys.argv) == 6:
+        utils.funcs_dir = sys.argv[1]
+        prog_path = sys.argv[2]
+        in_data = sys.argv[3]
+        log_path = sys.argv[4]
+        label_file = sys.argv[5]
 
     tmp_log_path = './inst_trace.log'
     exp_log_path = './mem_exp.log'
@@ -58,8 +65,8 @@ if __name__ == '__main__':
                     func_trace_map[asm_file] = slice_log
                     func_rndaddr_map[asm_file] = (rnd_addr, loop_size, start_addr, end_addr)
                     
-    print(func_trace_map)
-    print(func_rndaddr_map)
+    # print(func_trace_map)
+    # print(func_rndaddr_map)
     logger.info('END')
     #exit(0)
     
