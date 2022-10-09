@@ -43,7 +43,7 @@ if __name__ == '__main__':
     utils.get_funcs_trace(prog_path, in_data, log_path, label_file, compiler='tvm', only_fused=True)
     utils.print_layer_label_tvm(log_path, config_path='config.json', only_fused=True)
     func_meta_data, topo_list = utils.print_input_id(log_path)  # to reconstruct the conputational graph
-    exit(0)
+    # exit(0)
 
     # ==============================================================
     # Step 2 --- Recover the Shape of each Layer
