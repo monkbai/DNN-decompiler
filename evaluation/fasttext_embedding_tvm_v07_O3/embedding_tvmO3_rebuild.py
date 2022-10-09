@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     # print(out.size())
     # print(type(out))
-    print(out)
+    print(out.item())
     exit(0)
 
     # Input to the model
