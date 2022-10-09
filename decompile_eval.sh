@@ -188,14 +188,14 @@ cd $CUR_DIR/evaluation/resnet18_tvm_v07_O3/
 TMP_DIR=$DATA_DIR/TVM-v0.7/resnet18_tvm_O3
 python3 ./resnet18_tvm_O3_decompile.py $TMP_DIR/resnet18_funcs $TMP_DIR/resnet18_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling vgg16_tvm_v07_O3"
-cd $CUR_DIR/evaluation/vgg16_tvm_v07_O3/
-TMP_DIR=$DATA_DIR/vgg16_tvm_O3
-python3 ./vgg16_tvm_O3_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling vgg16_tvm_v07_O3"
+# cd $CUR_DIR/evaluation/vgg16_tvm_v07_O3/
+# TMP_DIR=$DATA_DIR/vgg16_tvm_O3
+# python3 ./vgg16_tvm_O3_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling fasttext_tvm_v07_O3"
-cd $CUR_DIR/evaluation/fasttext_embedding_tvm_v07_O3/
-python3 ./embedding_tvmO3_decompile.py $DATA_DIR/embedding/embedding_tvm_O3_funcs $DATA_DIR/embedding/embedding_tvm_O3 $DATA_DIR/embedding/label_tvm_O3.txt
+# echo " - Decompiling fasttext_tvm_v07_O3"
+# cd $CUR_DIR/evaluation/fasttext_embedding_tvm_v07_O3/
+# python3 ./embedding_tvmO3_decompile.py $DATA_DIR/embedding/embedding_tvm_O3_funcs $DATA_DIR/embedding/embedding_tvm_O3 $DATA_DIR/embedding/label_tvm_O3.txt
 
 
 # ------- TVM v0.8 O0 -------

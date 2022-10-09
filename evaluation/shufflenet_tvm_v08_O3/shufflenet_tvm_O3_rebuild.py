@@ -1,3 +1,4 @@
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -412,23 +413,27 @@ def shufflenetv2(width_mult=1.):
 if __name__ == "__main__":
     """Testing
     """
+    input_cat = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O3/cat.bin"
+    if len(sys.argv) == 2:
+        input_cat = sys.argv[1]
+
     model = ShuffleNetV2()
     # print(model)
     # input = torch.randn(1, 3, 224, 224)
-    with open("/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/TVM-v0.8/shufflenetv2_tvm_O3/cat.bin", 'br') as f:
+    with open(input_cat, 'br') as f:
         bin_data = f.read()
         np_arr = np.frombuffer(bin_data, dtype=np.float32)
-        print(np_arr.shape)
+        # print(np_arr.shape)
         np_arr = np_arr.reshape(3, 224, 224)
         np_arr = np_arr.reshape((1, 3, 224, 224))
         x = torch.Tensor(np_arr)
-        print(x.shape)
+        # print(x.shape)
     input = x
     out = model(input)
 
     max_index = np.argmax(out.detach().numpy())
-    print(max_index)
+    print("Result:", max_index)
     # print(out)
-    print(out.detach().numpy()[0, max_index])
-    print(total_size)
+    print("Confidence:", out.detach().numpy()[0, max_index])
+    # print(total_size)
     exit(0)
