@@ -53,7 +53,7 @@ class NET(nn.Module):
 
         #text = [sent len, batch size]
         embedded = self.net[0](x)
-        print(embedded.shape)
+        # print(embedded.shape)
                 
         #embedded = [sent len, batch size, emb dim]
         embedded = embedded.permute(1, 0, 2)
@@ -77,19 +77,19 @@ if __name__ == "__main__":
     x = x.reshape(7, 1)
 
     time1 = time.time()
-    print('building the model:', end=' ')
+    # print('building the model:', end=' ')
     vgg = NET(seq_len=7)
     time2 = time.time()
-    print('{}s'.format(time2 - time1))
+    # print('{}s'.format(time2 - time1))
 
-    print('predicting the label:', end=' ')
+    # print('predicting the label:', end=' ')
     out = vgg(x)
     time3 = time.time()
-    print('{}s'.format(time3 - time2))
+    # print('{}s'.format(time3 - time2))
 
-    print(out.size())
-    print(type(out))
-    print(out)
+    # print(out.size())
+    # print(type(out))
+    print(out.item())
     exit(0)
 
     # Input to the model

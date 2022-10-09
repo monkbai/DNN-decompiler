@@ -1,3 +1,5 @@
+import os
+import sys
 import torch
 import torch.nn as nn
 import numpy as np
@@ -275,6 +277,14 @@ class EfficientNetLite(nn.Module):
 
 
 if __name__ == '__main__':
+    input_cat = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_v09_O3/cat.bin"
+    new_cat = "/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_v09_O3/cat_transpose.bin"
+    if len(sys.argv) == 2:
+        input_cat = sys.argv[1]
+        cat_dir = os.path.dirname(input_cat)
+        new_cat = os.path.join(cat_dir, "cat_transpose.bin")
+        # print(new_cat)
+
     model_name = 'efficientnet_lite4'
     width_coefficient, depth_coefficient, image_size, dropout_rate = 1.4, 1.8, 300, 0.3
     num_classes = 1000
@@ -284,25 +294,25 @@ if __name__ == '__main__':
     # exit(0)
 
     # input = torch.randn(1, 3, 224, 224)
-    with open("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_v09_O3/cat.bin", 'br') as f:
+    with open(input_cat, 'br') as f:
             bin_data = f.read()
             np_arr = np.frombuffer(bin_data, dtype=np.float32)
-            print(np_arr.shape)
+            # print(np_arr.shape)
             np_arr = np_arr.reshape(3, 224, 224)
             np_arr = np_arr.reshape((1, 3, 224, 224))
 
             new_np_arr = np.transpose(np_arr, (0, 2, 3, 1))
-            print(new_np_arr.shape)
-            with open("/home/lifter/Documents/DL_compiler/BTD_DATA/TVM-v0.9.dev/efficientnet_tvm_v09_O3/cat_transpose.bin", "wb") as fp:
+            # print(new_np_arr.shape)
+            with open(new_cat, "wb") as fp:
                 fp.write(new_np_arr.astype(np.float32).tobytes())
 
             x = torch.Tensor(np_arr)
-            print(x.shape)
+            # print(x.shape)
     input = x
     out = model(input)
 
     max_index = np.argmax(out.detach().numpy())
-    print(max_index)
+    print("Result:", max_index)
     # print(out)
-    print(out.detach().numpy()[0, max_index])
+    print("Confidence:", out.detach().numpy()[0, max_index])
     exit(0)

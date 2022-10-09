@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 import os
 import sys
-sys.path.append("../")
+sys.path.append("../..")
 import math
 import utils
 from utils import list_to_json, dict_to_json, json_to_dict, json_to_list
@@ -16,6 +16,11 @@ if __name__ == '__main__':
     in_data = ''  # no input needed
     label_file = '/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/embedding_extra/embedding_tvm_v09_O3_funcs/labels.txt'
     config_file = './config.json'
+
+    if len(sys.argv) == 4:
+        utils.funcs_dir = sys.argv[1]
+        prog_path = sys.argv[2]
+        label_file = sys.argv[3]
 
     # (tmp files) generated during analysis
     log_path = './embedding_tvm_O3_func_call.log'
