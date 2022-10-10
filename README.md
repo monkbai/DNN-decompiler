@@ -34,7 +34,7 @@ We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-26
 
 ### 0. Prepare
 
-If you are using the provided docker image, you can skip this **Prepare** section.
+If you are using the provided docker image, you can skip this **Prepare** section and move to **1. Operator Inference**.
 
 Download and unzip Intel pin 3.14, then update the pin home directory (`pin_home`) in [config.py](https://github.com/monkbai/DNN-decompiler/blob/master/config.py#L3).
 
@@ -54,7 +54,11 @@ TODO
 
 ### 2. Decompilation & Rebuild
 
-TODO
+```sh
+cd DNN-decompiler
+./decompil_eval.sh
+```
+The `./decompil_eval.sh` will decompile and rebuild all 63 DNN executables. The output of rebuilt models and original DNN executables will be printed on screen (see example in **Decompilation Correctness** below). Corresponding decompilation outputs will be stored in `evaluation/<model>_<compiler>_<version>_<opt level>`. 
 
 -------
 #### Decompilation Output Interpretation
