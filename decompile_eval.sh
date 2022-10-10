@@ -352,8 +352,9 @@ python3 ./mobilenet_tvm_O3_decompile.py $TMP_DIR/mobilenetv2_funcs $TMP_DIR/mobi
 # cd $CUR_DIR/evaluation/fasttext_embedding_tvm_v09_O3/
 # python3 ./embedding_tvmO3_decompile.py $DATA_DIR/embedding_extra/embedding_tvm_v09_O3_funcs $DATA_DIR/embedding_extra/embedding_tvm_v09_O3 $DATA_DIR/embedding_extra/label_tvm_v09_O3.txt
 
-echo "============="
+echo "======= Decompilation Finished ======="
 # =============
+echo "======= Start Rebuild Evaluation ======="
 
 # ------- Glow 2020 -------
 #         Rebuild
@@ -783,7 +784,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/efficient_tvm_v09_O0/
 python3 ./efficientnet_tvm_O0_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/efficientnet_tvm_O0/efficientnet_lite4_tvm_O0_strip /home/cat_transpose.bin
+$DATA_DIR/TVM-v0.9.dev/efficientnet_tvm_O0/efficientnet_lite4_tvm_O0_strip /home/cat_transpose.bin 2>&-
 echo ""
 
 echo " - inception_tvm_v09_O0"
@@ -791,7 +792,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/inception_tvm_v09_O0/
 python3 ./inception_tvm_O0_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/inceptionv1_tvm_O0/inceptionv1_tvm_O0_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - mobilenet_tvm_v09_O0"
@@ -799,7 +800,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/mobilenet_tvm_v09_O0/
 python3 ./mobilenet_tvm_O0_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/mobilenetv2_tvm_O0/mobilenetv2_7_tvm_O0_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/mobilenetv2_tvm_O0/mobilenetv2_7_tvm_O0_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - shufflenet_tvm_v09_O0"
@@ -807,7 +808,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/shufflenet_tvm_v09_O0/
 python3 ./shufflenet_tvm_O0_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/shufflenetv2_tvm_O0/shufflenetv2_tvm_O0_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/shufflenetv2_tvm_O0/shufflenetv2_tvm_O0_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - resnet18_tvm_v09_O0"
@@ -815,7 +816,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/resnet18_tvm_v09_O0/
 python3 ./resnet18_tvm_O0_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/resnet18_tvm_O0/resnet18_tvm_O0_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/resnet18_tvm_O0/resnet18_tvm_O0_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - vgg16_tvm_v09_O0"
@@ -823,7 +824,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/vgg16_tvm_v09_O0/
 python3 ./vgg16_tvm_O0_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/vgg16_tvm_O0/vgg16_tvm_O0_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/vgg16_tvm_O0/vgg16_tvm_O0_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - fasttext_tvm_v09_O0"
@@ -843,7 +844,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/efficient_tvm_v09_O3/
 python3 ./efficientnet_tvm_O3_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/efficientnet_tvm_v09_O3/efficientnet_lite4_tvm_O3_strip /home/cat_transpose.bin
+$DATA_DIR/TVM-v0.9.dev/efficientnet_tvm_v09_O3/efficientnet_lite4_tvm_O3_strip /home/cat_transpose.bin 2>&-
 echo ""
 
 echo " - inception_tvm_v09_O3"
@@ -851,7 +852,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/inception_tvm_v09_O3/
 python3 ./inception_tvm_O3_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/inceptionv1_tvm_O3/inceptionv1_tvm_O3_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/inceptionv1_tvm_O3/inceptionv1_tvm_O3_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - mobilenet_tvm_v09_O3"
@@ -859,7 +860,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/mobilenet_tvm_v09_O3/
 python3 ./mobilenet_tvm_O3_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/mobilenetv2_tvm_v09_O3/mobilenetv2_7_tvm_O3_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/mobilenetv2_tvm_v09_O3/mobilenetv2_7_tvm_O3_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - shufflenet_tvm_v09_O3"
@@ -867,7 +868,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/shufflenet_tvm_v09_O3/
 python3 ./shufflenet_tvm_O3_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/shufflenetv2_tvm_O3_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/shufflenetv2_tvm_O3_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - resnet18_tvm_v09_O3"
@@ -875,7 +876,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/resnet18_tvm_v09_O3/
 python3 ./resnet18_tvm_O3_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_tvm_O3_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/resnet18_tvm_O3/resnet18_tvm_O3_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - vgg16_tvm_v09_O3"
@@ -883,7 +884,7 @@ echo " - Rebuilt model output:"
 cd $CUR_DIR/evaluation/vgg16_tvm_v09_O3/
 python3 ./vgg16_tvm_O3_rebuild.py /home/cat.bin 2>&-
 echo " - DNN Executable output:"
-$DATA_DIR/TVM-v0.9.dev/vgg16_tvm_O3/vgg16_tvm_O3_strip /home/cat.bin
+$DATA_DIR/TVM-v0.9.dev/vgg16_tvm_O3/vgg16_tvm_O3_strip /home/cat.bin 2>&-
 echo ""
 
 echo " - fasttext_tvm_v09_O3"
