@@ -1,0 +1,1 @@
+Download all the checkpoints [here](https://www.dropbox.com/s/e8rgxp2u3f01omn/output.zip?dl=0).
