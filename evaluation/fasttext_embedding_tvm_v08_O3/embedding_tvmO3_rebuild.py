@@ -53,7 +53,7 @@ class NET(nn.Module):
 
         #text = [sent len, batch size]
         embedded = self.net[0](x)
-        print(embedded.shape)
+        # print(embedded.shape)
                 
         #embedded = [sent len, batch size, emb dim]
         embedded = embedded.permute(1, 0, 2)
