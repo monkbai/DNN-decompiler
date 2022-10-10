@@ -46,7 +46,7 @@ python3 pin_tool.py
 ```
 [pin_tool.py](https://github.com/monkbai/DNN-decompiler/blob/master/pin_tools.py#L101) will copy and compile all pin tools listed in [MyPinTool/](https://github.com/monkbai/DNN-decompiler/tree/master/MyPinTool).
 
-Download and unzip the data ([BTD-data](README.md)) used for artifact evaluation, update the data directory `DATA_DIR` in [decompile_eval.sh](https://github.com/monkbai/DNN-decompiler/blob/master/decompile_eval.sh).
+Download and unzip the data ([BTD-data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0)) used for artifact evaluation, update the data directory `DATA_DIR` in [decompile_eval.sh](https://github.com/monkbai/DNN-decompiler/blob/master/decompile_eval.sh).
 
 ### 1. Operator Inference
 
