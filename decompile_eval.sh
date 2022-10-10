@@ -241,10 +241,10 @@ echo "BTD home: $CUR_DIR"
 # ------- TVM v0.8 O3 -------
 #        Decompilation
 # ---------------------------
-echo " - Decompiling efficientnet_tvm_v08_O3"
-cd $CUR_DIR/evaluation/efficient_tvm_v08_O3/
-TMP_DIR=$DATA_DIR/TVM-v0.8/efficientnet_tvm_O3
-python3 ./efficient_tvm_O3_decompile.py $TMP_DIR/efficientnet_funcs $TMP_DIR/efficientnet_lite4_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling efficientnet_tvm_v08_O3"
+# cd $CUR_DIR/evaluation/efficient_tvm_v08_O3/
+# TMP_DIR=$DATA_DIR/TVM-v0.8/efficientnet_tvm_O3
+# python3 ./efficient_tvm_O3_decompile.py $TMP_DIR/efficientnet_funcs $TMP_DIR/efficientnet_lite4_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 echo " - Decompiling inception_tvm_v08_O3"
 cd $CUR_DIR/evaluation/inception_tvm_v08_O3/
@@ -256,20 +256,20 @@ cd $CUR_DIR/evaluation/mobilenet_tvm_v08_O3/
 TMP_DIR=$DATA_DIR/TVM-v0.8/mobilenetv2_tvm_O3
 python3 ./mobilenet_tvm_O3_decompile.py $TMP_DIR/mobilenet_funcs $TMP_DIR/mobilenetv2_7_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling shufflenet_tvm_v08_O3"
-cd $CUR_DIR/evaluation/shufflenet_tvm_v08_O3/
-TMP_DIR=$DATA_DIR/TVM-v0.8/shufflenetv2_tvm_O3
-python3 ./shufflenet_tvm_O3_decompile.py $TMP_DIR/shufflenetv2_funcs $TMP_DIR/shufflenetv2_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling shufflenet_tvm_v08_O3"
+# cd $CUR_DIR/evaluation/shufflenet_tvm_v08_O3/
+# TMP_DIR=$DATA_DIR/TVM-v0.8/shufflenetv2_tvm_O3
+# python3 ./shufflenet_tvm_O3_decompile.py $TMP_DIR/shufflenetv2_funcs $TMP_DIR/shufflenetv2_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling resnet18_tvm_v08_O3"
-cd $CUR_DIR/evaluation/resnet18_tvm_v08_O3/
-TMP_DIR=$DATA_DIR/TVM-v0.8/resnet18_tvm_O3
-python3 ./resnet18_tvm_O3_decompile.py $TMP_DIR/resnet18_funcs $TMP_DIR/resnet18_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling resnet18_tvm_v08_O3"
+# cd $CUR_DIR/evaluation/resnet18_tvm_v08_O3/
+# TMP_DIR=$DATA_DIR/TVM-v0.8/resnet18_tvm_O3
+# python3 ./resnet18_tvm_O3_decompile.py $TMP_DIR/resnet18_funcs $TMP_DIR/resnet18_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling vgg16_tvm_v08_O3"
-cd $CUR_DIR/evaluation/vgg16_tvm_v08_O3/
-TMP_DIR=$DATA_DIR/TVM-v0.8/vgg16_tvm_O3
-python3 ./vgg16_tvm_O3_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling vgg16_tvm_v08_O3"
+# cd $CUR_DIR/evaluation/vgg16_tvm_v08_O3/
+# TMP_DIR=$DATA_DIR/TVM-v0.8/vgg16_tvm_O3
+# python3 ./vgg16_tvm_O3_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 echo " - Decompiling fasttext_tvm_v08_O3"
 cd $CUR_DIR/evaluation/fasttext_embedding_tvm_v08_O3/
@@ -285,30 +285,30 @@ cd $CUR_DIR/evaluation/efficient_tvm_v09_O0/
 TMP_DIR=$DATA_DIR/TVM-v0.9.dev/efficientnet_tvm_O0
 python3 ./efficient_tvm_O0_decompile.py $TMP_DIR/efficientnet_funcs $TMP_DIR/efficientnet_lite4_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling inception_tvm_v09_O0"
-cd $CUR_DIR/evaluation/inception_tvm_v09_O0/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/inceptionv1_tvm_O0
-python3 ./inception_tvm_O0_decompile.py $TMP_DIR/inceptionv1_funcs $TMP_DIR/inceptionv1_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling inception_tvm_v09_O0"
+# cd $CUR_DIR/evaluation/inception_tvm_v09_O0/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/inceptionv1_tvm_O0
+# python3 ./inception_tvm_O0_decompile.py $TMP_DIR/inceptionv1_funcs $TMP_DIR/inceptionv1_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling mobilenet_tvm_v09_O0"
-cd $CUR_DIR/evaluation/mobilenet_tvm_v09_O0/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/mobilenetv2_tvm_O0
-python3 ./mobilenet_tvm_O0_decompile.py $TMP_DIR/mobilenet_funcs $TMP_DIR/mobilenetv2_7_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling mobilenet_tvm_v09_O0"
+# cd $CUR_DIR/evaluation/mobilenet_tvm_v09_O0/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/mobilenetv2_tvm_O0
+# python3 ./mobilenet_tvm_O0_decompile.py $TMP_DIR/mobilenet_funcs $TMP_DIR/mobilenetv2_7_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling shufflenet_tvm_v09_O0"
-cd $CUR_DIR/evaluation/shufflenet_tvm_v09_O0/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/shufflenetv2_tvm_O0
-python3 ./shufflenet_tvm_O0_decompile.py $TMP_DIR/shufflenetv2_funcs $TMP_DIR/shufflenetv2_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling shufflenet_tvm_v09_O0"
+# cd $CUR_DIR/evaluation/shufflenet_tvm_v09_O0/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/shufflenetv2_tvm_O0
+# python3 ./shufflenet_tvm_O0_decompile.py $TMP_DIR/shufflenetv2_funcs $TMP_DIR/shufflenetv2_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling resnet18_tvm_v09_O0"
-cd $CUR_DIR/evaluation/resnet18_tvm_v09_O0/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/resnet18_tvm_O0
-python3 ./resnet18_tvm_O0_decompile.py $TMP_DIR/resnet18_funcs $TMP_DIR/resnet18_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling resnet18_tvm_v09_O0"
+# cd $CUR_DIR/evaluation/resnet18_tvm_v09_O0/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/resnet18_tvm_O0
+# python3 ./resnet18_tvm_O0_decompile.py $TMP_DIR/resnet18_funcs $TMP_DIR/resnet18_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling vgg16_tvm_v09_O0"
-cd $CUR_DIR/evaluation/vgg16_tvm_v09_O0/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/vgg16_tvm_O0
-python3 ./vgg16_tvm_O0_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling vgg16_tvm_v09_O0"
+# cd $CUR_DIR/evaluation/vgg16_tvm_v09_O0/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/vgg16_tvm_O0
+# python3 ./vgg16_tvm_O0_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O0_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 echo " - Decompiling fasttext_tvm_v09_O0"
 cd $CUR_DIR/evaluation/fasttext_embedding_tvm_v09_O0/
@@ -318,35 +318,35 @@ python3 ./embedding_tvmO0_decompile.py $DATA_DIR/embedding_extra/embedding_tvm_v
 # ------- TVM v0.9.dev O3 -------
 #        Decompilation
 # ---------------------------
-echo " - Decompiling efficientnet_tvm_v09_O3"
-cd $CUR_DIR/evaluation/efficient_tvm_v09_O3/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/efficientnet_tvm_v09_O3
-python3 ./efficient_tvm_O3_decompile.py $TMP_DIR/efficientnet_funcs $TMP_DIR/efficientnet_lite4_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling efficientnet_tvm_v09_O3"
+# cd $CUR_DIR/evaluation/efficient_tvm_v09_O3/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/efficientnet_tvm_v09_O3
+# python3 ./efficient_tvm_O3_decompile.py $TMP_DIR/efficientnet_funcs $TMP_DIR/efficientnet_lite4_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling inception_tvm_v09_O3"
-cd $CUR_DIR/evaluation/inception_tvm_v09_O3/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/inceptionv1_tvm_O3
-python3 ./inception_tvm_O3_decompile.py $TMP_DIR/inceptionv1_funcs $TMP_DIR/inceptionv1_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling inception_tvm_v09_O3"
+# cd $CUR_DIR/evaluation/inception_tvm_v09_O3/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/inceptionv1_tvm_O3
+# python3 ./inception_tvm_O3_decompile.py $TMP_DIR/inceptionv1_funcs $TMP_DIR/inceptionv1_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 echo " - Decompiling mobilenet_tvm_v09_O3"
 cd $CUR_DIR/evaluation/mobilenet_tvm_v09_O3/
 TMP_DIR=$DATA_DIR/TVM-v0.9.dev/mobilenetv2_tvm_v09_O3
 python3 ./mobilenet_tvm_O3_decompile.py $TMP_DIR/mobilenet_funcs $TMP_DIR/mobilenetv2_7_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling shufflenet_tvm_v09_O3"
-cd $CUR_DIR/evaluation/shufflenet_tvm_v09_O3/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3
-python3 ./shufflenet_tvm_O3_decompile.py $TMP_DIR/shufflenetv2_funcs $TMP_DIR/shufflenetv2_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling shufflenet_tvm_v09_O3"
+# cd $CUR_DIR/evaluation/shufflenet_tvm_v09_O3/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/shufflenetv2_tvm_v09_O3
+# python3 ./shufflenet_tvm_O3_decompile.py $TMP_DIR/shufflenetv2_funcs $TMP_DIR/shufflenetv2_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 echo " - Decompiling resnet18_tvm_v09_O3"
 cd $CUR_DIR/evaluation/resnet18_tvm_v09_O3/
 TMP_DIR=$DATA_DIR/TVM-v0.9.dev/resnet18_tvm_O3
 python3 ./resnet18_tvm_O3_decompile.py $TMP_DIR/resnet18_funcs $TMP_DIR/resnet18_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
-echo " - Decompiling vgg16_tvm_v09_O3"
-cd $CUR_DIR/evaluation/vgg16_tvm_v09_O3/
-TMP_DIR=$DATA_DIR/TVM-v0.9.dev/vgg16_tvm_O3
-python3 ./vgg16_tvm_O3_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
+# echo " - Decompiling vgg16_tvm_v09_O3"
+# cd $CUR_DIR/evaluation/vgg16_tvm_v09_O3/
+# TMP_DIR=$DATA_DIR/TVM-v0.9.dev/vgg16_tvm_O3
+# python3 ./vgg16_tvm_O3_decompile.py $TMP_DIR/vgg16_funcs $TMP_DIR/vgg16_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 echo " - Decompiling fasttext_tvm_v09_O3"
 cd $CUR_DIR/evaluation/fasttext_embedding_tvm_v09_O3/

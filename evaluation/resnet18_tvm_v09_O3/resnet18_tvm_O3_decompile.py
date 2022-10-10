@@ -103,7 +103,7 @@ if __name__ == '__main__':
             print('layout_shape', result[3])
         else:
             print(result)
-    exit(0)
+    # exit(0)
     
     
     # ==============================================================
