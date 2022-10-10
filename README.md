@@ -8,7 +8,7 @@ Paper: [coming soon](README.md)
 
 Extended version (25 pages): [https://arxiv.org/abs/2210.01075](https://arxiv.org/abs/2210.01075)
 
-TODO: We will release and update all code and data in a few days and a usable Docker image will be available for artifact evaluation at that time. Please check this repo later.
+TODO: We will release and update all code and data in a few days and a usable [Docker image](TODO) will be available for artifact evaluation at that time. Please check this repo later.
 
 ## Prerequisites
 ```
@@ -24,7 +24,11 @@ IDA Pro (optional)
 ```
 You can download pin 3.14 from [here](https://www.intel.com/content/www/us/en/developer/articles/tool/pin-a-binary-instrumentation-tool-downloads.html), or use the docker image with all prerequisites installed.
 
+#### IDA
 BTD relies on IDA Pro (version 7.5) for disassembly, and because IDA is commercial software, we do not provide it in this repo; instead, in order to reduce the workload of AE reviewers, we provide the disassembly results directly as input for BTD. The scripts used to disassemble DNN executable into assembly functions with IDA are presented in [ida/](https://github.com/monkbai/DNN-decompiler/tree/master/ida). IDA Pro is not indispensable; any other full-fledged disassembly tool can be used to replace IDA, but we do not provide the relevant code here.
+
+#### Hardware
+We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-2683, 256GB RAM, and an Nvidia GeForce RTX 2080 GPU. Logging and filtering all traces for all DNN executables in the evaluation takes more than a **week** (sorry, we currently only provide a single-thread version) and consumes nearly **1TB** disk storage. To ease the AE committee to review, we omit the trace logging process and provide the filtered traces in the [docker image](TODO) and [evaluation data](TODO). The trace logger and filter are provided in [MyPinTool/](MyPinTool) and the [trace_filter.py](trace_filter.py) script. Without logging and filtering, the whole evaluation takes roughly **one** day and requires less than **120GB** of disk space. Besides, the symbolic execution may consume a lot of memory resources, so please make sure that the machine on which the experiment is run has sufficient memory.
 
 ## Artifact Evaluation
 
