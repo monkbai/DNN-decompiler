@@ -1,7 +1,7 @@
 
-*1. replace all DATA with the dropbox link.*
+<!---*1. replace all DATA with the dropbox link.*-->
 
-*2. replace all OUTPUT with the dropbox link*
+<!---*2. replace all OUTPUT with the dropbox link*-->
 
 ## Structure
 
@@ -36,14 +36,14 @@ This folder is organized as:
 
 ## BPE
 
-Use [fastBPE](https://github.com/glample/fastBPE) to get the BPE code. We also prepare generated BPE codes [here](DATA).
+Use [fastBPE](https://github.com/glample/fastBPE) to get the BPE code. We also prepare generated BPE codes [here](https://www.dropbox.com/s/prg0vmei2x781wy/data.zip?dl=0).
 
 ## Pre-processing
 
 We provide all pre-processing functions (with comments) in `preprocessing.py`. You can use these
 functions to generate the training and test samples from [raw data](https://www.dropbox.com/s/a1mxqwqn4tytmgz/labeled_dataset_2022.zip?dl=0) provided in **Labeled Dataset for Operator Inference**. 
 
-We also provide all the processed data at [here](DATA). You can download and unzip them into the `data` folder.
+We also provide all the processed data at [here](https://www.dropbox.com/s/prg0vmei2x781wy/data.zip?dl=0). You can download and unzip them into the `data` folder.
 
 ## Training
 
@@ -60,7 +60,7 @@ To train an operator identifier from scratch, run
 To infer DNN operators using a trained operator identifier, run
 `python main.py --training 0` with configurations lised in **Training**.
 
-We also provide all our trained operator identifiers [here](OUTPUT). You can download and unzip them into the `output` folder.
+We also provide all our trained operator identifiers [here](https://www.dropbox.com/s/e8rgxp2u3f01omn/output.zip?dl=0). You can download and unzip them into the `output` folder.
 
 To infer DNN operators using these checkpoints,
 run `python main.py --training 0` and set `--exp_name` as one of the choices from
