@@ -1,1 +1,0 @@
-{"transpose": 0, "conv2d": 1, "max_pool": 2, "local_response_normalization": 3, "convDKKC8": 4, "insert_tensor": 5, "relu": 6, "avg_pool": 7, "matmul": 8, "batchedadd": 9, "softmax": 10, "add": 11, "extract_tensor": 12, "batchnormalization": 13}
