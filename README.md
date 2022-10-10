@@ -124,7 +124,7 @@ Example (vgg16 TVM v0.8 O0):
 #### Decompilation Correctness
 ![example-input-img](cat.png)
 
-After decompilation, the DNN model is rebuild with decompiled model structure and extracted parameters. [decompile_eval.sh](decompile_eval.sh) will run each rebuilt model (implemented in pytorch) and the original DNN executable with the above example image in binary format as input. The output would be like this:
+After decompilation, the DNN model is rebuild with decompiled model structure and extracted parameters (stored in .json format). [decompile_eval.sh](decompile_eval.sh) will run each rebuilt model (implemented in pytorch) and the original DNN executable with the above example image in binary format as input. The output would be like this:
 ```
  - vgg16_tvm_v09_O3
  - Rebuilt model output:
