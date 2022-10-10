@@ -172,9 +172,9 @@ If you are interested in the interfaces of BTD, you can take a look at the decom
 
 TODO: update links
 
- - Labeled Dataset for Operator Inference (containing compiled DNN executables and disassembly output):
-https://www.dropbox.com/s/a1mxqwqn4tytmgz/labeled_dataset_2022.zip?dl=0
-<!---https://www.dropbox.com/s/lgkp2xfmyn7kwv4/labeled_dataset.zip?dl=0-->
+ - Labeled Dataset for Operator Inference (containing compiled DNN executables and disassembly output): https://www.dropbox.com/s/a1mxqwqn4tytmgz/labeled_dataset_2022.zip?dl=0 <!---https://www.dropbox.com/s/lgkp2xfmyn7kwv4/labeled_dataset.zip?dl=0-->
+    * data.zip: https://www.dropbox.com/s/prg0vmei2x781wy/data.zip?dl=0
+    * output.zip: https://www.dropbox.com/s/e8rgxp2u3f01omn/output.zip?dl=0
 
  - ONNX Models
 https://www.dropbox.com/s/x8gwqyej7fla3rz/DNN_models.zip?dl=0
