@@ -56,9 +56,9 @@ TODO
 
 ```sh
 cd DNN-decompiler
-./decompil_eval.sh
+./decompile_eval.sh
 ```
-The `./decompil_eval.sh` will decompile and rebuild all 63 DNN executables. The output of rebuilt models and original DNN executables will be printed on screen (see example in **Decompilation Correctness** below). Corresponding decompilation outputs will be stored in `evaluation/<model>_<compiler>_<version>_<opt level>`. 
+The `./decompile_eval.sh` will decompile and rebuild all 63 DNN executables. It takes roughly 24 hours to finish all experiments. The output of rebuilt models and original DNN executables will be printed on screen (see example in **Decompilation Correctness** below). Corresponding decompilation outputs will be stored in `evaluation/<model>_<compiler>_<version>_<opt level>`. 
 
 -------
 #### Decompilation Output Interpretation
