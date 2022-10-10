@@ -249,6 +249,7 @@ echo "BTD home: $CUR_DIR"
 echo " - Decompiling inception_tvm_v08_O3"
 cd $CUR_DIR/evaluation/inception_tvm_v08_O3/
 TMP_DIR=$DATA_DIR/TVM-v0.7/inceptionv1_tvm_O3
+echo "python3 ./inception_tvm_O3_decompile.py $TMP_DIR/inceptionv1_funcs $TMP_DIR/inceptionv1_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt"
 python3 ./inception_tvm_O3_decompile.py $TMP_DIR/inceptionv1_funcs $TMP_DIR/inceptionv1_tvm_O3_strip $TMP_DIR/cat.bin $TMP_DIR/func_call.log $TMP_DIR/label.txt
 
 echo " - Decompiling mobilenet_tvm_v08_O3"
