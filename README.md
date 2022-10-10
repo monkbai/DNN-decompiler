@@ -28,7 +28,7 @@ You can download pin 3.14 from [here](https://www.intel.com/content/www/us/en/de
 BTD relies on IDA Pro (version 7.5) for disassembly, and because IDA is commercial software, we do not provide it in this repo; instead, in order to reduce the workload of AE reviewers, we provide the disassembly results directly as input for BTD. The scripts used to disassemble DNN executable into assembly functions with IDA are presented in [ida/](https://github.com/monkbai/DNN-decompiler/tree/master/ida). IDA Pro is not indispensable; any other full-fledged disassembly tool can be used to replace IDA, but we do not provide the relevant code here.
 
 #### Hardware
-We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-2683, 256GB RAM, and an Nvidia GeForce RTX 2080 GPU. Logging and filtering all traces for all DNN executables in the evaluation takes more than a **week** (sorry, we currently only provide a single-thread version) and consumes nearly **1TB** disk storage. To ease the AE committee to review, we omit the trace logging process and provide the filtered traces in the [docker image](TODO) and [evaluation data](TODO). The trace logger and filter are provided in [MyPinTool/](MyPinTool) and the [trace_filter.py](trace_filter.py) script. Without logging and filtering, the whole evaluation takes roughly **one** day and requires less than **120GB** of disk space. Besides, the symbolic execution may consume a lot of memory resources, so please make sure that the machine on which the experiment is run has sufficient memory.
+We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-2683, 256GB RAM, and an Nvidia GeForce RTX 2080 GPU. Logging and filtering all traces for all DNN executables in the evaluation takes more than a **week** (sorry, we currently only provide a single-thread version) and consumes nearly **1TB** disk storage. To ease the AE committee to review, we omit the trace logging process and provide the filtered traces in the [docker image](TODO) and [evaluation data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0). The trace logger and filter are provided in [MyPinTool/](MyPinTool) and the [trace_filter.py](trace_filter.py) script. Without logging and filtering, the whole evaluation takes roughly **one** day and requires less than **120GB** of disk space. Besides, the symbolic execution may consume a lot of memory resources, so please make sure that the machine on which the experiment is run has sufficient memory.
 
 ## Artifact Evaluation
 
@@ -175,6 +175,8 @@ TODO: update links
  - Labeled Dataset for Operator Inference (containing compiled DNN executables and disassembly output): https://www.dropbox.com/s/a1mxqwqn4tytmgz/labeled_dataset_2022.zip?dl=0 <!---https://www.dropbox.com/s/lgkp2xfmyn7kwv4/labeled_dataset.zip?dl=0-->
     * data.zip: https://www.dropbox.com/s/prg0vmei2x781wy/data.zip?dl=0
     * output.zip: https://www.dropbox.com/s/e8rgxp2u3f01omn/output.zip?dl=0
+
+ * Data for artifact evaluataion (including filtered traces, disassembled functions, and original DNN executables): https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0
 
  - ONNX Models
 https://www.dropbox.com/s/x8gwqyej7fla3rz/DNN_models.zip?dl=0
