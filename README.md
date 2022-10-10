@@ -135,7 +135,7 @@ The maximum position in output vector is: 282, with max-value 9.341150.
 timing: 566.89 ms (create), 0.54 ms (set_input), 4034.66 ms (run), 0.00 ms (get_output), 0.61 ms (
 destroy)
 ```
-In the above exmaple, both rebuilt model and DNN executable output result as **`282`** (see [1000 classes of ImageNet](https://github.com/onnx/models/blob/main/vision/classification/synset.txt)), and the confidence scores are `9.341153` and `9.341150` respectively. While the confidence scores are slightly inconsistent, we interpret that such inconsistency is caused by the floating-point precision loss between pytorch model and DNN executable, i.e., the decompilation is still correct.
+In the above exmaple, both rebuilt model and DNN executable output result as **`282`** (see [1000 classes of ImageNet](https://github.com/onnx/models/blob/main/vision/classification/synset.txt)), and the confidence scores are `9.341153` and `9.341150` respectively. While the confidence scores (or max values) are slightly inconsistent, we interpret that such inconsistency is caused by the floating-point precision loss between pytorch model and DNN executable, i.e., the decompilation is still correct.
 
 ## Code Structure
 
