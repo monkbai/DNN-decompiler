@@ -57,7 +57,7 @@ class Engine(object):
 
     def load_model(self, path):
         print('Loading Model from %s ...' % (path))
-        ckpt = torch.load(path)
+        ckpt = torch.load(path, map_location='cpu')
         self.model.load_state_dict(ckpt['model'])
 
     def zero_grad(self):
