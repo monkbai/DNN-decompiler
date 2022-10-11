@@ -17,8 +17,11 @@ git
 gcc/g++ (7.5.0)
 make (4.1)
 python3 (3.6.9 or higher)
-numpy-1.19.5
-torch (1.9.0 or higher)
+  - numpy-1.19.5
+  - torch (1.9.0 or higher)
+  - torchvision (0.11.2)
+  - fastBPE (0.1.0)
+  - tqdm (4.64.1)
 Intel pin (3.14) 
 IDA Pro (optional)
 ```
