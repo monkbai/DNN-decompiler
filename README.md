@@ -1,8 +1,8 @@
 # BTD: DNN Executables Decompiler
 
-Research Artifact for our USENIX Security 2023 paper: "Decompiling x86 Deep Neural Network Executables"
+Research Artifact for our **USENIX Security 2023** paper: "Decompiling x86 Deep Neural Network Executables"
 
-BTD is the **first** deep neural network (DNN) executables decompiler. BTD takes DNN executables (running on x86 CPUs) compiled by DNN compilers (e.g., [TVM](https://tvm.apache.org/) and [Glow](https://github.com/pytorch/glow)) and outputs full model specifications, including types of DNN operators, network topology, dimensions, and parameters that are (nearly) identical to those of the input models. BTD is evaluated to be robust against complex compiler optimizations, such as operator fusion and memory layout optimization. More details are reported in our paper published at USENIX Security 2023.
+BTD is the **first** deep neural network (DNN) executables decompiler. BTD takes DNN executables (running on x86 CPUs) compiled by DNN compilers (e.g., [TVM](https://tvm.apache.org/), [Glow](https://github.com/pytorch/glow), and [NNFusion](https://github.com/microsoft/nnfusion)) and outputs full model specifications, including types of DNN operators, network topology, dimensions, and parameters that are (nearly) identical to those of the input models. BTD is evaluated to be robust against complex compiler optimizations, such as operator fusion and memory layout optimization. More details are reported in our paper published at USENIX Security 2023.
 
 Paper: [coming soon](README.md)
 
@@ -32,6 +32,13 @@ BTD relies on IDA Pro (version 7.5) for disassembly, and because IDA is commerci
 
 #### Hardware
 We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-2683, 256GB RAM, and an Nvidia GeForce RTX 2080 GPU. Logging and filtering all traces for all DNN executables in the evaluation takes more than a **week** (sorry, we currently only provide a single-thread version) and consumes nearly **1TB** disk storage. To ease the AE committee to review, we omit the trace logging process and provide the filtered traces in the [docker image](TODO) and [evaluation data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0). The trace logger and filter are provided in [MyPinTool/](MyPinTool) and the [trace_filter.py](trace_filter.py) script. Without logging and filtering, the whole evaluation takes roughly **one** day and requires less than **120GB** of disk space. Besides, the symbolic execution may consume a lot of memory resources, so please make sure that the machine on which the experiment is run has sufficient memory.
+
+#### Dataset
+<img src="Compiler.png" alt="compilers" width="555"/>
+
+![dataset-statistics](Statistics.png)
+
+Our evaluation covers above 7 models compiled with 9 different compiler options, including `Glow-2020`, `Glow-2021`, `Glow-2022`, `TVM-v0.7 (O0 and O3)`, `TVM-v0.8 (O0 and O3)`, `TVM-v0.9.dev (O0 and O3)`, in total 63 DNN excutables. NNFusion-emitted executables are *easier* to decompile since they contain wrapper functions to invoke target operator implementations in kernel libraries (see our paper for more detailed discussion). Thus, in this evaluation we only focuses on decompiling executables compiled by TVM and Glow.
 
 ## Artifact Evaluation
 
