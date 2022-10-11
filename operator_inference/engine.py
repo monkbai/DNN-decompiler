@@ -17,10 +17,11 @@ class Engine(object):
         self.epoch = 0
         self.max_acc = -1
         self.max_epoch = -1
-        self.mse = nn.MSELoss().cuda()
-        self.l1 = nn.L1Loss().cuda()
-        self.bce = nn.BCELoss().cuda()
-        self.ce = nn.CrossEntropyLoss().cuda()
+        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.mse = nn.MSELoss().to(self.device)
+        self.l1 = nn.L1Loss().to(self.device)
+        self.bce = nn.BCELoss().to(self.device)
+        self.ce = nn.CrossEntropyLoss().to(self.device)
         self.last_output = None
         self.idx2word = idx2word # function
         self.word2idx = word2idx
@@ -39,10 +40,10 @@ class Engine(object):
                         dropout=self.args.dropout
                         )
         
-        self.model = torch.nn.DataParallel(self.model).cuda()    
+        self.model = self.model.to(self.device)    
 
         self.optim = torch.optim.Adam(
-                        self.model.module.parameters(),
+                        self.model.parameters(),
                         lr=self.args.lr,
                         betas=(self.args.beta1, 0.999)
                         )
@@ -50,14 +51,14 @@ class Engine(object):
     def save_model(self, path):
         print('Saving Model on %s ...' % (path))
         state = {
-            'model': self.model.module.state_dict(),
+            'model': self.model.state_dict(),
         }
         torch.save(state, path)
 
     def load_model(self, path):
         print('Loading Model from %s ...' % (path))
         ckpt = torch.load(path)
-        self.model.module.load_state_dict(ckpt['model'])
+        self.model.load_state_dict(ckpt['model'])
 
     def zero_grad(self):
         self.model.zero_grad()
@@ -102,8 +103,8 @@ class Engine(object):
             start_time = time.time()
             for i, (indexes, labels, name_list) in enumerate(tqdm(data_loader)):
                 self.zero_grad()
-                indexes = indexes.cuda()
-                labels = labels.cuda()
+                indexes = indexes.to(self.device)
+                labels = labels.to(self.device)
                 
                 scores = self.model(indexes)
                 loss = self.bce(scores, labels)
@@ -130,8 +131,8 @@ class Engine(object):
             path = ((self.args.text_dir+'test_%03d.txt') % (self.epoch))
             with open(path, 'w') as f:    
                 for i, (indexes, labels, name_list) in enumerate(tqdm(data_loader)):
-                    indexes = indexes.cuda()
-                    labels = labels.cuda()
+                    indexes = indexes.to(self.device)
+                    labels = labels.to(self.device)
                     scores = self.model(indexes)
                     loss = self.bce(scores, labels)
                     record.add(loss.detach().item())
