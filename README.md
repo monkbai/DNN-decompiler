@@ -17,8 +17,11 @@ git
 gcc/g++ (7.5.0)
 make (4.1)
 python3 (3.6.9 or higher)
-numpy-1.19.5
-torch (1.9.0 or higher)
+  - numpy-1.19.5
+  - torch (1.9.0 or higher)
+  - torchvision (0.11.2)
+  - fastBPE (0.1.0)
+  - tqdm (4.64.1)
 Intel pin (3.14) 
 IDA Pro (optional)
 ```
@@ -32,29 +35,43 @@ We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-26
 
 ## Artifact Evaluation
 
-### 0. Prepare
+### 0. Import Docker Image
 
-If you are using the provided docker image, you can skip this **Prepare** section.
+Download the packed docker image, then run the command below to unpack the .tar file into a docker image. (You can choose a image name that would not conflict with existing names).
+```sh
+cat BTD-artifact.tar | docker import - <image_name>
+```
+
+
+
+### 1. Prepare
+
+If you are using the provided docker image, you can skip this **Prepare** section and move to **Operator Inference**.
 
 Download and unzip Intel pin 3.14, then update the pin home directory (`pin_home`) in [config.py](https://github.com/monkbai/DNN-decompiler/blob/master/config.py#L3).
 
-```
+```sh
 git clone https://github.com/monkbai/DNN-decompiler.git
 mkdir <path_to_pin_home>/source/tools/MyPinTool/obj-intel64
 cd DNN-decompiler
-python3 pin_tool.py
+python3 pin_tools.py
 ```
-[pin_tool.py](https://github.com/monkbai/DNN-decompiler/blob/master/pin_tools.py#L101) will copy and compile all pin tools listed in [MyPinTool/](https://github.com/monkbai/DNN-decompiler/tree/master/MyPinTool).
+[pin_tools.py](https://github.com/monkbai/DNN-decompiler/blob/master/pin_tools.py#L101) will copy and compile all pin tools listed in [MyPinTool/](https://github.com/monkbai/DNN-decompiler/tree/master/MyPinTool).
 
-Download and unzip the data ([BTD-data](README.md)) used for artifact evaluation, update the data directory `DATA_DIR` in [decompile_eval.sh](https://github.com/monkbai/DNN-decompiler/blob/master/decompile_eval.sh).
+Download and unzip the data ([BTD-data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0)) used for artifact evaluation, update the data directory `DATA_DIR` in [decompile_eval.sh](https://github.com/monkbai/DNN-decompiler/blob/master/decompile_eval.sh).
 
-### 1. Operator Inference
-
-TODO
-
-### 2. Decompilation & Rebuild
+### 2. Operator Inference
 
 TODO
+
+### 3. Decompilation & Rebuild
+
+```sh
+cd DNN-decompiler
+git pull
+./decompile_eval.sh
+```
+The `./decompile_eval.sh` will decompile and rebuild all 63 DNN executables. It takes roughly 24 hours to finish all experiments. The output of rebuilt models and original DNN executables will be printed on screen (see example in **Decompilation Correctness** below). Corresponding decompilation outputs will be stored in `evaluation/<model>_<compiler>_<version>_<opt level>`. 
 
 -------
 #### Decompilation Output Interpretation
@@ -128,7 +145,7 @@ Example (vgg16 TVM v0.8 O0):
 #### Decompilation Correctness
 ![example-input-img](cat.png)
 
-After decompilation, the DNN model is rebuild with decompiled model structure and extracted parameters (stored in .json format). [decompile_eval.sh](decompile_eval.sh) will run each rebuilt model (implemented in pytorch) and the original DNN executable with the above example image in binary format as input. The output would be like this:
+After decompilation, the DNN model is rebuild with decompiled model structure and extracted parameters (stored in .json format). [decompile_eval.sh](decompile_eval.sh) will run each rebuilt model (implemented in pytorch) and the original DNN executable with the above example image in [binary format](cat.bin) as input. The output would be like this:
 ```
  - vgg16_tvm_v09_O3
  - Rebuilt model output:
