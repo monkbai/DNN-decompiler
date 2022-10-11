@@ -15,4 +15,4 @@ python3 python3 main.py --training 0 --exp_name TVM_v0.8_O3 --setting TVM_v0.8_O
 python3 python3 main.py --training 0 --exp_name TVM_v0.9.dev_O0 --setting TVM_v0.9.dev_O0 --compiler TVM
 python3 python3 main.py --training 0 --exp_name TVM_v0.9.dev_O3 --setting TVM_v0.9.dev_O3 --compiler TVM
 
-echo "Inference results are written in ./output/<compiler_option/text/test_*.txt>"
+echo "Inference results are written in $CUR_DIR/operator_inference/output/<compiler_option/text/test_*.txt>"
