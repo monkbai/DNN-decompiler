@@ -17,9 +17,9 @@ def clean_output():
                 #print os.path.join(subdir, file)
                 filepath = os.path.join(subdir, file)
                 print("rm {}".format(filepath))
-                # status, output = subprocess.getstatusoutput("rm {}".format(filepath))
-                # if status:
-                #     print(output)
+                status, output = subprocess.getstatusoutput("rm {}".format(filepath))
+                if status:
+                    print(output)
             else:
                 pass
 
