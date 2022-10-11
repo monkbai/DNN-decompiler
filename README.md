@@ -69,6 +69,8 @@ python3 pin_tools.py
 
 Download and unzip the data ([BTD-data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0)) used for artifact evaluation, update the data directory `DATA_DIR` in [decompile_eval.sh](https://github.com/monkbai/DNN-decompiler/blob/master/decompile_eval.sh).
 
+Download [data.zip](https://www.dropbox.com/s/prg0vmei2x781wy/data.zip?dl=0) and [output.zip](https://www.dropbox.com/s/e8rgxp2u3f01omn/output.zip?dl=0) and unzip them into the `operator_inference/data` and `operator_inference/output` directories, respectively.
+
 ### 2. Operator Inference
 
 The code structure and docs of operator inference is provided in [operator_inference/README](operator_inference/README.md).
@@ -208,7 +210,7 @@ If you are interested in the interfaces of BTD, you can take a look at the decom
 
 ## Data
 
-TODO: update links
+We provide all dataset used in our paper.
 
  - Labeled Dataset for Operator Inference (containing compiled DNN executables and disassembly output): https://www.dropbox.com/s/a1mxqwqn4tytmgz/labeled_dataset_2022.zip?dl=0 <!---https://www.dropbox.com/s/lgkp2xfmyn7kwv4/labeled_dataset.zip?dl=0-->
     * data.zip: https://www.dropbox.com/s/prg0vmei2x781wy/data.zip?dl=0
