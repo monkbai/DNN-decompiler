@@ -108,12 +108,12 @@ class DataLoader(object):
         self.init_param()
 
     def init_param(self):
-        return  # self.gpus = torch.cuda.device_count()
+        self.gpus = torch.cuda.device_count()
 
     def get_loader(self, dataset, shuffle=True):
         data_loader = torch.utils.data.DataLoader(
                             dataset,
-                            batch_size=self.args.batch_size,  # * self.gpus,
+                            batch_size=self.args.batch_size * self.gpus,
                             num_workers=int(self.args.num_workers),
                             shuffle=shuffle
                         )
