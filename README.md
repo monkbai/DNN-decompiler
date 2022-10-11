@@ -35,30 +35,40 @@ We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-26
 
 ## Artifact Evaluation
 
-### 0. Prepare
+### 0. Import Docker Image
 
-If you are using the provided docker image, you can skip this **Prepare** section and move to **1. Operator Inference**.
+Download the packed docker image, then run the command below to unpack the .tar file into a docker image. (You can choose a image name that would not conflict with existing names).
+```sh
+cat BTD-artifact.tar | docker import - <image_name>
+```
+
+
+
+### 1. Prepare
+
+If you are using the provided docker image, you can skip this **Prepare** section and move to **Operator Inference**.
 
 Download and unzip Intel pin 3.14, then update the pin home directory (`pin_home`) in [config.py](https://github.com/monkbai/DNN-decompiler/blob/master/config.py#L3).
 
-```
+```sh
 git clone https://github.com/monkbai/DNN-decompiler.git
 mkdir <path_to_pin_home>/source/tools/MyPinTool/obj-intel64
 cd DNN-decompiler
-python3 pin_tool.py
+python3 pin_tools.py
 ```
-[pin_tool.py](https://github.com/monkbai/DNN-decompiler/blob/master/pin_tools.py#L101) will copy and compile all pin tools listed in [MyPinTool/](https://github.com/monkbai/DNN-decompiler/tree/master/MyPinTool).
+[pin_tools.py](https://github.com/monkbai/DNN-decompiler/blob/master/pin_tools.py#L101) will copy and compile all pin tools listed in [MyPinTool/](https://github.com/monkbai/DNN-decompiler/tree/master/MyPinTool).
 
 Download and unzip the data ([BTD-data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0)) used for artifact evaluation, update the data directory `DATA_DIR` in [decompile_eval.sh](https://github.com/monkbai/DNN-decompiler/blob/master/decompile_eval.sh).
 
-### 1. Operator Inference
+### 2. Operator Inference
 
 TODO
 
-### 2. Decompilation & Rebuild
+### 3. Decompilation & Rebuild
 
 ```sh
 cd DNN-decompiler
+git pull
 ./decompile_eval.sh
 ```
 The `./decompile_eval.sh` will decompile and rebuild all 63 DNN executables. It takes roughly 24 hours to finish all experiments. The output of rebuilt models and original DNN executables will be printed on screen (see example in **Decompilation Correctness** below). Corresponding decompilation outputs will be stored in `evaluation/<model>_<compiler>_<version>_<opt level>`. 
