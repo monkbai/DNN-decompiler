@@ -37,12 +37,20 @@ We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-26
 
 ### 0. Import Docker Image
 
-Download the packed docker image, then run the command below to unpack the .tar file into a docker image. (You can choose a image name that would not conflict with existing names).
+Download the packed [docker image](TODO), then run the command below to unpack the .tar file into a docker image. This may take a while. (You can replace `btd-artifact` with any image name that would not conflict with existing names).
 ```sh
-cat BTD-artifact.tar | docker import - <image_name>
+cat BTD-artifact.tar | docker import - btd-artifact
 ```
-
-
+Create a container named `BTD-AE` with the docker image:
+```sh
+docker run -dit --name BTD-AE btd-artifact /bin/bash
+```
+Open a bash in the container:
+```sh
+docker exec -it BTD-AE /bin/bash
+cd /home
+```
+You can then run the evaluation commands (listed in **Operator Inference** and **Decompilation & Rebuild** below) within this bash. 
 
 ### 1. Prepare
 
@@ -54,6 +62,7 @@ Download and unzip Intel pin 3.14, then update the pin home directory (`pin_home
 git clone https://github.com/monkbai/DNN-decompiler.git
 mkdir <path_to_pin_home>/source/tools/MyPinTool/obj-intel64
 cd DNN-decompiler
+git pull
 python3 pin_tools.py
 ```
 [pin_tools.py](https://github.com/monkbai/DNN-decompiler/blob/master/pin_tools.py#L101) will copy and compile all pin tools listed in [MyPinTool/](https://github.com/monkbai/DNN-decompiler/tree/master/MyPinTool).
