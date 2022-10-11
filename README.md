@@ -8,7 +8,8 @@ Paper: [coming soon](README.md)
 
 Extended version (25 pages): [https://arxiv.org/abs/2210.01075](https://arxiv.org/abs/2210.01075)
 
-TODO: We will release and update all code and data in a few days and a usable [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) will be available for artifact evaluation at that time. Please check this repo later.
+This repo constains all code and data used in the evaluation of BTD, we also provide a [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) to ease the AE process.
+<!---TODO: We will release and update all code and data in a few days and a usable [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) will be available for artifact evaluation at that time. Please check this repo later.-->
 
 ## Prerequisites
 ```
@@ -57,7 +58,7 @@ Open a bash in the container:
 docker exec -it BTD-AE /bin/bash
 cd /home
 ```
-You can then run the evaluation commands (listed in **Operator Inference** and **Decompilation & Rebuild** below) within this bash. 
+You can then run the evaluation commands (listed in **Operator Inference** and **Decompilation & Rebuild** below) within this bash. We *strongly recommend* reviewers use the provided [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) for artifact evaluation to avoid errors that may be caused by environments.
 
 ### 1. Prepare
 
