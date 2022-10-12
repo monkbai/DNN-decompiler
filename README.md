@@ -39,7 +39,7 @@ We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-26
 
 ![dataset-statistics](Statistics.png)
 
-Our evaluation covers above 7 models compiled with 9 different compiler options, including `Glow-2020`, `Glow-2021`, `Glow-2022`, `TVM-v0.7 (O0 and O3)`, `TVM-v0.8 (O0 and O3)`, `TVM-v0.9.dev (O0 and O3)`, in total 63 DNN excutables. NNFusion-emitted executables are *easier* to decompile since they contain wrapper functions to invoke target operator implementations in kernel libraries (see our paper for more detailed discussion). Thus, in this evaluation we only focuses on decompiling executables compiled by TVM and Glow.
+Our evaluation covers above 7 models compiled with 9 different compiler options, including `Glow-2020`, `Glow-2021`, `Glow-2022`, `TVM-v0.7 (O0 and O3)`, `TVM-v0.8 (O0 and O3)`, `TVM-v0.9.dev (O0 and O3)`, in total 63 DNN excutables. NNFusion-emitted executables are *easier* to decompile since they contain wrapper functions to invoke target operator implementations in kernel libraries (see our paper for more detailed discussion). Thus, in this evaluation we only focus on decompiling executables compiled by TVM and Glow.
 
 ## Artifact Evaluation
 
