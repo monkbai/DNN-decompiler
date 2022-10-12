@@ -204,6 +204,7 @@ if __name__ == '__main__':
             meta_data[6] = 1
             meta_data[5] = meta_data[4] = None
             meta_data[3] = 'add'
+            new_meta_data.append(meta_data)  # biases of dense
         else:
             new_meta_data.append(meta_data)
 
