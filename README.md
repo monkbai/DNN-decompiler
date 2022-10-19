@@ -220,7 +220,9 @@ If you are interested in the interfaces of BTD, you can take a look at the decom
 
 ## Data
 
-We provide all dataset used in our paper.
+Our dataset is available at [https://doi.org/10.5281/zenodo.7219867](https://doi.org/10.5281/zenodo.7219867).
+
+We also provided all datasets via Dropbox for better download speed. 
 
  - Docker Image for Artifact Evaluation: https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0
 
