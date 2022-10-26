@@ -107,7 +107,7 @@ if __name__ == '__main__':
 
     # Glow
     func_count = asm_count = 0
-    func_count, asm_count = scan(os.path.join(data_dir, "vgg16_glow/vgg16_glow_ida"), func_count, asm_count)
+    func_count, asm_count = scan(os.path.join(data_dir, "Glow-2020/vgg16_glow/vgg16_glow_ida"), func_count, asm_count)
     func_count, asm_count = scan(os.path.join(data_dir, "Glow-2021/vgg16_glow/vgg16_funcs"), func_count, asm_count)
     func_count, asm_count = scan(os.path.join(data_dir, "Glow-2022/vgg16_glow/vgg16_funcs"), func_count, asm_count)
     print("Glow VGG16:\nAvg. #Func {}, Avg. #Asm Inst {}\n".format(func_count/3, asm_count/3))
