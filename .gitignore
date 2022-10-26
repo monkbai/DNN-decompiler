@@ -1,7 +1,7 @@
 *.txt
 *.log
 __pycache__/
-*.json
+.DS_Store
 *.asm
 *.lst
 *.bin
