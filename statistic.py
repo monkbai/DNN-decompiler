@@ -17,7 +17,7 @@ def scan(funcs_dir: str, f_count=0.0, a_count=0.0):
 
 
 if __name__ == '__main__':
-    data_dir = "/export/d1/zliudc/DLE_Decompiler/TVM/rebuild_ida/"
+    data_dir = "/home/BTD-data/"
 
     # TVM -O0
     func_count = asm_count = 0
