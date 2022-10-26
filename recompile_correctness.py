@@ -426,7 +426,7 @@ if __name__ == '__main__':
 
     print("Glow 2022 Resnet18")
     o1 = run_rebuilt_model(os.path.join(home_dir, "evaluation/resnet18_glow_2022/resnet18_glow_rebuild.py"))
-    o2 = run_original_model(os.path.join(data_dir, "Glow-2022/resnet18_glow/resnet18_v1_7_strip.out"))
+    o2 = run_original_model(os.path.join(data_dir, "Glow-2022/resnet18_glow/resnet18_strip.out"))
     print("Pass") if compare_glow(o1, o2) else print("Failed")
 
     print("Glow 2022 Vgg16")
