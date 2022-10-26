@@ -281,4 +281,4 @@ inference accuracy of all settings (different models/compilers/optimizations/ver
 
 In `acc.txt`, since we have manually fixed the "Add vs. BiasAdd" issue discussed in **Operators with Similar Assembly Code** of Section 7.1.1, in some cases, the accuracy may be higher (i.e., better results) than results reported in Table 3.
 
-In `log.txt`, the incorrect inference results are induced by the **Data Bias** issue we discussed in Section 7.1.1: there is one missing/extra ReLU due to bias in real data. This can be easily fixed by post-checking if symbolic constraints cotain "max" (please refer to Section 7.1.1).
+In `log.txt`, the incorrect inference results of TVM O3 are induced by the **Data Bias** issue we discussed in Section 7.1.1: there is one missing/extra ReLU due to bias in real data. This can be easily fixed by post-checking if symbolic constraints cotain "max" (please refer to Section 7.1.1).
