@@ -51,11 +51,11 @@ if __name__ == '__main__':
     print("Dimension accuracy: {}%".format((1-4/(dim_num))*100))
     print("Parameter accuracy: {}%".format((1-error_param/param_num)*100))
 
-    # print("TVM v0.8 O0 Resnet18")
-    # param_num, dim_num = traverse("./evaluation/resnet18_tvm_v08_O0/")
-    # error_param, error_dim = param_count("./evaluation/resnet18_tvm_v08_O0/0166.weights_0.json")
-    # print("Dimension accuracy: {}%".format((1-4/(dim_num))*100))
-    # print("Parameter accuracy: {}%".format((1-error_param/param_num)*100))
+    print("TVM v0.8 O0 Resnet18")
+    param_num, dim_num = traverse("./evaluation/resnet18_tvm_v08_O0/")
+    error_param, error_dim = param_count("./evaluation/resnet18_tvm_v08_O0/0166.weights_0.json")
+    print("Dimension accuracy: {}%".format((1-4/(dim_num))*100))
+    print("Parameter accuracy: {}%".format((1-error_param/param_num)*100))
 
     print("TVM v0.9.dev O0 Resnet18")
     param_num, dim_num = traverse("./evaluation/resnet18_tvm_v09_O0/")
@@ -68,10 +68,10 @@ if __name__ == '__main__':
     error_param, error_dim = param_count("./evaluation/resnet18_tvm_v07_O3/0038.weights_0.json")
     print("Parameter accuracy: {}%".format((1-error_param/param_num)*100))
 
-    # print("TVM v0.8 O3 Resnet18")
-    # param_num, dim_num = traverse("./evaluation/resnet18_tvm_v08_O3/")
-    # error_param, error_dim = param_count("./evaluation/resnet18_tvm_v08_O3/0101.weights_0.json")
-    # print("Parameter accuracy: {}%".format((1-error_param/param_num)*100))
+    print("TVM v0.8 O3 Resnet18")
+    param_num, dim_num = traverse("./evaluation/resnet18_tvm_v08_O3/")
+    error_param, error_dim = param_count("./evaluation/resnet18_tvm_v08_O3/0101.weights_0.json")
+    print("Parameter accuracy: {}%".format((1-error_param/param_num)*100))
 
     print("TVM v0.9.dev O3 Resnet18")
     param_num, dim_num = traverse("./evaluation/resnet18_tvm_v09_O3/")
