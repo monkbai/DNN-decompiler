@@ -57,11 +57,7 @@ class Engine(object):
 
     def load_model(self, path):
         print('Loading Model from %s ...' % (path))
-        ckpt = torch.load(path, map_location='cpu')
-        '''
-        Note: `map_location='cpu'` works for both
-        CPU and GPU computations. 
-        '''
+        ckpt = torch.load(path)
         self.model.load_state_dict(ckpt['model'])
 
     def zero_grad(self):
@@ -155,6 +151,23 @@ class Engine(object):
             print('Recons Loss: %f' % (record.mean()))
             print('Acc: %f' % (record_acc.mean()))
             print('Inference results are written in %s' % path)
+
+    def id_to_text(self, scores):
+        result_list = []
+        for i in range(len(scores)):
+            score = scores[i]
+            result = []
+            for j in range(len(score)):
+                if score[j] > 0.5:
+                    result.append(self.label_list[j])
+            result_list.append(result)
+        return result_list
+
+    def inference(self, indexes):
+        self.set_eval()
+        indexes = indexes.to(self.device)
+        scores = self.model(indexes)
+        return self.id_to_text(scores.data)
 
 if __name__ == '__main__':
     pass

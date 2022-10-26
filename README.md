@@ -255,3 +255,30 @@ https://www.dropbox.com/s/i8ub0kihusy1evk/cpu_recompile.zip?dl=0
 The second package includes legacy code migration demo. As clarified in Section 7 (the Discussion section; Downstream Applications paragraph), we decompiled x86 DNN executables, and try to migrate the decompiled models to GPUs by compiling them again using TVM with cuda as target device.  
 https://www.dropbox.com/s/01zu0oyh00e57pw/gpu_recompile.zip?dl=0
 -->
+
+## Artifact Evaluation
+
+### Operator Inference (Table 3)
+
+#### Updates: 
+
+- `operator_inference/engine.py`: we added two functions for generating the inference results.
+
+- `AE/`: we added scripts in this folder for replicating results in Table 3.
+
+#### How to Execute
+
+1. `cd operator_inference`
+
+2. `cp AE/* ./`
+
+3. `python run_accuracy.py`
+
+`acc.txt` and `log.txt` are generated after executing the above commands. `acc.txt` records the
+inference accuracy of all settings (different models/compilers/optimizations/versions). `log.txt` logs the incorrect inference results.
+
+#### Expected Results
+
+In `acc.txt`, since we have manually fixed the "Add vs. BiasAdd" issue discussed in **Operators with Similar Assembly Code** of Section 7.1.1, in some cases, the accuracy may be higher (i.e., better results) than results reported in Table 3.
+
+In `log.txt`, the incorrect inference results are induced by the **Data Bias** issue we discussed in Section 7.1.1: there is one missing/extra ReLU due to bias in real data. This can be easily fixed by post-checking if symbolic constraints cotain "max" (please refer to Section 7.1.1).
