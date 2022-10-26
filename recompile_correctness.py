@@ -295,7 +295,7 @@ if __name__ == '__main__':
     # TVM v0.9.dev O3
     print("TVM v0.9.dev O3 Efficientnet")
     o1 = run_rebuilt_model(os.path.join(home_dir, "evaluation/efficient_tvm_v09_O3/efficientnet_tvm_O3_rebuild.py"))
-    o2 = run_original_model(os.path.join(data_dir, "TVM-v0.9.dev/efficientnet_tvm_O3/efficientnet_lite4_tvm_O3_strip"), os.path.join(home_dir, "cat_transpose.bin"))
+    o2 = run_original_model(os.path.join(data_dir, "TVM-v0.9.dev/efficientnet_tvm_v09_O3/efficientnet_lite4_tvm_O3_strip"), os.path.join(home_dir, "cat_transpose.bin"))
     print("Pass") if compare_tvm(o1, o2) else print("Failed")
 
     print("TVM v0.9.dev O3 Inception")
@@ -305,12 +305,12 @@ if __name__ == '__main__':
 
     print("TVM v0.9.dev O3 Mobilenet")
     o1 = run_rebuilt_model(os.path.join(home_dir, "evaluation/mobilenet_tvm_v09_O3/mobilenet_tvm_O3_rebuild.py"))
-    o2 = run_original_model(os.path.join(data_dir, "TVM-v0.9.dev/mobilenetv2_tvm_O3/mobilenetv2_7_tvm_O3_strip"))
+    o2 = run_original_model(os.path.join(data_dir, "TVM-v0.9.dev/mobilenetv2_tvm_v09_O3/mobilenetv2_7_tvm_O3_strip"))
     print("Pass") if compare_tvm(o1, o2) else print("Failed")
 
     print("TVM v0.9.dev O3 Shufflenet")
     o1 = run_rebuilt_model(os.path.join(home_dir, "evaluation/shufflenet_tvm_v09_O3/shufflenet_tvm_O3_rebuild.py"))
-    o2 = run_original_model(os.path.join(data_dir, "TVM-v0.9.dev/shufflenetv2_tvm_O3/shufflenetv2_tvm_O3_strip"))
+    o2 = run_original_model(os.path.join(data_dir, "TVM-v0.9.dev/shufflenetv2_tvm_v09_O3/shufflenetv2_tvm_O3_strip"))
     print("Pass") if compare_tvm(o1, o2) else print("Failed")
 
     print("TVM v0.9.dev O3 Resnet18")
