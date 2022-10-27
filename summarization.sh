@@ -3,12 +3,12 @@ CUR_DIR=$PWD
 DATA_DIR=/home/BTD-data
 
 echo "\n======= Table 2 ======="
-python3 ./statistics.py 
+python3 ./statistic.py 
 
 echo "\n======= Table 3 ======="
 cd ./operator_inference
 cp AE/* ./
-python3 ./statistics.py 
+python3 ./run_accuracy.py 
 cat ./acc.txt
 cd ..
 
