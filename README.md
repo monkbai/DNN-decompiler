@@ -191,6 +191,20 @@ destroy)
 ```
 In the above exmaple, both rebuilt model and DNN executable output result as **`282`** (see [1000 classes of ImageNet](https://github.com/onnx/models/blob/main/vision/classification/synset.txt)), and the confidence scores are `9.341153` and `9.341150` respectively. While the confidence scores (or max values) are slightly inconsistent, we interpret that such inconsistency is caused by the floating-point precision loss between pytorch model and DNN executable, i.e., the decompilation is still *correct*.
 
+### 4. Results Summarization
+Update: We uploaded scripts to summarize the results of the above experiments.
+```sh
+git pull
+./summarization.sh
+```
+`summarization.sh` will invoke scripts including:
+ - `statistic.py`, which collects statistics of DNN executables evaluated in our study (Table 2).
+ - `operator/run_accuracy.py`, which calculates the average accuracy of operator inference (Table 3). Note that since we have manually fixed the "Add vs. BiasAdd" issue discussed in **Operators with Similar Assembly Code** of Section 7.1.1, in some cases, the accuracy may be higher (i.e., better results) than results reported in Table 3.
+ - `parameter_accuracy.py`, which calculates the dimension inference accuracy/parameter inference accuracy of `TVM Resnet18` (Table 4). Note that accuracies for all other models are 100%, as we discussed in Sec 7.1.3. Thus, this script only reproduces results for Resnet18.
+ - `recompile_correctness.py`, which evaluates the correctness of recompilation (Table 5). `Pass` means the model is 100% correctly rebuilt. Note that we manually fix errors in `TVM Resnet18` as discussed in Sec 7.1.4 to confirm our claim that "all remaining operators in ResNet18 are correctly decompiled". Therefore, we expect to get 63/63 passes by running this script.
+
+When the `summarization.sh` script finishes running, all results reported in Table 2-5 should be printed to the screen.
+
 ## Code Structure
 
 ```
