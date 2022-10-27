@@ -69,3 +69,30 @@ run `python main.py --training 0` and set `--exp_name` as one of the choices fro
 
 For example, if you want to infer DNN operators for an executable compiled using TVM ver. 0.7 and O0 optimization, you can run `python main.py --training 0 --exp_name TVM_v0.7_O0 --setting TVM_v0.7_O0 --compiler TVM`. Similarly, for executables compiled using GLOW ver. 2020, you can
 run `python main.py --training 0 --exp_name GLOW_2020 --setting GLOW_2020 --compiler GLOW`.
+
+## Artifact Evaluation
+
+### Operator Inference (Table 3)
+
+#### Updates: 
+
+- `operator_inference/engine.py`: we added two functions for generating the inference results.
+
+- `AE/`: we added scripts in this folder for replicating results in Table 3.
+
+#### How to Execute
+
+1. `cd operator_inference`
+
+2. `cp AE/* ./`
+
+3. `python run_accuracy.py`
+
+`acc.txt` and `log.txt` are generated after executing the above commands. `acc.txt` records the
+inference accuracy of all settings (different models/compilers/optimizations/versions). `log.txt` logs the incorrect inference results.
+
+#### Expected Results
+
+In `acc.txt`, since we have manually fixed the "Add vs. BiasAdd" issue discussed in **Operators with Similar Assembly Code** of Section 7.1.1, in some cases, the accuracy may be higher (i.e., better results) than results reported in Table 3.
+
+In `log.txt`, the incorrect inference results of TVM O3 are induced by the **Data Bias** issue we discussed in Section 7.1.1: there is one missing/extra ReLU due to bias in real data. This can be easily fixed by post-checking if symbolic constraints cotain "max" (please refer to Section 7.1.1).
