@@ -2,6 +2,7 @@
 *.log
 __pycache__/
 .DS_Store
+*.json
 *.asm
 *.lst
 *.bin
