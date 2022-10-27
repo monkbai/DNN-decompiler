@@ -20,5 +20,5 @@ python3 ./parameter_accuracy.py
 
 echo ""
 echo "======= Table 5 ======="
-ccho "<Pass> means the model is 100% correctly rebuilt."
+echo "<Pass> means the model is 100% correctly rebuilt."
 python3 ./recompile_correctness.py
