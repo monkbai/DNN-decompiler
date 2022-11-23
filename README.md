@@ -4,7 +4,7 @@ Research Artifact for our **USENIX Security 2023** paper: "Decompiling x86 Deep 
 
 BTD is the **first** deep neural network (DNN) executables decompiler. BTD takes DNN executables (running on x86 CPUs) compiled by DNN compilers (e.g., [TVM](https://tvm.apache.org/), [Glow](https://github.com/pytorch/glow), and [NNFusion](https://github.com/microsoft/nnfusion)) and outputs full model specifications, including types of DNN operators, network topology, dimensions, and parameters that are (nearly) identical to those of the input models. BTD is evaluated to be robust against complex compiler optimizations, such as operator fusion and memory layout optimization. More details are reported in our paper published at USENIX Security 2023.
 
-Paper: [coming soon](README.md)
+Paper: [coming soon](https://github.com/monkbai/DNN-decompiler/blob/master/sec23-btd-badges.pdf)
 
 Extended version (25 pages): [https://arxiv.org/abs/2210.01075](https://arxiv.org/abs/2210.01075)
 
