@@ -198,9 +198,9 @@ git pull
 ./summarization.sh
 ```
 `summarization.sh` will invoke scripts including:
- - `statistic.py`, which collects statistics of DNN executables evaluated in our study (Table 2).
+ - `statistic.py`, which collects statistics of DNN executables evaluated in our study (Table 2). Note that the statistics may *slightly deviate* from the numbers in Table 2 depending on the building environment, but this should not affect our claims in the paper.
  - `operator/run_accuracy.py`, which calculates the average accuracy of operator inference (Table 3). Note that since we have manually fixed the "Add vs. BiasAdd" issue discussed in **Operators with Similar Assembly Code** of Section 7.1.1, in some cases, the accuracy may be higher (i.e., better results) than results reported in Table 3.
- - `parameter_accuracy.py`, which calculates the dimension inference accuracy/parameter inference accuracy of `TVM Resnet18` (Table 4). Note that accuracies for all other models are 100%, as we discussed in Sec 7.1.3. Thus, this script only reproduces results for Resnet18.
+ - `parameter_accuracy.py`, which calculates the dimension inference accuracy/parameter inference accuracy of `TVM Resnet18` (Table 4). Note that it is difficult to compare the recovered dimensions/parameters with the reference due to compiler optimizations (e.g., operator fusion)， i.e., the ground truth of optimized models is not available, as discussed in Sec 7.1.3. Hence, #failures in Table 4 equals #dimensions or #parameters that need to be fixed before the recovered models can be compiled into executables showing identical behavior with the references. This script only reproduces results for Resnet18 (accuracies for all other models are 100%, and therefore no need to be included in this script; see results in Sec 7.1.4).
  - `recompile_correctness.py`, which evaluates the correctness of recompilation (Table 5). `Pass` means the model is 100% correctly rebuilt. Note that we manually fix errors in `TVM Resnet18` as discussed in Sec 7.1.4 to confirm our claim that "all remaining operators in ResNet18 are correctly decompiled". Therefore, we expect to get 63/63 passes by running this script.
 
 When the `summarization.sh` script finishes running, all results reported in Table 2-5 should be printed to the screen.
