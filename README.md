@@ -13,6 +13,9 @@ Extended version (25 pages): [https://arxiv.org/abs/2210.01075](https://arxiv.or
 This repo contains all code and data used in the evaluation of BTD, we also provide a [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) to ease the AE process.
 <!---TODO: We will release and update all code and data in a few days and a usable [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) will be available for artifact evaluation at that time. Please check this repo later.-->
 
+### News: 
+This artifact is evaluated and awarded with badges: **Available**, **Functional**, **Reproduced**.
+
 ## Prerequisites
 ```
 ubuntu 18.04
