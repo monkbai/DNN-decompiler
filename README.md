@@ -10,7 +10,8 @@ Extended version (25 pages): [https://arxiv.org/abs/2210.01075](https://arxiv.or
 
 **Artifact Appendix in USENIX format**: [artifact-appendix.pdf](https://github.com/monkbai/DNN-decompiler/blob/master/artifact-appendix-badges.pdf)
 
-This repo contains all code and data used in the evaluation of BTD, we also provide a [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) to ease the AE process.
+This repo contains all code and data used in the evaluation of BTD, we also provide a Docker image to ease the AE process.
+<!--- [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) to ease the AE process. --》
 <!---TODO: We will release and update all code and data in a few days and a usable [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) will be available for artifact evaluation at that time. Please check this repo later.-->
 
 ### News: 
@@ -37,7 +38,8 @@ You can download pin 3.14 from [here](https://www.intel.com/content/www/us/en/de
 BTD relies on IDA Pro (version 7.5) for disassembly, and because IDA is commercial software, we do not provide it in this repo; instead, in order to reduce the workload of AE reviewers, we provide the disassembly results directly as input for BTD. The scripts used to disassemble DNN executable into assembly functions with IDA are presented in [ida/](https://github.com/monkbai/DNN-decompiler/tree/master/ida). IDA Pro is not indispensable; any other full-fledged disassembly tool can be used to replace IDA, but we do not provide the relevant code here.
 
 #### Hardware
-We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-2683, 256GB RAM, and an Nvidia GeForce RTX 2080 GPU. Logging and filtering all traces for all DNN executables in the evaluation takes more than a **week** (sorry, we currently only provide a single-thread version) and consumes nearly **1TB** disk storage. To ease the AE committee to review, we omit the trace logging process and provide the filtered traces in the [docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) and [evaluation data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0). The trace logger and filter are provided in [MyPinTool/](MyPinTool) and the [trace_filter.py](trace_filter.py) script. Without logging and filtering, the whole evaluation takes roughly **one** day and requires less than **120GB** of disk space. Besides, the symbolic execution may consume a lot of memory resources, so please make sure that the machine on which the experiment is run has sufficient memory.
+We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-2683, 256GB RAM, and an Nvidia GeForce RTX 2080 GPU. Logging and filtering all traces for all DNN executables in the evaluation takes more than a **week** (sorry, we currently only provide a single-thread version) and consumes nearly **1TB** disk storage. To ease the AE committee to review, we omit the trace logging process and provide the filtered traces in the docker image and evaluation data. The trace logger and filter are provided in [MyPinTool/](MyPinTool) and the [trace_filter.py](trace_filter.py) script. Without logging and filtering, the whole evaluation takes roughly **one** day and requires less than **120GB** of disk space. Besides, the symbolic execution may consume a lot of memory resources, so please make sure that the machine on which the experiment is run has sufficient memory.
+<!--- [docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) and [evaluation data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0) -->
 
 #### Dataset
 <img src="Compiler.png" alt="compilers" width="555"/>
@@ -50,7 +52,7 @@ Our evaluation covers above 7 models compiled with 9 different compiler options,
 
 ### 0. Import Docker Image
 
-Download the packed [docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0), then run the command below to unpack the .tar file into a docker image. This may take a while. (You can replace `btd-artifact` with any image name that would not conflict with existing names).
+Download the packed docker image, then run the command below to unpack the .tar file into a docker image. This may take a while. (You can replace `btd-artifact` with any image name that would not conflict with existing names).
 ```sh
 cat BTD-artifact.tar | docker import - btd-artifact
 ```
@@ -63,7 +65,7 @@ Open a bash in the container:
 docker exec -it BTD-AE /bin/bash
 cd /home
 ```
-You can then run the evaluation commands (listed in **Operator Inference** and **Decompilation & Rebuild** below) within this bash. We *strongly recommend* reviewers use the provided [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) for artifact evaluation to avoid errors that may be caused by environments.
+You can then run the evaluation commands (listed in **Operator Inference** and **Decompilation & Rebuild** below) within this bash. We *strongly recommend* reviewers use the provided Docker image for artifact evaluation to avoid errors that may be caused by environments.
 
 ### 1. Prepare
 
@@ -239,11 +241,12 @@ If you are interested in the interfaces of BTD, you can take a look at the decom
 
 Our dataset is available at [https://doi.org/10.5281/zenodo.7219867](https://doi.org/10.5281/zenodo.7219867).
 
+<!---
 We also provided all datasets via Dropbox for better download speed. 
 
  - Docker Image for Artifact Evaluation: https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0
 
- - Labeled Dataset for Operator Inference (containing compiled DNN executables and disassembly output): https://www.dropbox.com/s/a1mxqwqn4tytmgz/labeled_dataset_2022.zip?dl=0 <!---https://www.dropbox.com/s/lgkp2xfmyn7kwv4/labeled_dataset.zip?dl=0-->
+ - Labeled Dataset for Operator Inference (containing compiled DNN executables and disassembly output): https://www.dropbox.com/s/a1mxqwqn4tytmgz/labeled_dataset_2022.zip?dl=0 
     * data.zip: https://www.dropbox.com/s/prg0vmei2x781wy/data.zip?dl=0
     * output.zip: https://www.dropbox.com/s/e8rgxp2u3f01omn/output.zip?dl=0
 
@@ -263,7 +266,6 @@ https://www.dropbox.com/s/9y0k71dbowixs8w/embedding_input.zip?dl=0
  - White-box Attack Results
 https://www.dropbox.com/s/9fuxmfuaroqtvjm/whitebox_steal.zip?dl=0
 
-<!---
 Recompilation
 
 The first package includes recompiled new DNN executables on x86 platforms. This is in accordance with our recompilation evaluation in Section 6.5.  
