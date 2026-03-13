@@ -2,7 +2,7 @@
 
 Research Artifact for our **USENIX Security 2023** paper: "Decompiling x86 Deep Neural Network Executables"
 
-BTD is the **first** deep neural network (DNN) executables decompiler. BTD takes DNN executables (running on x86 CPUs) compiled by DNN compilers (e.g., [TVM](https://tvm.apache.org/), [Glow](https://github.com/pytorch/glow), and [NNFusion](https://github.com/microsoft/nnfusion)) and outputs full model specifications, including types of DNN operators, network topology, dimensions, and parameters that are (nearly) identical to those of the input models. BTD is evaluated to be robust against complex compiler optimizations, such as operator fusion and memory layout optimization. More details are reported in our paper published at USENIX Security 2023.
+BTD is the **first** deep neural network (DNN) executable decompiler. BTD takes DNN executables (running on x86 CPUs) compiled by DNN compilers (e.g., [TVM](https://tvm.apache.org/), [Glow](https://github.com/pytorch/glow), and [NNFusion](https://github.com/microsoft/nnfusion)) and outputs full model specifications, including types of DNN operators, network topology, dimensions, and parameters that are (nearly) identical to those of the input models. BTD is evaluated to be robust against complex compiler optimizations, such as operator fusion and memory layout optimization. More details are reported in our paper published at USENIX Security 2023.
 
 Paper: [coming soon](https://github.com/monkbai/DNN-decompiler/blob/master/sec23-btd-badges.pdf)
 
@@ -10,7 +10,7 @@ Extended version (25 pages): [https://arxiv.org/abs/2210.01075](https://arxiv.or
 
 **Artifact Appendix in USENIX format**: [artifact-appendix.pdf](https://github.com/monkbai/DNN-decompiler/blob/master/artifact-appendix-badges.pdf)
 
-This repo contains all code and data used in the evaluation of BTD, we also provide a Docker image to ease the AE process.
+This repo contains all code and data used in the evaluation of BTD. We also provide a [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) to ease the AE process.
 <!--- [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) to ease the AE process. --》
 <!---TODO: We will release and update all code and data in a few days and a usable [Docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) will be available for artifact evaluation at that time. Please check this repo later.-->
 
@@ -38,7 +38,7 @@ You can download pin 3.14 from [here](https://www.intel.com/content/www/us/en/de
 BTD relies on IDA Pro (version 7.5) for disassembly, and because IDA is commercial software, we do not provide it in this repo; instead, in order to reduce the workload of AE reviewers, we provide the disassembly results directly as input for BTD. The scripts used to disassemble DNN executable into assembly functions with IDA are presented in [ida/](https://github.com/monkbai/DNN-decompiler/tree/master/ida). IDA Pro is not indispensable; any other full-fledged disassembly tool can be used to replace IDA, but we do not provide the relevant code here.
 
 #### Hardware
-We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-2683, 256GB RAM, and an Nvidia GeForce RTX 2080 GPU. Logging and filtering all traces for all DNN executables in the evaluation takes more than a **week** (sorry, we currently only provide a single-thread version) and consumes nearly **1TB** disk storage. To ease the AE committee to review, we omit the trace logging process and provide the filtered traces in the docker image and evaluation data. The trace logger and filter are provided in [MyPinTool/](MyPinTool) and the [trace_filter.py](trace_filter.py) script. Without logging and filtering, the whole evaluation takes roughly **one** day and requires less than **120GB** of disk space. Besides, the symbolic execution may consume a lot of memory resources, so please make sure that the machine on which the experiment is run has sufficient memory.
+We ran our evaluation experiments on a server equipped with Intel Xeon CPU E5-2683, 256GB RAM, and an Nvidia GeForce RTX 2080 GPU. Logging and filtering all traces for all DNN executables in the evaluation takes more than a **week** (sorry, we currently only provide a single-thread version) and consumes nearly **1TB** disk storage. To ease the AE committee to review, we omit the trace logging process and provide the filtered traces in the [docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) and [evaluation data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0). The trace logger and filter are provided in [MyPinTool/](MyPinTool) and the [trace_filter.py](trace_filter.py) script. Without logging and filtering, the whole evaluation takes roughly **one** day and requires less than **120GB** of disk space. Besides, the symbolic execution may consume a lot of memory resources, so please make sure that the machine on which the experiment is run has sufficient memory.
 <!--- [docker image](https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0) and [evaluation data](https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0) -->
 
 #### Dataset
@@ -183,18 +183,18 @@ Example (vgg16 TVM v0.8 O0):
 #### Decompilation Correctness
 ![example-input-img](cat.png)
 
-After decompilation, the DNN model is rebuild with decompiled model structure and extracted parameters (stored in .json format). [decompile_eval.sh](decompile_eval.sh) will run each rebuilt model (implemented in pytorch) and the original DNN executable with the above example image in [binary format](cat.bin) as input. The output would be like this:
+After decompilation, the DNN model is rebuilt with the decompiled model structure and extracted parameters (stored in .json format). [decompile_eval.sh](decompile_eval.sh) will run each rebuilt model (implemented in PyTorch) and the original DNN executable with the above example image in [binary format](cat.bin) as input. The output would be like this:
 ```
  - vgg16_tvm_v09_O3
  - Rebuilt model output:
 Result: 282
 Confidence: 9.341153
  - DNN Executable output:
-The maximum position in output vector is: 282, with max-value 9.341150.
+The maximum position in the output vector is: 282, with max-value 9.341150.
 timing: 566.89 ms (create), 0.54 ms (set_input), 4034.66 ms (run), 0.00 ms (get_output), 0.61 ms (
 destroy)
 ```
-In the above exmaple, both rebuilt model and DNN executable output result as **`282`** (see [1000 classes of ImageNet](https://github.com/onnx/models/blob/main/vision/classification/synset.txt)), and the confidence scores are `9.341153` and `9.341150` respectively. While the confidence scores (or max values) are slightly inconsistent, we interpret that such inconsistency is caused by the floating-point precision loss between pytorch model and DNN executable, i.e., the decompilation is still *correct*.
+In the above example, both the rebuilt model and the DNN executable output result as **`282`** (see [1000 classes of ImageNet](https://github.com/onnx/models/blob/main/vision/classification/synset.txt)), and the confidence scores are `9.341153` and `9.341150` respectively. While the confidence scores (or max values) are slightly inconsistent, we interpret that such inconsistency is caused by the floating-point precision loss between pytorch model and the DNN executable, i.e., the decompilation is still *correct*.
 
 ### 4. Results Summarization
 Update: We uploaded scripts to summarize the results of the above experiments.
@@ -215,14 +215,14 @@ When the `summarization.sh` script finishes running, all results reported in Tab
 ```
 ├── MyPinTool/          // Pin tools' source code
 ├── compiler_opt/       // identify the complation provenance
-├── evaluation/         // scripts for main evaluation including 63 executables
+├── evaluation/         // scripts for main evaluation, including 63 executables
 ├── ida/                // ida scripts
 ├── nlp_models/         // nlp models evaluation
 ├── nnfusion/           // nnfusion evaluation
 ├── operator_inference/ // inference the type of a DNN operator
 ├── recompile/          // recompile decompiled models
-├── validation/         // to validate the correctness of rebult models
-├── white-box-attack/   // info about white-boix attacks we used 
+├── validation/         // to validate the correctness of rebuilt models
+├── white-box-attack/   // info about white-box attacks we used 
 ├── config.py
 ├── decompile_eval.sh   // script for artifact evaluation
 ├── explain.py          // heuristics used in BTD
@@ -241,7 +241,7 @@ If you are interested in the interfaces of BTD, you can take a look at the decom
 
 Our dataset is available at [https://doi.org/10.5281/zenodo.7219867](https://doi.org/10.5281/zenodo.7219867).
 
-<!---
+
 We also provided all datasets via Dropbox for better download speed. 
 
  - Docker Image for Artifact Evaluation: https://www.dropbox.com/s/o43uoxrxisozdq5/BTD-artifact.tar?dl=0
@@ -250,7 +250,7 @@ We also provided all datasets via Dropbox for better download speed.
     * data.zip: https://www.dropbox.com/s/prg0vmei2x781wy/data.zip?dl=0
     * output.zip: https://www.dropbox.com/s/e8rgxp2u3f01omn/output.zip?dl=0
 
- * Data for artifact evaluataion (including filtered traces, disassembled functions, and original DNN executables): https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0
+ * Data for artifact evaluation (including filtered traces, disassembled functions, and original DNN executables): https://www.dropbox.com/s/ifzc4d7z4czbpvv/BTD-data.zip?dl=0
 
  - ONNX Models
 https://www.dropbox.com/s/x8gwqyej7fla3rz/DNN_models.zip?dl=0
@@ -271,7 +271,7 @@ Recompilation
 The first package includes recompiled new DNN executables on x86 platforms. This is in accordance with our recompilation evaluation in Section 6.5.  
 https://www.dropbox.com/s/i8ub0kihusy1evk/cpu_recompile.zip?dl=0  
 
-The second package includes legacy code migration demo. As clarified in Section 7 (the Discussion section; Downstream Applications paragraph), we decompiled x86 DNN executables, and try to migrate the decompiled models to GPUs by compiling them again using TVM with cuda as target device.  
+The second package includes a legacy code migration demo. As clarified in Section 7 (the Discussion section; Downstream Applications paragraph), we decompiled x86 DNN executables and tried to migrate the decompiled models to GPUs by compiling them again using TVM with CUDA as the target device.  
 https://www.dropbox.com/s/01zu0oyh00e57pw/gpu_recompile.zip?dl=0
--->
+
 
